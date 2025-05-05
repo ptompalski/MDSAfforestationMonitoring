@@ -1,7 +1,1 @@
-This project aims to address the critical challenge of monitoring tree survival across hundreds of afforestation sites in Canada’s 2 Billion Trees program. 
-By leveraging site-level data and satellite-derived spectral indices, 
-we explore the potential of machine learning and deep learning models to predict survival rates over time.
-Our approach combines interpretable models like logistic regression with more advanced techniques such as random forests, 
-gradient boosting, and recurrent neural networks to capture both spatial and temporal patterns in the data. 
-The success of this work hinges on identifying the relationship between the predictive features and the target variable in order to build a robust machine learning model. 
-The effectiveness of the model will play a vital role in supporting afforestation efforts across Canada.
+This project addresses the challenge of monitoring tree survival across hundreds of afforestation sites in Canada’s 2 Billion Trees program. By leveraging site-level data and satellite-derived spectral indices, we evaluate machine learning and deep learning models to predict survival over time. Our approach spans from interpretable models like logistic regression to advanced methods such as random forests, gradient boosting, and recurrent neural networks. Identifying key predictors is essential for building effective, scalable tools to support national afforestation efforts.
