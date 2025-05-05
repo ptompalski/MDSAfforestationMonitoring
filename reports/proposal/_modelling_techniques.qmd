@@ -2,17 +2,22 @@
 
 **WorkFlow** 1) split sites into train/test sets to avoid leakage 2) data preprocessing 3) fit baseline and more advanced models 4) Validation/ Model Selection 5) Feature Selection and Feature Importance 6) Evaluate Model on Test Data 
 
-### Why these models?
-We chose tree‐ensemble learners to capture complex, non‐linear interactions among vegetation indices and an LSTM prototype to leverage multi‑date imagery for earlier detection of canopy recovery.
+### Why these models?  
+To balance interpretability and predictive power, we start with logistic regression to capture linear effects, then apply ensemble methods that uncover non‑linear interactions among vegetation indices, and finally prototype an LSTM to leverage sequential imagery for earlier detection of canopy recovery.
 
-### Candidate algorithms  
+### Candidate Algorithms  
 
-| Model | Project fit | Note |
-|-------|-------------|------|
-| **Logistic Reg.** [@peng2002introduction] | Transparent 0–1 survival baseline  | Coefficients guide feature pruning |
-| **Random Forest** [@rigatti2017random] | Handles mixed bands/indices without scaling | Importance ranks sensors |
-| **AdaBoost** [@schapire2013explaining] | Focuses on hard‑to‑detect early failures | Monitor outlier sensitivity |
-| **Ordinal Logit** [@harrell2015ordinal] | Bins time‑since‑planting into discrete survival‑time categories for a multiclass classification view (if needed) | Applies proportional‑odds to ordered bins |
-| **LSTM RNN** [@grossberg2013recurrent] | Better exploits of full time series | Needs ≥ several years of imagery |
+| Model                 | Use case                                                      | Key advantage                                          |
+|-----------------------|---------------------------------------------------------------|--------------------------------------------------------|
+| **Logistic Regression** | Establishes an interpretable baseline linking features to survival probability | Fast to fit; coefficients guide feature selection      |
+| **Random Forest**       | Models complex interactions without extensive preprocessing   | Robust to noisy, mixed‑type predictors                |
+| **AdaBoost**            | Emphasizes hard‑to‑classify trees to boost overall accuracy   | Iteratively focuses on difficult cases                 |
+| **Ordinal Logistic**    | Discretizes time‑since‑planting into ordered survival bins    | Leverages ordinal relationships in survival timing    |
+| **LSTM Network**        | Exploits full time‑series spectral sequences for trend detection | Learns long‑term dependencies across dates            |
 
-Each model outputs probability of being high risk. The stand‑level survival estimate is the mean $\hat p_i$. We evaluate ROC‑AUC, $F_1$, Brier score, and calibration; select thresholds that maximise $F_1$ on validation. Results will inform the Canadian Forest Service which sensor stack achieves operational accuracy earliest and most cost‑effectively.
+Each model outputs a per‑site survival probability ($\hat p_i$). We estimate stand‑level survival as the mean of these probabilities:  
+$$
+\text{Survival rate} \;=\; \frac{1}{N}\sum_{i=1}^N \hat p_i.
+$$
+
+Models are compared on ROC‑AUC, $F_1$ score, Brier score, and calibration curves, with thresholds chosen to maximize $F_1$ on validation. Results will guide the Canadian Forest Service in selecting the most accurate, interpretable, and cost‑effective sensor and modelling approach for operational afforestation monitoring.  
