@@ -1,0 +1,49 @@
+---
+title: "Remote Sensing for Forest Recovery: Proposal"
+author: 
+    - name: Benjamin Frizzell
+    - name: Zanan Pech
+    - name: Mavis Wong
+    - name: Hui Tang
+bibliography: references.bib
+date: today
+format: 
+    pdf:
+        toc: true
+        number-sections: true
+        theme: flatly
+---
+
+## Abstract 
+
+{{< include _abstract.qmd >}}
+
+## Introduction
+
+{{< include _introduction.qmd >}}
+
+## Data Description
+
+{{< include _data_description.qmd >}}
+
+## Data Engineering
+
+{{< include _data_engineering.qmd >}}
+
+## Modelling Techniques
+
+{{< include _modelling_techniques.qmd >}}
+
+## Success Criteria
+
+{{< include _success_criteria.qmd >}}
+
+## Timeline
+
+{{< include _timeline.qmd >}}
+
+## Conclusion
+
+{{< include _conclusion.qmd >}}
+
+## References
