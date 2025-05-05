@@ -15,26 +15,20 @@ Grey-coloured records indicate rows that have recorded values.](../../img/missin
 
 We find excessive missingness in the columns `PlantDt`, `Type`, `NmbrPIO`, `NmbrPIR`, and `NmbrPIT`. 
 The columns `PlantDt`, `NmbrPIO`, `NmbrPIR`, and `NmbrPIT` relate to sites where replanting has occured, 
-which is outside of the project scope. Therefore, these columns can be removed.
-Additionally, `Type` can be fully imputed via string processing on the `SpcsCmp` column.
-
-To complement @fig-missing_rows, @fig-missing_correlation more precisely displays the pairwise missingness between columns in our data.
-The perfect correlation between `ASSSD_1`, and `SrvvR_1`, `ASSSD_2` and `SrvvR_2`, etc.
-indicates that all recorded survival rates have corresponding dates of assesment, which is important for tracking temporal dependence. 
-The strong correlation between missing vegetation index observations observed in @fig-missing_correlation as well as their small
-proportion of missingness in @fig-missing_rows indicates that rows with missing indices can be easily dropped.
-
-![A missingness correlation plot between columns in the dataset. 
-Positive values indicate concurrent missingess, and negative values indicate inverse missingness.
-Values near zero indicate no relationship between the missingness of the two features.](../../img/missing_correlation.png){#fig-missing_correlation width=70%}
+and can be removed as they are outside of the project scope 
+Additionally, `Type` can be fully imputed via string processing on the `SpcsCmp` column. 
+There is a direct correlation between missingness in survivial rate and time of assesment:
+if the survival rate is recorded, the time at which it was recorded is also present.
+This will allow for tracking of temporal dependence without the need for imputation, which will be elaborated further upon in the following sections.
+Additionally, a similar pattern appears between the ten vegetation indices, meaning the few missing values can be dropped without significant loss of data.
 
 ### Feature Selection and Engineering
 
 As mentioned in @sec-data_description, strong collinearity between the vegetation indices indicates a need for feature selection. 
-As a baseline method, we will start with **Recursive Feature Elimination**, due to its compatbility with nonlinear tree-based models [@scikit-learn]. 
+As a baseline method, we will use **Recursive Feature Elimination**, due to its compatbility with many nonlinear ML models [@scikit-learn]. 
 We also propose the use of **Bayesian Model Averaging**,
 as such a method is suitable for an analysis of multiple competing models, varying in features and architecture [@hoeting1998bayesian].
-It may be necessary to leverage these results with domain knowlege of the characteristics and relationships of each vegetation index as outlined by @zeng2022optical.
+It may also be necessary to leverage these results with domain knowlege of the characteristics and relationships of each index as outlined by @zeng2022optical.
 
 Very little feature engineering will be performed during this analysis. 
 However, we aim to experiment with tree density (number of trees per unit area) -derived from `Planted` and `Area_ha`- as a predictor.
@@ -49,8 +43,7 @@ We will then remove rows with missing survival rate records, and rows with misma
 ### Conversion to Classifier Problem
 
 Since the survival rates are given as real-valued proportions between 0% and 100%,
-they must be converted to classes such 'good' and 'poor' survival rate at the very least. 
-This is to simplify and align the analysis with the project goals. 
+they must be converted to binary classes at the very least, to simplify and align the analysis with the project goals. 
 Special care an experimentation will be required in deciding a threshold between classes,
 as most survival rates are skewed towards 100%. There is a trade-off that must be considered:
 A low threshold may be more appropriate for the analysis but may lead to heavy class imbalance.
