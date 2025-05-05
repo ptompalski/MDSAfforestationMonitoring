@@ -1,20 +1,10 @@
 
-Afforestation plays a vital role in combating climate change and protecting biodiversity. 
-Trees capture and store carbon from the atmosphere, improve air and water quality, 
-provide shelter and shade that reduce urban heat, and help cool our cities. 
-More importantly, they serve as sources of food, nutrients, and habitats for countless living organisms[@canada2023_2bt_commitment].
+Afforestation is crucial for combating climate change and supporting biodiversity. Trees help purify the atmosphere and provide food, nutrients, and habitats for countless species [@canada2023_2bt_commitment].
 
-Recognizing the essential benefits of trees, 
-the Canadian federal government launched the **2 Billion Trees** program to provide financial support to provinces, 
-territories, non-profit organizations, businesses, and Indigenous governments and organizations. 
-The goal is to plant two billion trees across hundreds of sites nationwide over a 10-year period, by 2031 [@nrcan2021].
+To advance these goals, the Canadian government launched the **2 Billion Trees** program, aiming to plant two billion trees nationwide by 2031 with support for provinces and territories [@nrcan2021].
 
-With this large-scale initiative underway, 
-it becomes crucial to monitor the survival rates of the trees being planted — a task that poses significant logistical challenges. 
-Remote sensing presents a promising solution by enabling large-scale environmental monitoring through satellite imagery. 
-However, detecting small or newly planted trees from above remains difficult due to their limited canopy coverage and weak spectral signals [@ubc2025remotesensing].
+Monitoring survival at scale is a major challenge. While remote sensing enables broad environmental monitoring, detecting small or newly planted trees remains difficult due to limited canopy coverage and weak spectral signals [@ubc2025remotesensing].
 
-In this study, we aim to investigate two main research questions:
-
-- Can remote sensing data help reduce the number of field sites that must be physically visited?  
-- Which modelling approach is most effective, and how long after planting is needed before accurate survival predictions can be made?
+This study aim to address two key questions:
+- Can remote sensing reduce the need for physical site visits?
+- Which modelling approach is most effective, and how soon after planting can survival be reliably predicted?
