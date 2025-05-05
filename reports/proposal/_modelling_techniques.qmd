@@ -1,0 +1,19 @@
+![](../../img/Data_Pipelines.png){width="100%"}
+
+**WorkFlow** 1) split sites into train/test sets to avoid leakage 2) data preprocessing 3) fit baseline and more advanced models 4) Validation/ Model Selection 5) Feature Selection and Feature Importance 6) Evaluate Model on Test Data 
+
+### Why these models?
+* Tree ensemble models can better capture the non-linear interactions among the Vegetation indices. 
+* Multi‑date imagery motivates a prototype LSTM that might detect recovery trends ​earlier than single‑date summaries.
+
+### Candidate algorithms  
+
+| Model | Project fit | Note |
+|-------|-------------|------|
+| **Logistic Reg.** [@peng2002introduction] | Transparent 0–1 survival baseline  | Coefficients guide feature pruning |
+| **Random Forest** [@rigatti2017random] | Handles mixed bands/indices without scaling | Importance ranks sensors |
+| **AdaBoost** [@schapire2013explaining] | Focuses on hard‑to‑detect early failures | Monitor outlier sensitivity |
+| **Ordinal Logit** [@harrell2015ordinal] | Bins time‑since‑planting into discrete survival‑time categories for a multiclass classification view (if needed) | Applies proportional‑odds to ordered bins |
+| **LSTM RNN** [@grossberg2013recurrent] | Better exploits of full time series | Needs ≥ several years of imagery |
+
+Each model outputs $\hat p_i = P(\text{alive at } T)$. The stand‑level survival estimate is the mean $\hat p_i$. We evaluate ROC‑AUC, $F_1$, Brier score, and calibration; select thresholds that maximise $F_1$ on validation. Results will inform the Canadian Forest Service which sensor stack achieves operational accuracy earliest and most cost‑effectively.

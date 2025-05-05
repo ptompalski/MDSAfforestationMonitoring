@@ -1,0 +1,10 @@
+In this capstone, we demonstrated how remote‑sensing and site data can be combined in an end‑to‑end pipeline to predict afforestation survival rates. 
+
+### Limitations
+- **Missing data** missing survival rate in certain year records may bias model training.  
+- **Multicollinearity between indices** can inflate variance of coefficient estimates and mask true signal.  
+- **Class imbalance** (few early‑mortality cases) may lead to over‑optimistic accuracy on the majority “alive” class.  
+- **Weak spectral signals** from very small or young trees limit detection accuracy in the first seasons.  
+- **Seasonality effects** require careful temporal aggregation; mis‑aligned phenophase dates can degrade performance.
+
+Despite these constraints, our framework provides a scalable foundation. Future work will explore imputation strategies, variable‑selection to mitigate collinearity, and finer temporal modelling to leverage time-series features.
