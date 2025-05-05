@@ -18,31 +18,31 @@ format:
 
 {{< include _abstract.qmd >}}
 
-## Introduction
+## Introduction {#sec-intro}
 
 {{< include _introduction.qmd >}}
 
-## Data Description
+## Data Description {#sec-data_description}
 
 {{< include _data_description.qmd >}}
 
-## Data Engineering
+## Data Engineering {#sec-data_engineering}
 
 {{< include _data_engineering.qmd >}}
 
-## Modelling Techniques
+## Modelling Techniques {#sec-modelling_techniques}
 
 {{< include _modelling_techniques.qmd >}}
 
-## Success Criteria
+## Success Criteria {#sec-success_criteria}
 
 {{< include _success_criteria.qmd >}}
 
-## Timeline
+## Timeline {#sec-timeline}
 
 {{< include _timeline.qmd >}}
 
-## Conclusion
+## Conclusion  {#sec-conclusion}
 
 {{< include _conclusion.qmd >}}
 

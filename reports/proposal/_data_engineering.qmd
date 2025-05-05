@@ -1,0 +1,41 @@
+### Train-Test Splitting
+
+Splitting the dataset into training and testing subsets is necessary to prevent data leakage,
+but requires nuance due to it's heirarchical structure. 
+We perform the train-test split by **unique sites**
+to ensure pixels and time step records for a particular site appear in only one of the two subsets. 
+
+### Missing Data
+
+![A plot visualizing missing record patterns across the training dataset. 
+Grey-coloured records indicate rows that have recorded values.](../../img/missing_rows.png){#fig-missing_rows width=70%}
+
+We find excessive missingness in the columns `PlantDt`, `Type`, `NmbrPIO`, `NmbrPIR`, and `NmbrPIT`. 
+`PlantDt`, `NmbrPIO`, `NmbrPIR`, and `NmbrPIT` relate to sites where replanting has occured, 
+and can be removed as they are outside of the project scope, and 
+`Type` can be fully imputed via string processing on the `SpcsCmp` column. 
+There is a direct correspondence between missingness in survivial rate and assesment time,
+allowing for easier tracking of temporal dependence across survival records.
+
+
+### Feature Selection and Engineering
+
+As mentioned in @sec-data_description, strong collinearity between vegetation indices indicates a need for feature selection. 
+We will begin with **Recursive Feature Elimination**, due to its compatbility with nonlinear ML models [@scikit-learn]. 
+We also propose the use of **Bayesian Model Averaging**,
+as it is suitable for an analysis of multiple competing models [@hoeting1998bayesian].
+Domain knowlege of the vegetation indices as given by @zeng2022optical will also be leveraged in this process.
+Very little feature engineering will be performed, but we aim experiment with tree density (number of trees per unit area) as a predictor.
+
+### Data Pivoting
+
+Most machine learning models require the input data to contain just one target column.
+We will pivot the seven target columns into one, keeping track of temporalty using column names and assesment dates.
+We will then remove rows with missing survival rates, and with mismatching assesment and imaging dates.
+
+### Conversion to Classifier Problem
+
+Since the survival rates are given as percentage proportions,
+they will be converted to binary classes to simplify the analysis and emphasize high-risk sites.
+Since most survival rates are within 70% - 100%, 
+usefulness alongside class imbalance must be considered when deciding on a suitable threshold.

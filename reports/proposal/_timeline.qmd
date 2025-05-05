@@ -1,0 +1,8 @@
+| Date & Time                     | Deliverable                         | Description                                           |
+|---------------------------------|-------------------------------------|-------------------------------------------------------|
+| **May 2, 2025**                 | Proposal Presentations              | Group oral presentations                              |
+| **May 6, 2025 12:00**           | Proposal Report – Draft to Mentor   | Ungraded draft                                        |
+| **May 9, 2025 17:00**           | Final Proposal Report               | Final version to partner & mentor                     |
+| **June 9, 2025 16:00**          | Data Product – Runnable Draft       | Draft pipeline & code to mentor                       |
+| **June 12–13, 2025 9:00–16:30**  | Final Presentation                  | Group presentation of modelling approach & key results|
+| **June 25, 2025 12:00**         | Final Data Product & Report         | Final pipeline, data product, and technical report    |
