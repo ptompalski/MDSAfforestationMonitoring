@@ -1,23 +1,16 @@
-![](../../img/Data_Pipelines.png){width="100%"}
 
-**WorkFlow** 1) split sites into train/test sets to avoid leakage 2) data preprocessing 3) fit baseline and more advanced models 4) Validation/ Model Selection 5) Feature Selection and Feature Importance 6) Evaluate Model on Test Data 
+### Logistic Regression
+As the simplest model, logistic regresion will serve as a baseline to contrast performance against other models.
+Logistic regression may also aid in providing insight as to the most important indices via easily interpretable predictor coefficients.
 
-### Why these models?  
-To balance interpretability and predictive power, we start with logistic regression to capture linear effects, then apply ensemble methods that uncover non‑linear interactions among vegetation indices, and finally prototype an LSTM to leverage sequential imagery for earlier detection of canopy recovery.
+### Aggregated Models: Random Forest and Gradient Boosting
+Studies by @bergmuller2022predicting suggest that aggregated tree models may effectively utitlize vegetation indices to
+predict tree mortality. Given this, we find it reasonable to test their performance in our analysis.
+Random Forests and GBMs complement each other well, as the former produces an aggregation of 'overfit' trees which work in tandem
+to produce more accurate responses, whereas the ladder produces a sequence of 'underfit' trees
+which continuously correct on mistakes made by the previous iteration [@scikit-learn].
 
-### Candidate Algorithms  
-
-| Model                        | Use case                                                      | Key advantage                                          |
-|------------------------------|---------------------------------------------------------------|--------------------------------------------------------|
-| **Logistic Regression** [@scikit-learn] | Establishes an interpretable baseline linking features to survival probability | Fast to fit; coefficients guide feature selection      |
-| **Random Forest** [@scikit-learn]       | Models complex interactions without extensive preprocessing   | Robust to noisy, mixed‑type predictors                |
-| **AdaBoost** [@scikit-learn]            | Emphasizes hard‑to‑classify trees to boost overall accuracy   | Iteratively focuses on difficult cases                 |
-| **Ordinal Logistic** [@scikit-learn]    | Discretizes time‑since‑planting into ordered survival bins    | Leverages ordinal relationships in survival timing    |
-| **LSTM Network** [@scikit-learn]        | Exploits full time‑series spectral sequences for trend detection | Learns long‑term dependencies across dates            |
-
-Each model outputs a per‑site survival probability ($\hat p_i$). We estimate stand‑level survival as the mean of these probabilities:  
-$$
-\text{Survival rate} \;=\; \frac{1}{N}\sum_{i=1}^N \hat p_i.
-$$
-
-Models are compared on ROC‑AUC, $F_1$ score, Brier score, and calibration curves, with thresholds chosen to maximize $F_1$ on validation. Results will guide the Canadian Forest Service in selecting the most accurate, interpretable, and cost‑effective sensor and modelling approach for operational afforestation monitoring.  
+### Sequential Deep Learning Models: LSTMs, GRUs, etc.
+If time permits, we may consider implementing sequential RNN-based deep learning models such as LSTMs and/or GRUs.
+These models have the benefit of capturing non‑linear structure and can more effectively exploit changes in vegetation index response
+across time [@paszke2019pytorch]. 
