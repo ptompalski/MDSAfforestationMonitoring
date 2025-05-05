@@ -7,13 +7,13 @@ To balance interpretability and predictive power, we start with logistic regress
 
 ### Candidate Algorithms  
 
-| Model                 | Use case                                                      | Key advantage                                          |
-|-----------------------|---------------------------------------------------------------|--------------------------------------------------------|
-| **Logistic Regression** | Establishes an interpretable baseline linking features to survival probability | Fast to fit; coefficients guide feature selection      |
-| **Random Forest**       | Models complex interactions without extensive preprocessing   | Robust to noisy, mixed‑type predictors                |
-| **AdaBoost**            | Emphasizes hard‑to‑classify trees to boost overall accuracy   | Iteratively focuses on difficult cases                 |
-| **Ordinal Logistic**    | Discretizes time‑since‑planting into ordered survival bins    | Leverages ordinal relationships in survival timing    |
-| **LSTM Network**        | Exploits full time‑series spectral sequences for trend detection | Learns long‑term dependencies across dates            |
+| Model                        | Use case                                                      | Key advantage                                          |
+|------------------------------|---------------------------------------------------------------|--------------------------------------------------------|
+| **Logistic Regression** [@scikit-learn] | Establishes an interpretable baseline linking features to survival probability | Fast to fit; coefficients guide feature selection      |
+| **Random Forest** [@scikit-learn]       | Models complex interactions without extensive preprocessing   | Robust to noisy, mixed‑type predictors                |
+| **AdaBoost** [@scikit-learn]            | Emphasizes hard‑to‑classify trees to boost overall accuracy   | Iteratively focuses on difficult cases                 |
+| **Ordinal Logistic** [@scikit-learn]    | Discretizes time‑since‑planting into ordered survival bins    | Leverages ordinal relationships in survival timing    |
+| **LSTM Network** [@scikit-learn]        | Exploits full time‑series spectral sequences for trend detection | Learns long‑term dependencies across dates            |
 
 Each model outputs a per‑site survival probability ($\hat p_i$). We estimate stand‑level survival as the mean of these probabilities:  
 $$
