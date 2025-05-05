@@ -1,16 +1,15 @@
 
 ### Logistic Regression
-As the simplest model, logistic regresion will serve as a baseline to contrast performance against other models.
-Logistic regression may also aid in providing insight as to the most important indices via easily interpretable predictor coefficients.
+Logistic regression will serve as a baseline to contrast performance against other, more complex models.
+It may also provide insight into feature importance through interpretable coefficients.
 
 ### Aggregated Models: Random Forest and Gradient Boosting
 Studies by @bergmuller2022predicting suggest that aggregated tree models may effectively utitlize vegetation indices to
-predict tree mortality. Given this, we find it reasonable to test their performance in our analysis.
-Random Forests and GBMs complement each other well, as the former produces an aggregation of 'overfit' trees which work in tandem
-to produce more accurate responses, whereas the ladder produces a sequence of 'underfit' trees
-which continuously correct on mistakes made by the previous iteration [@scikit-learn].
+predict tree mortality. Random Forests and GBMs complement each other well, as the former produces many 'overfit' trees in tandem
+to produce more accurate responses, whereas the ladder iteratively produces 'underfit' trees
+which correct on mistakes made by the previous [@scikit-learn].
 
 ### Sequential Deep Learning Models: LSTMs, GRUs, etc.
 If time permits, we may consider implementing sequential RNN-based deep learning models such as LSTMs and/or GRUs.
-These models have the benefit of capturing non‑linear structure and can more effectively exploit changes in vegetation index response
+These models have the benefit of capturing non‑linear structure and may exploit changes in vegetation indices
 across time [@paszke2019pytorch]. 
