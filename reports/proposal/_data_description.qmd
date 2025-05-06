@@ -1,9 +1,7 @@
-## Data Description
-
-The dataset used in this study includes field-measured survival rates of afforested sites collected by Forest Ontario, as well as satellite data products from the Harmonized Landsat Sentinel-2 (HLS) project. 
+The dataset used in this study includes field-measured survival rates of afforested sites collected by Forest Ontario [@ubc2025remotesensing], as well as satellite data products from the Harmonized Landsat Sentinel-2 (HLS) project [@hls]. 
 
 ### Site Features
-||Description|
+|Column Name|Description|
 |-----|-----------|
 |ID|Site ID|
 |PixelID| Pixel ID|
@@ -24,51 +22,50 @@ The dataset used in this study includes field-measured survival rates of affores
 |DOY| Day of Year of the Remote Sensing Data|
 
 ### Spectral Indicies
-|Index|Description|
-|-----|-----------|
-|NDVI | Normalized Difference Vegetation Index|
-|SAVI |Soil-Adjusted Vegetation Index|
-|MSAVI |Modified Soil-Adjusted Vegetation Index|
-|EVI |Enhanced Vegetation Index|
-|EVI2|Two-band Enhanced Vegetation Index|
-|NDWI |Normalized Difference Water Index|
-|NBR |Normalized Burn Ratio|
-|TCB |Tasseled Cap Brightness|
-|TCG |Tasseled Cap Greenness|
-|TCW |Tasseled Cap Wetness|
+|Type|Index|Description|
+|--|-----|-----------|
+|Vegetation Index|NDVI | Normalized Difference Vegetation Index|
+||SAVI |Soil-Adjusted Vegetation Index|
+||MSAVI |Modified Soil-Adjusted Vegetation Index|
+||EVI |Enhanced Vegetation Index|
+||EVI2|Two-band Enhanced Vegetation Index|
+|Water Index|NDWI |Normalized Difference Water Index|
+|Fire Index|NBR |Normalized Burn Ratio|
+|Tasseled Cap Transfored|TCB |Tasseled Cap Brightness|
+||TCG |Tasseled Cap Greenness|
+||TCW |Tasseled Cap Wetness|
 
 
 ### Out-of-range Values
-During EDA, we noticed that there are out-of-range values in the vegetation indicies and survival rates. With the exception of TCB, TCW and TCG, the vegetation indicies should range between -1 to 1[@NDVI; @SAVI; @MSAVI; @EVI;  @EVI2; @NDWI; @NBR]. The survival rates should not exceed 100. We will be removing these out-of-range records from the dataset.
+During EDA, we noticed out-of-range values in the vegetation indices and survival rates. With the exception of TCB, TCW and TCG, the vegetation indices should range between -1 to 1 [@NDVI; @EVI2; @NDWI]. Survival rates should not exceed 100%. Out-of-range records will be removed from the dataset.
 
 
 ### Previous Land Use and Species Composition
-Class imbalance was observed in 'SpcsCmp' column. Given that there are over 300 categories in 'SpcsCmp', it would not be practical for us to use this column as a predictor for our model.  
 
-Severe class imbalance are also observed in the 'prevUse' column, as such, we would also not be using 'prevUse' as a predictor for our model.
+Class imbalance was observed in `SpcsCmp`. With over 300 categories in `SpcsCmp`, it would not be practical to use it as a predictor for our model.  
+
+Similarly, severe class imbalance was observed in `prevUse`, as such, it will also be excluded from our model. 
 
 ### Species Type
-From 'SpcsCmp', we are able to impute the species type. Sites are classified as Conifer(Deciduous) if the proportion of softwood(hardwood) species >= 80%, else, they would be classified as mixed. 
+From `SpcsCmp`, we are able to impute the missing values in `Type`. Sites are classified as "Conifer" ("Deciduous") if $\ge 80 \%$ of the species are "Softwood" ("Hardwood"); otherwise, it would be classified as "Mixed" [@mixed]. 
 
-@fig-diff_srvvR_vi shows that survival rates and spectral indices differs by species type, suggesting that 'Type' would be a viable feature to use as predictor for our model. 
+As shown in @fig-diff_srvvR_vi, survival rates and spectral signals vary by species type, suggesting 'Type' could be a viable feature for our model. 
 
-![Plot showing mean survival rate and vegetation index signals for different species type in Year 1, 2 and 5. There is significant difference in the relationship between survival rate and VI signals for different species type. Conifers has a smaller signal response to change in survival rate. Deciduous shows the strongest response in the first two years. Mixed type shows a linear relationship between survival rate the spectral signal.](../../img/age_srvvR_vi.png){#fig-diff_srvvR_vi width=70%}
+![Plot showing mean survival rate and vegetation index signals for different species types across Years 1, 2 and 5. There is a significant difference in the relationship between survival rate and spectral signals for different species types. Conifers show a weaker signal response to changes in survival rate. Deciduous shows the strongest response during the first two years. Mixed type shows a linear relationship between survival rate and spectral signal.](../../img/age_srvvR_vi.png){#fig-diff_srvvR_vi width=100%}
 
 
 ### Trends and Seasonality
-Clear seasonality was observed in the spectral indices, where the signals peaked during the summer and dropped during winter months (@fig-vi_seasonality). This would be something that we need to address in our model. 
+From @fig-vi_seasonality, we observed clear seasonality in the spectral indices, where spectral signals peaked during the summer and dropped during winter. This would need to be accounted for during model development. 
 
-![Plot showing seasonality in vegetation indices.](../../img/vi_seasonality.png){#fig-vi_seasonality width=70%}
+![Plot showing seasonality in spectral indices.](../../img/vi_seasonality.png){#fig-vi_seasonality width=100%}
 
-@fig-age_vi also shows a positive relationship between vegetation indicies and tree age. Minimal change in vegetation indicies was observed between age 1 to age 4. Indicating potential difficulties in survival rate prediction for earlier years. 
+@fig-age_vi reveals a positive relationship between vegetation indices and tree age. Minimal changes in spectral signals are observed between ages 1 to 4, indicating potential difficulties in predicting the survival rates for younger trees. 
 
-![Plot showing mean spectral signal by tree age. With the exception of TCB, spectral signal increases as tree matures. A negative relationship was observed for TCB due to decreasing surface brightness as canopy cover increases.](../../img/age_vi.png){#fig-age_vi width=70%}
+![Plot showing mean spectral signal by tree age. With the exception of TCB, the spectral signal increases with age. A negative relationship was observed for TCB due to lower surface brightness from canopy cover.](../../img/age_vi.png){#fig-age_vi width=100%}
 
 
 ### Collinearity
-From @fig-correlation, we observed strong collinearity between vegetation indices except for TCB. 
-The strongest correlation between survival rate and vegetation indicies is observed in Year 7. 
+As shown in @fig-correlation, there is strong collinearity between the vegetation indices, except for TCB. 
+The strongest correlation between survival rate and vegetation indices was observed in Year 7. 
 
-![Correlation plot showing strong collinearity between vegetation indicies.](../../img/feat_target_correlation.png){#fig-correlation width=70%}
-
-
+![Correlation plot showing strong collinearity between vegetation indicies.](../../img/feat_target_correlation.png){#fig-correlation width=100%}
