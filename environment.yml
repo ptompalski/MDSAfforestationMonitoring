@@ -10,6 +10,7 @@ dependencies:
   - matplotlib=3.10.0
   - pandas=2.2.3
   - pyarrow=20.0.0
+  - click=8.1.8
   - pip
   - pip:
     - altair-ally==0.1.1

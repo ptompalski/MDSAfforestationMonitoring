@@ -13,6 +13,7 @@ dependencies:
   - pyarrow=20.0.0
   - pytest=8.3.5
   - pytest-cov=6.1.1 
+  - click=8.1.8
   - pip
   - pip:
     - altair-ally==0.1.1
