@@ -1,3 +1,4 @@
+name: mds-afforest-dev
 channels:
   - conda-forge
   - defaults
@@ -10,6 +11,8 @@ dependencies:
   - matplotlib=3.10.0
   - pandas=2.2.3
   - pyarrow=20.0.0
+  - pytest=8.3.5
+  - pytest-cov=6.1.1 
   - pip
   - pip:
     - altair-ally==0.1.1
