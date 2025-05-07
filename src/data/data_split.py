@@ -49,7 +49,7 @@ def data_split(df: pd.DataFrame, seed: int = 591, prop_train: float = 0.7):
 @click.option('--prop_train',
     type=click.FloatRange(0.0, 1.0, min_open=True, max_open=True),
     default=0.7,
-    help="Proportion of data assigned to training sample (must be > 0 and < 1), Default = 0.7."
+    help="Proportion of data assigned to training sample, Default = 0.7."
 )
 @click.option('--seed', type=int, default=591, help="Random seed for reproducibility.")
 def main(input_path,output_dir,prop_train,seed):
@@ -57,7 +57,7 @@ def main(input_path,output_dir,prop_train,seed):
     Command-line interface for splitting data into train/test sets.
     '''
     
-    print('Splitting data into train/test sets...')
+    print('\nSplitting data into train/test sets...')
 
     # Read in unsplit data
     # NOTE: I am assuming data is saved as parquet by this stage
