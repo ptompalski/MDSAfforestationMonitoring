@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import click
 
 def classify_species(x):
     """
@@ -29,7 +30,6 @@ def classify_species(x):
         return "Conifer"
     else:
         return "Mixed"
-
 
 def data_cleaning(df):
     """
@@ -77,34 +77,13 @@ def data_cleaning(df):
 
     return df
 
-def data_split(df):
-    """
-    Splits the data into training and testing sets by site.
-    Each site is either in training set or in the test set. 
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input dataframe.
+def main():
+    '''
+    Command-line interface for preprocessing features of data.
+    Preprocessing target will be performed in following steps. 
+    '''
+    pass
 
-    Returns
-    -------
-    pd.DataFrame
-        Training data containing records from 70% of sites.
-    pd.DataFrame
-        Testing data containing records from the remaining 30% sites.
-    """
-    id_list = np.arange(df['ID'].min(), df['ID'].max()+1)
-    # initialize split parameters
-    SEED = 591
-    prop_train = 0.7
-    n_training_sites = int(prop_train*len(id_list))
-    np.random.seed(SEED)
-    # randomly select proportion of sites for training set
-    training_ids = np.random.choice(id_list, size=n_training_sites, replace=False)
-
-    # filter the data for site IDs selected in the training set
-    df_train = df[df['ID'].isin(training_ids)]
-    df_test = df[~df['ID'].isin(training_ids)]
-    
-    return df_train, df_test
+if __name__ == '__main__':
+    main()
