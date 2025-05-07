@@ -1,6 +1,8 @@
+import os
+import click
 import pandas as pd
 import numpy as np
-import click
+import gc
 
 def classify_species(x):
     """
@@ -53,6 +55,7 @@ def data_cleaning(df):
     """
     # Drop replanted sites
     df = df[(df['NmbrPlR'].isna()) | (df['NmbrPlR'] == 0)]
+    
     # Drop rows with missing spectral indices
     df = df.dropna(subset=['NDVI', 'SAVI', 'MSAVI', 'EVI',
                         'EVI2', 'NDWI', 'NBR', 'TCB', 'TCG', 'TCW'])
@@ -77,13 +80,27 @@ def data_cleaning(df):
 
     return df
 
-
-def main():
+@click.command()
+@click.option('--input_path', type=click.Path(exists=True), required=True, help='Path to raw input data. Expecting parquet format.')
+@click.option('--output_dir', type=click.Path(file_okay=False), required=True, help='Directory to save cleaned data')
+def main(input_path,output_dir):
     '''
     Command-line interface for preprocessing features of data.
-    Preprocessing target will be performed in following steps. 
+    Note that preprocessing target features (pivoting, etc.) is not performed at this stage.
     '''
-    pass
+    print('Loading raw data...')
+    df_raw = pd.read_parquet(input_path)
 
+    print('Cleaning data features...')
+    df_clean_feats = data_cleaning(df_raw)
+
+    del df_raw               # free memory
+    gc.collect()             # force garbage collection
+
+    print('Saving cleaned dataset...')
+    output_path_clean = os.path.join(output_dir, 'clean_feats_data.parquet')
+    df_clean_feats.to_parquet(output_path_clean)
+    print(f'Cleaned data saved to {output_path_clean}')
+  
 if __name__ == '__main__':
     main()
