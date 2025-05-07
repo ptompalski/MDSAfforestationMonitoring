@@ -39,6 +39,7 @@ def data_cleaning(df):
     3. Drop rows where the image year ('Year') precedes the planting year ('Season').
     4. Drop rows with invalid survival rates (SrvvR_1, ..., SrvvR_7 not in [0, 100]).
     5. Drop rows with invalid spectral index values (-1 to 1).
+    6. Drop unnecessary columns (NmbrPlO, NmbrPlR, NmbrPlT, 'prevUse', 'SpcsCmp').
 
     Parameters
     ----------
@@ -70,6 +71,9 @@ def data_cleaning(df):
     # Impute type column
     df.loc[df['NmbrPlR'].isna(
     ), 'Type'] = df.loc[df['NmbrPlR'].isna(), 'SpcsCmp'].apply(classify_species)
+    
+    # Drop unnecessary columns
+    df = df.drop(['NmbrPlO', 'NmbrPlR', 'NmbrPlT', 'prevUse', 'SpcsCmp'], axis=1)
 
     return df
 
