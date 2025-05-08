@@ -1,0 +1,10 @@
+
+Afforestation is crucial for combating climate change and supporting biodiversity. Trees help purify the atmosphere and provide food, nutrients, and habitats for countless species [@canada2023_2bt_commitment].
+
+To advance these goals, the Canadian government launched the **2 Billion Trees** program, aiming to plant two billion trees nationwide by 2031 with support for provinces and territories [@nrcan2021].
+
+Monitoring survival at scale is a major challenge. While remote sensing enables broad environmental monitoring, detecting small or newly planted trees remains difficult due to limited canopy coverage and weak spectral signals [@ubc2025remotesensing].
+
+This study aim to address two key questions:
+- Can remote sensing reduce the need for physical site visits?
+- Which modelling approach is most effective, and how soon after planting can survival be reliably predicted?
