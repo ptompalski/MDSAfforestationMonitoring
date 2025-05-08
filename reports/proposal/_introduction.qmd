@@ -1,12 +1,10 @@
-## Introduction
+Monitoring the success of large-scale afforestation initiatives is a critical yet complex challenge especially for early growth stages. Young trees often produce weak spectral signals due to sparse canopies, making them difficult to detect using traditional remote sensing methods [@ubc2025remotesensing]. As part of Canada’s 2 Billion Trees program—which aims to plant two billion trees across Canadian provinces by 2031—Natural Resources Canada must track survival rates across hundreds of ecologically diverse and often remote planting sites [@nrcan2021].
 
-Afforestation plays a vital role in combating climate change and protecting biodiversity. Trees capture and store carbon from the atmosphere, improve air and water quality, provide shelter and shade that reduce urban heat, and help cool our cities. More importantly, they serve as sources of food, nutrients, and habitats for countless living organisms[@canada2023_2bt_commitment].
-
-Recognizing the essential benefits of trees, the Canadian federal government launched the **2 Billion Trees** program to provide financial support to provinces, territories, non-profit organizations, businesses, and Indigenous governments and organizations. The goal is to plant two billion trees across hundreds of sites nationwide over a 10-year period, by 2031 [@nrcan2021].
-
-With this large-scale initiative underway, it becomes crucial to monitor the survival rates of the trees being planted — a task that poses significant logistical challenges. Remote sensing presents a promising solution by enabling large-scale environmental monitoring through satellite imagery. However, detecting small or newly planted trees from above remains difficult due to their limited canopy coverage and weak spectral signals [@ubc2025remotesensing].
+This problem is crucial because the ecological and climate benefits of afforestation—such as carbon reduction, and biodiversity restoration can only be realized if newly planted trees survive and grow. 
 
 In this study, we aim to investigate two main research questions:
 
 - Can remote sensing data help reduce the number of field sites that must be physically visited?  
 - Which modelling approach is most effective, and how long after planting is needed before accurate survival predictions can be made?
+
+To address these qestions, this study leverages satellite-derived vegetation indices and site-level data to train machine learning models. By evaluating multiple modelling approaches—including logistic regression, random forests, and deep learning architectures—we aim to determine which techniques provide the most accurate and predictions of tree survival to support the mission of supporting sustainable forest management and addressing climate change.
