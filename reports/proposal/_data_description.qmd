@@ -64,7 +64,7 @@ From @fig-vi_seasonality, we observed clear seasonality in the spectral indices,
 ![Plot showing mean spectral signal by tree age. With the exception of TCB, the spectral signal increases with age. A negative relationship was observed for TCB due to lower surface brightness from canopy cover.](../../img/age_vi.png){#fig-age_vi width=100%}
 
 
-### Collinearity
+### Collinearity {#sec-collnearity}
 As shown in @fig-correlation, there is strong collinearity between the vegetation indices, except for TCB. 
 The strongest correlation between survival rate and vegetation indices was observed in Year 7. 
 
