@@ -35,8 +35,6 @@ def test_classify_species():
     with pytest.raises(ZeroDivisionError):
         classify_species('HW 0, SW 0')
         
-    
-
 def test_outlier_survival_rates():
     '''
     Test to ensure survival rates are between 0% and 100% after cleaning
