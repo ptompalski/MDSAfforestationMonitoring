@@ -4,7 +4,7 @@ This problem is crucial because the ecological and climate benefits of afforesta
 
 In this study, we aim to investigate two main research questions:
 
-- Can remote sensing data help reduce the number of field sites that must be physically visited?  
+- Can satellite-derived vegetation indices and site-level data be used to accurately predict tree survival over time in large-scale afforestation programs? 
 - Which modelling approach is most effective, and how long after planting is needed before accurate survival predictions can be made?
 
-To address these qestions, this study leverages satellite-derived vegetation indices and site-level data to train machine learning models. By evaluating multiple modelling approaches—including logistic regression, random forests, and deep learning architectures—we aim to determine which techniques provide the most accurate and predictions of tree survival to support the mission of supporting sustainable forest management and addressing climate change.
+To address these qestions, this study leverages satellite-derived vegetation indices and site-level data to train machine learning models. By evaluating multiple modelling approaches—including logistic regression, random forests, and deep learning architectures—we aim to determine which techniques provide the most accurate predictions of tree survival rate to support the mission of supporting sustainable forest management and addressing climate change.
