@@ -164,7 +164,7 @@ df_outlier_evi2 =  pd.DataFrame({
     'SAVI':  [0.7, -0.9, 0.5, -0.5, 0.2, 0.1],
     'MSAVI': [0.4, 0.9, 0.6, 0.1, -0.8, -0.2],  
     'EVI':   [0.5, 0.4, -0.3, 0.7, 0.9, 0.1],    
-    'EVI2':  [1.3, -1.4, 0.8, -1.0, -1.2, -0.5], # 1.3 and -1.2 are outliers 
+    'EVI2':  [1.3, -1.4, 0.8, -1.0, -1.2, -0.5], # 1.3, -1.4, and -1.2 are outliers 
     'NDWI':  [-0.7, 0.2, 0.6, 0.3, -0.2, 0.1],   
     'NBR':   [0.9, -0.6, 0.2, -0.8, 0.3, 0.1],   
     'TCB':   [-0.5, 0.3, 0.5, -0.9, 0.0, 0.7],   
@@ -216,7 +216,7 @@ df_outlier_nbr =  pd.DataFrame({
     'SAVI':  [0.7, -0.9, 0.5, -0.5, 0.2, 0.1],
     'MSAVI': [0.4, 0.9, 0.6, 0.1, -0.8, -0.2],  
     'EVI':   [0.5, 0.4, -0.3, 0.7, 0.9, 0.1],    
-    'EVI2':  [0.3, -1.4, 0.8, -1.0, 1.2, -0.5],  
+    'EVI2':  [0.3, -0.4, 0.8, -1.0, 0.2, -0.5],  
     'NDWI':  [-0.7, 0.2, 0.6, 0.3, -0.2, -0.1],  
     'NBR':   [0.9, -0.6, 1.2, -1.8, 0.3, 0.1],   # 1.2 and -1.8 are outliers
     'TCB':   [-0.5, 0.3, 0.5, -0.9, 0.0, 0.7],   
@@ -249,7 +249,7 @@ def test_columns_dropped():
     Test to ensure correct columns are dropped after cleaning
     ''' 
     # expected columns after cleaning
-    assert data_cleaning(df_outlier_indices).columns.to_list() ==  expected_columns
+    assert data_cleaning(df_no_outliers).columns.to_list() ==  expected_columns
 
 def test_outlier_survival_rates():
     '''
@@ -257,14 +257,25 @@ def test_outlier_survival_rates():
     '''
     
     
-def test_outlier_indices():
+@pytest.mark.parametrize(
+    'input_df,expected_dropped_rows',
+    [
+        (df_outlier_ndvi,[2,4]),
+        (df_outlier_savi,[0,1,3]),
+        (df_outlier_msavi,[0,4]),
+        (df_outlier_evi,[0,2,5]),
+        (df_outlier_evi2,[0,1,4]),
+        (df_outlier_ndwi,[0,3]),
+        (df_outlier_nbr,[2,3] )        
+    ]
+)   
+def test_outlier_indices(input_df,expected_dropped_rows):
     '''
     Test to ensure vegetation indices are within correct range after cleaning
     '''
-    # only the first two rows of the test dataframe have no outlier vegetation indices
-    expected_output = df_outlier_indices.iloc[[0,1]][expected_columns]
-    assert data_cleaning(df_outlier_indices).equals(expected_output)
-    
+    expected_output = input_df.drop(index=expected_dropped_rows)[expected_columns]
+    assert data_cleaning(input_df).equals(expected_output)
+
     
     
 def test_missingness():
