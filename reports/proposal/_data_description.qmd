@@ -59,7 +59,7 @@ Secondly, we noticed severe class imbalance in `SpcsCmp`. There are over 300 cat
 
 Thirdly, there is strong seasonality in spectral indices (@fig-vi_seasonality), where the signal peaks during summer, and drops during winter. This will be something we need to address during model development.
 
-![Plot showing seasonality in spectral indices. The seasonal fluctuation is consistent with known vegetation cycles. The signal peaks during summer, when canopy cover is densest and drops sharply in winter when trees shed their leaves.](../../img/vi_seasonality.png){#fig-vi_seasonality width=100%}
+![Plot showing seasonality in spectral indices. The seasonal fluctuation is consistent with known vegetation cycles. The signal peaks during summer, when canopy cover is densest and drops sharply in winter when trees shed their leaves.](../../img/vi_seasonality.png){#fig-vi_seasonality width=110%}
 
 Finally, we observed strong collinearity among most spectral indices (@fig-correlation), suggesting the need for dimensionality reduction to prevent overfitting.
 
