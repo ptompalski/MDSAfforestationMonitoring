@@ -51,7 +51,7 @@ In this study, our primary predictor is the spectral indices. @tbl-vi describes 
 |Surface Reflectance|Tasseled Cap Brightness (TCB)|Measures soil brightness using a tasselled cap transformation of spectral bands.|Not designed for monitoring vegetation health, useful for detecting soil exposure and changes in vegetation cover.|
 : Description and evaluation of spectral indices available in the dataset.[@zeng2022optical;@tasselled;@NDVI;@EVI2;@NBR] {#tbl-vi tbl-colwidths="[10,20, 30, 40]"}
 
-### Exploratory Insights
+### Exploratory Insights {#sec-exploratory-insights}
 
 To better understand the data, we conducted exploratory data analysis (EDA) and identified 4 key data quality and structural issues that should be addressed before model training. First, there are out-of-range values in the survival rate and spectral indices columns, where the spectral indices should range between -1 to 1 and survival rates should not exceed 100%. We will remove these outliers during data cleaning.
 
