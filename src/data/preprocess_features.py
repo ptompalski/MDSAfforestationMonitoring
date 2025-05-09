@@ -96,6 +96,7 @@ def create_density_feature(df):
             Dataframe with density feature.
     """
     df['Density'] = df['Planted'] / df['Area_ha']
+    df.drop(['Planted', 'Area_ha'], axis=1, inplace=True)
 
     return df
 
