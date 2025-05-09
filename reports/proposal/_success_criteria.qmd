@@ -3,7 +3,7 @@ The success of this project will be evaluated based on the relevance of selected
 | **Metric**       | **Description**                                                    | **Audience**                    |
 |------------------|-------------------------------------------------------------------|---------------------------------|
 | Accuracy         | Proportion of correct predictions over total              | General (e.g., government officials) |
-| Log Loss         | Pediction probability to measure uncertainty           | Technical                       |
+| Log Loss         | Prediction probability to measure uncertainty           | Technical                       |
 | F1 Score         | Score of precision over recall                             | Technical                       |
 | ROC Curve (AUC)  | Plots true positive rate vs. false positive rate across thresholds| Technical                       |
 | PR Curve (AUC)   | Plots precision vs. recall across thresholds                      | Technical                       |
