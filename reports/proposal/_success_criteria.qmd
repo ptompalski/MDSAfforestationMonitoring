@@ -1,1 +1,11 @@
-The success of this project will be evaluated based on the usefulness of the selected predictors and the performance of key evaluation metrics, including accuracy, log loss, F1 score, and ROC and PR curves. If our predictors are shown to contribute meaningfully to modeling tree survival rates, we aim to achieve at least 60% accuracy in correct predictions. Accuracy will serve as the primary metric for communicating results to general audiences—particularly government officials without data science expertise—as it provides a straightforward summary of model performance. However, given the imbalanced nature of our dataset, metrics such as log loss, F1 score, and the ROC and PR curves will be especially important for technical stakeholders and researchers within the federal government who are equipped to interpret more nuanced performance indicators.
+The success of this project will be evaluated based on the relevance of selected predictors and the performance of key evaluation metrics (see @tbl-eval-metrics). A minimum target of **60% accuracy** has been set for correct predictions, which will serve as the **primary metric** for communicating results to non-technical audiences. However, due to class imbalance, metrics such as **log loss**, **F1 score**, and **Receiver Operating Characteristic (ROC)/Precision-recall curve (PR) curves** will provide essential insights for technical stakeholders.
+
+| **Metric**       | **Description**                                                    | **Audience**                    |
+|------------------|-------------------------------------------------------------------|---------------------------------|
+| Accuracy         | Proportion of correct predictions over total              | General (e.g., government officials) |
+| Log Loss         | Prediction probability to measure uncertainty           | Technical                       |
+| F1 Score         | Score of precision over recall                             | Technical                       |
+| ROC Curve (AUC)  | Plots true positive rate vs. false positive rate across thresholds| Technical                       |
+| PR Curve (AUC)   | Plots precision vs. recall across thresholds                      | Technical                       |
+
+: Evaluation metrics used to assess model performance, including their target audiences {#tbl-eval-metrics}
