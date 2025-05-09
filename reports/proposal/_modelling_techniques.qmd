@@ -1,15 +1,10 @@
+We evaluate three model families of increasing complexity: a transparent baseline (**logistic regression**), non-linear ensembles (**random forest (RF)** and **gradient boosting machines (GBM)**), and sequence-aware deep networks (**long short-term memory (LSTM)** and **gated recurrent unit (GRU)** recurrent neural networks (RNNs)).
 
-### Logistic Regression
-Logistic regression will serve as a baseline to contrast performance against other, more complex models.
-It may also provide insight into feature importance through interpretable coefficients.
+### Logistic Regression  
+A fast, interpretable baseline that estimates survival odds and provides coefficient-based feature importance.
 
-### Aggregated Models: Random Forest and Gradient Boosting
-Studies by @bergmuller2022predicting suggest that aggregated tree models may effectively utitlize vegetation indices to
-predict tree mortality. Random Forests and GBMs complement each other well, as the former produces many 'overfit' trees in tandem
-to produce more accurate responses, whereas the ladder iteratively produces 'underfit' trees
-which correct on mistakes made by the previous [@scikit-learn].
+### Ensemble Trees: RF & GBM  
+RF averages decorrelated trees to reduce variance; GBM builds trees sequentially to correct predecessor errors, jointly capturing non-linear interactions in vegetation indices [@bergmuller2022predicting].
 
-### Sequential Deep Learning Models: LSTMs, GRUs, etc.
-If time permits, we may consider implementing sequential RNN-based deep learning models such as LSTMs and/or GRUs.
-These models have the benefit of capturing non‑linear structure and may exploit changes in vegetation indices
-across time [@paszke2019pytorch]. 
+### Sequential Deep Learning: LSTM & GRU RNNs  
+If time permits, LSTM/GRU RNNs will model temporal patterns in multi-year vegetation-index series to detect survival trends [@paszke2019pytorch].
