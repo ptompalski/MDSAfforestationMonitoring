@@ -56,7 +56,7 @@ This approach allows us to fully capture temporal fluctuations in sensing data v
 
 ### Feature Selection
 
-As outlined in @sec-collnearity, collinearity among remote sensing features indicates the need for feature selection;
+As outlined in @sec-exploratory-insights, collinearity among remote sensing features indicates the need for feature selection;
 reducing the number of vegetation indices needed by the model may greatly decrease model variance, training time,
 and computational costs. @tbl-feature-selection outlines several potential feature selection methods.
 Additionally, domain knowledge based on spectral index characteristics given by @zeng2022optical may also be leveraged in this process.
