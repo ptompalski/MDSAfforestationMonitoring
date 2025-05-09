@@ -80,6 +80,26 @@ def data_cleaning(df):
 
     return df
 
+
+def create_density_feature(df):
+    """
+    Create density features based on the number of trees planted.
+
+    Parameters
+    ----------
+        df : pd.DataFrame
+            Original dataframe
+
+    Returns
+    ----------
+        pd.DataFrame
+            Dataframe with density feature.
+    """
+    df['Density'] = df['Planted'] / df['Area_ha']
+
+    return df
+
+
 @click.command()
 @click.option('--input_path', type=click.Path(exists=True), required=True, help='Path to raw input data. Expecting parquet format.')
 @click.option('--output_dir', type=click.Path(file_okay=False), required=True, help='Directory to save cleaned data')
