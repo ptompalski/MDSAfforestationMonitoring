@@ -73,7 +73,7 @@ Recursive Feature Elimination (RFE) & Iteratively fits a model and removes the l
 \hline
 SHAP Values & Utilizes Shapley values from game theory to quantify each feature's contribution to individual predictions. & Offers detailed insights into feature contributions; captures feature interactions; supported by visualization tools. & Computationally intensive with large datasets; requires understanding of underlying statistical concepts. \\
 \hline
-Bayesian Model Averaging (BMA) & Combines predictions from multiple models, weighted by their posterior probabilities, to account for model uncertainty. & Considers model uncertainty; suitable for comparing multiple candidate models with varying architectures. & High computational cost; relies on strong assumptions or approximations (e.g., BIC); limited direct support Python and may be time-consuming to implement manually. \\
+Bayesian Model Averaging (BMA) & Combines predictions from multiple models, weighted by their posterior probabilities, to account for model uncertainty. & Considers model uncertainty; suitable for comparing multiple candidate models with varying architectures. & High computational cost; relies on strong assumptions or approximations (e.g., BIC); limited direct support in Python and may be time-consuming to implement manually. \\
 \hline
 Permutation Importance & Measures feature importance by randomly shuffling each feature and observing the impact on model performance. & Model-agnostic; easy to implement and interpret; available in libraries like scikit-learn. & Sensitive to feature correlation; may not accurately reflect importance in the presence of multicollinearity. \\
 \hline
