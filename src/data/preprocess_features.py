@@ -117,6 +117,9 @@ def main(input_path,output_dir):
     del df_raw               # free memory
     gc.collect()             # force garbage collection
 
+    print('Creating density feature...')
+    df_clean_feats = create_density_feature(df_clean_feats)
+
     print('Saving cleaned dataset...')
     output_path_clean = os.path.join(output_dir, 'clean_feats_data.parquet')
     df_clean_feats.to_parquet(output_path_clean)
