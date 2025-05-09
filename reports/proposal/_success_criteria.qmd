@@ -1,11 +1,11 @@
 The success of this project will be evaluated based on the relevance of selected predictors and the performance of key evaluation metrics (see @tbl-eval-metrics). A minimum target of **60% accuracy** has been set for correct predictions, which will serve as the **primary metric** for communicating results to non-technical audiences. However, due to class imbalance, metrics such as **log loss**, **F1 score**, and **Receiver Operating Characteristic (ROC)/Precision-recall curve (PR) curves** will provide essential insights for technical stakeholders.
 
-| **Metric**       | **Audience**                    |
-|------------------|---------------------------------|
-| Accuracy         | General (e.g., government officials) |
-| Log Loss         | Technical                       |
-| F1 Score         | Technical                       |
-| ROC Curve (AUC)  | Technical                       |
-| PR Curve (AUC)   | Technical                       |
+| **Metric**       | **Description**                                                    | **Audience**                    |
+|------------------|-------------------------------------------------------------------|---------------------------------|
+| Accuracy         | Proportion of correct predictions over total              | General (e.g., government officials) |
+| Log Loss         | Pediction probability to measure uncertainty           | Technical                       |
+| F1 Score         | Score of precision over recall                             | Technical                       |
+| ROC Curve (AUC)  | Plots true positive rate vs. false positive rate across thresholds| Technical                       |
+| PR Curve (AUC)   | Plots precision vs. recall across thresholds                      | Technical                       |
 
 : Evaluation metrics used to assess model performance, including their target audiences {#tbl-eval-metrics}
