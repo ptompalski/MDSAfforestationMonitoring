@@ -75,3 +75,4 @@ Additionally, a positive correlation between spectral indices and tree age was o
 ![Plot showing mean spectral signal by tree age. Except for TCB, the spectral signal increases with age. A negative relationship was observed for TCB due to lower surface brightness from canopy cover.](../../img/age_vi.png){#fig-age_vi width=100%}
 
 
+
