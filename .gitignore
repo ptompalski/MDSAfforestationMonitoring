@@ -1,0 +1,29 @@
+## Jupyter Notebook ##
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+## MacOS Caches ##
+.DS_Store
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+.VolumeIcon.icns
+._*
+
+## VSCode
+.vscode/
+.history/
+
+# Keep data private, but keep file structure consistent for scripts using .gitkeep
+data/raw/*
+!data/raw/.gitkeep
+
+data/interim/*
+!data/interim/.gitkeep
+
+data/processed/*
+!data/processed/.gitkeep
+
+# Quarto
+reports/.quarto/*
