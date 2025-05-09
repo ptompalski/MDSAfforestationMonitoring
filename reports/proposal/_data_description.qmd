@@ -1,4 +1,4 @@
-The dataset used in this study combines field-measured survival rates for more than 2,500 afforested sites collected by Forest Ontario [@ubc2025remotesensing] with remote sensing data obtained from the Harmonized Landsat Sentinel-2 (HLS) project [@hls]. 
+The dataset used in this study combines field-measured survival rates for more than 2,500 afforested sites collected by Forest Canada [@ubc2025remotesensing] with remote sensing data obtained from the Harmonized Landsat Sentinel-2 (HLS) project [@hls]. 
 
 The combination of time-series satellite data and field-measured survival rate allows us to investigate how spectral signals change with survival rates and support the model development for survival prediction based on satellite data.
 

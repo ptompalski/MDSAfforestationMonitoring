@@ -1,13 +1,12 @@
 ---
 title: "Remote Sensing for Forest Recovery: Proposal Report"
 author: 
-    - name: Piotr Tompalski
-    - name: Alexi Rodríguez-Arelis
     - name: Benjamin Frizzell
     - name: Zanan Pech
     - name: Mavis Wong
     - name: Hui Tang
-bibliography: references.bib
+    - name: Piotr Tompalski
+    - name: Alexi Rodríguez-Arelis
 date: today
 bibliography: references.bib
 format: 
