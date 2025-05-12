@@ -1,17 +1,29 @@
 ---
-title: "Remote Sensing for Forest Recovery: Proposal"
+title: "Remote Sensing for Forest Recovery: Proposal Report"
 author: 
     - name: Benjamin Frizzell
     - name: Zanan Pech
     - name: Mavis Wong
     - name: Hui Tang
-bibliography: references.bib
+    - name: Piotr Tompalski
+    - name: Alexi Rodríguez-Arelis
 date: today
+bibliography: references.bib
 format: 
-    pdf:
-        toc: true
-        number-sections: true
-        theme: flatly
+  pdf:
+    toc: true
+    number-sections: true
+    theme: flatly
+    include-in-header:
+      text: |
+        \usepackage{booktabs}
+        \usepackage{longtable}
+        \usepackage{array}
+        \usepackage{caption}
+        \usepackage{float}
+        \usepackage{colortbl}
+        \usepackage{etoolbox}
+        \AtBeginEnvironment{longtable}{\rowcolors{2}{gray!15}{white}}
 ---
 
 ## Abstract 

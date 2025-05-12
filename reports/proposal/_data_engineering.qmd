@@ -1,41 +1,83 @@
-### Train-Test Splitting
 
-Splitting the dataset into training and testing subsets is necessary to prevent data leakage,
-but requires nuance due to it's heirarchical structure. 
-We perform the train-test split by **unique sites**
-to ensure pixels and time step records for a particular site appear in only one of the two subsets. 
+@fig-data-engineering outlines the proposed data engineering pipeline for this analysis.
+
+![A flowchart of the data engineering process of the model pipeline. 
+Green boxes indicate key data engineering steps, while grey boxes represent other essential steps in the pipeline.
+For example, modeling must occur in tandem with feature selection, as understanding how each feature impacts model performance is necessary
+when selecting the optimal features for the final model.](../../img/flowchart_data_engineering.png){#fig-data-engineering width=90% fig-pos="H"}
 
 ### Missing Data
 
-![A plot visualizing missing record patterns across the training dataset. 
-Grey-coloured records indicate rows that have recorded values.](../../img/missing_rows.png){#fig-missing_rows width=70%}
+![A plot visualizing missing record patterns across the dataset. 
+Each column corresponds to a column in the dataset, and grey-coloured rows indicate non-missing entries.](../../img/missing_rows.png){#fig-missing_rows width=90%}
 
-We find excessive missingness in the columns `PlantDt`, `Type`, `NmbrPIO`, `NmbrPIR`, and `NmbrPIT`. 
-`PlantDt`, `NmbrPIO`, `NmbrPIR`, and `NmbrPIT` relate to sites where replanting has occured, 
-and can be removed as they are outside of the project scope, and 
-`Type` can be fully imputed via string processing on the `SpcsCmp` column. 
-There is a direct correspondence between missingness in survivial rate and assesment time,
+@fig-missing_rows illustrates significant missing data in the columns `PlantDt`, `Type`, `NmbrPIO`, `NmbrPIR`, and `NmbrPIT`. 
+`PlantDt`, `NmbrPIO`, `NmbrPIR`, and `NmbrPIT` pertain to sites where replanting has occurred and can be excluded as they fall outside the project scope. 
+The `Type` column can be fully imputed through string processing of the `SpcsCmp` column. 
+There is a direct correspondence between missingness in survival rate and assessment time,
 allowing for easier tracking of temporal dependence across survival records.
 
+### Feature Engineering
 
-### Feature Selection and Engineering
-
-As mentioned in @sec-data_description, strong collinearity between vegetation indices indicates a need for feature selection. 
-We will begin with **Recursive Feature Elimination**, due to its compatbility with nonlinear ML models [@scikit-learn]. 
-We also propose the use of **Bayesian Model Averaging**,
-as it is suitable for an analysis of multiple competing models [@hoeting1998bayesian].
-Domain knowlege of the vegetation indices as given by @zeng2022optical will also be leveraged in this process.
-Very little feature engineering will be performed, but we aim experiment with tree density (number of trees per unit area) as a predictor.
+Minimal feature engineering will be conducted, as the primary focus of the analysis is on remote sensing data.
+However, we aim to experiment with tree density (number of trees per unit area) as a predictor, 
+which can be derived as the quotient of the `Planted` and `Area_ha` columns.
 
 ### Data Pivoting
 
 Most machine learning models require the input data to contain just one target column.
-We will pivot the seven target columns into one, keeping track of temporalty using column names and assesment dates.
-We will then remove rows with missing survival rates, and with mismatching assesment and imaging dates.
+We will pivot the seven target columns into a single column, tracking temporality using column names and assessment dates.
+We will then remove rows with missing survival rates and those with mismatching assessment and imaging dates.
 
 ### Conversion to Classifier Problem
 
 Since the survival rates are given as percentage proportions,
 they will be converted to binary classes to simplify the analysis and emphasize high-risk sites.
-Since most survival rates are within 70% - 100%, 
-usefulness alongside class imbalance must be considered when deciding on a suitable threshold.
+Given that most survival rates range between 70% and 100%, 
+considerations of usefulness and class imbalance are essential when determining an appropriate threshold.
+
+### Train-Test Splitting
+
+Splitting the dataset into training and testing subsets is necessary to prevent data leakage; 
+the model must only be trained on the training data,
+and the test data cannot be used until the very last stage of model performance evaluation.
+This ensures that the performance on the test data is a valid estimate of the model's performance in deployment.
+For many machine learning problems, this can be done by randomly dividing the given data into two subsets. 
+However, the hierarchical structure of the data, as depicted in @fig-data-hierarchy, requires a more thoughtful methodology.
+
+![A flowchart depicting the hierarchical structure of the remote sensing data. 
+Unique afforestation sites (which are characterized by the `ID` column) 
+may contain one or more pixels (identified by the `pixelID` column), 
+and each pixel has multiple records of sensing data throughout time, often in monthly intervals (time of imaging is marked by the `ImgDate` column). 
+Since the data is stored in a tabular format, rows correspond to one remote sensing record, for one pixel, at one point in time.](../../img/flowchart_data_heirarchy.png){#fig-data-hierarchy width=90%}
+
+We perform the train-test split by site ID to ensure pixels and time step records for a particular site appear in only one of the two subsets.
+This approach allows us to fully capture temporal fluctuations in sensing data via sequential modeling later in the analysis (see @sec-modelling_techniques for further details).
+
+### Feature Selection
+
+As outlined in @sec-exploratory-insights, collinearity among remote sensing features indicates the need for feature selection;
+reducing the number of vegetation indices needed by the model may greatly decrease model variance, training time,
+and computational costs. @tbl-feature-selection outlines several potential feature selection methods.
+Additionally, domain knowledge based on spectral index characteristics given by @zeng2022optical may also be leveraged in this process.
+
+::: {#tbl-feature-selection .table tbl-cap="Comparison of Feature Selection Methods, including **Recursive Feature Elimination** and **Permutation Importance** available in scikit-learn [@scikit-learn], as well as methods such as **SHAP Values** [@lundberg2017unified] and **Bayesian Model Averaging** [@hoeting1998bayesian]."}
+
+```{=latex}
+\begin{longtable}{|p{3cm}|p{4cm}|p{4cm}|p{4cm}|}
+\hline
+\rowcolor{gray!30}
+\textbf{Method} & \textbf{Description} & \textbf{Advantages} & \textbf{Disadvantages} \\
+\hline
+Recursive Feature Elimination (RFE) & Iteratively fits a model and removes the least important feature at each step, based on model-derived importance metrics. & Simple to implement within a model pipeline; suitable for tree-based models that provide feature importance metrics. & Computationally expensive for large feature sets; may overlook complex feature interactions; tree-based feature importance can be difficult to interpret. \\
+\hline
+SHAP Values & Utilizes Shapley values from game theory to quantify each feature's contribution to individual predictions. & Offers detailed insights into feature contributions; captures feature interactions; supported by visualization tools. & Computationally intensive with large datasets; requires understanding of underlying statistical concepts. \\
+\hline
+Bayesian Model Averaging (BMA) & Combines predictions from multiple models, weighted by their posterior probabilities, to account for model uncertainty. & Considers model uncertainty; suitable for comparing multiple candidate models with varying architectures. & High computational cost; relies on strong assumptions or approximations (e.g., BIC); limited direct support in Python and may be time-consuming to implement manually. \\
+\hline
+Permutation Importance & Measures feature importance by randomly shuffling each feature and observing the impact on model performance. & Model-agnostic; easy to implement and interpret; available in libraries like scikit-learn. & Sensitive to feature correlation; may not accurately reflect importance in the presence of multicollinearity. \\
+\hline
+\end{longtable}
+```
+
+:::
