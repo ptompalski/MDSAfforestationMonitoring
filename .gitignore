@@ -27,3 +27,6 @@ data/processed/*
 
 # Quarto
 reports/.quarto/*
+
+# Pytest
+.pytest_cache

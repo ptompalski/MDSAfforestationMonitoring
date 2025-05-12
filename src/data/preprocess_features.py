@@ -1,6 +1,8 @@
+import os
+import click
 import pandas as pd
 import numpy as np
-import click
+import gc
 
 def classify_species(x):
     """
@@ -53,6 +55,7 @@ def data_cleaning(df):
     """
     # Drop replanted sites
     df = df[(df['NmbrPlR'].isna()) | (df['NmbrPlR'] == 0)]
+    
     # Drop rows with missing spectral indices
     df = df.dropna(subset=['NDVI', 'SAVI', 'MSAVI', 'EVI',
                         'EVI2', 'NDWI', 'NBR', 'TCB', 'TCG', 'TCW'])
@@ -60,9 +63,11 @@ def data_cleaning(df):
     # remove records before planting
     df = df[df['Year']>= df['Season']]
 
+    # NOTE: dropping survival rates will be done after pivoting
+    
     # drop out-of-range survival rates
-    for i in ['SrvvR_1', 'SrvvR_2', 'SrvvR_3', 'SrvvR_4', 'SrvvR_5', 'SrvvR_6', 'SrvvR_7']:
-        df = df[(df[i].between(0, 100, inclusive='both')) | df[i].isna()]
+    #for i in ['SrvvR_1', 'SrvvR_2', 'SrvvR_3', 'SrvvR_4', 'SrvvR_5', 'SrvvR_6', 'SrvvR_7']:
+    #   df = df[(df[i].between(0, 100, inclusive='both')) | df[i].isna()]
 
     # drop out-of-range indices
     for i in ['NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR']:
@@ -73,17 +78,55 @@ def data_cleaning(df):
     ), 'Type'] = df.loc[df['NmbrPlR'].isna(), 'SpcsCmp'].apply(classify_species)
     
     # Drop unnecessary columns
-    df = df.drop(['NmbrPlO', 'NmbrPlR', 'NmbrPlT', 'prevUse', 'SpcsCmp'], axis=1)
+    df = df.drop(['NmbrPlO', 'NmbrPlR', 'NmbrPlT', 'prevUse', 'SpcsCmp','PlantDt','ImgDate'], axis=1)
 
     return df
 
 
-def main():
+def create_density_feature(df):
+    """
+    Create density features based on the number of trees planted.
+
+    Parameters
+    ----------
+        df : pd.DataFrame
+            Original dataframe
+
+    Returns
+    ----------
+        pd.DataFrame
+            Dataframe with density feature.
+    """
+    df['Density'] = df['Planted'] / df['Area_ha']
+    df.drop(['Planted', 'Area_ha'], axis=1, inplace=True)
+
+    return df
+
+
+@click.command()
+@click.option('--input_path', type=click.Path(exists=True), required=True, help='Path to raw input data. Expecting parquet format.')
+@click.option('--output_dir', type=click.Path(file_okay=False), required=True, help='Directory to save cleaned data')
+def main(input_path,output_dir):
     '''
     Command-line interface for preprocessing features of data.
-    Preprocessing target will be performed in following steps. 
+    Note that preprocessing target features (pivoting, etc.) is not performed at this stage.
     '''
-    pass
+    print('Loading raw data...')
+    df_raw = pd.read_parquet(input_path)
 
+    print('Cleaning data features...')
+    df_clean_feats = data_cleaning(df_raw)
+
+    del df_raw               # free memory
+    gc.collect()             # force garbage collection
+
+    print('Creating density feature...')
+    df_clean_feats = create_density_feature(df_clean_feats)
+
+    print('Saving cleaned dataset...')
+    output_path_clean = os.path.join(output_dir, 'clean_feats_data.parquet')
+    df_clean_feats.to_parquet(output_path_clean)
+    print(f'Cleaned data saved to {output_path_clean}')
+  
 if __name__ == '__main__':
     main()

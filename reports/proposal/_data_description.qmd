@@ -1,71 +1,78 @@
-The dataset used in this study includes field-measured survival rates of afforested sites collected by Forest Ontario [@ubc2025remotesensing], as well as satellite data products from the Harmonized Landsat Sentinel-2 (HLS) project [@hls]. 
+The dataset used in this study combines field-measured survival rates for more than 2,500 afforested sites collected by Forest Canada [@ubc2025remotesensing] with remote sensing data obtained from the Harmonized Landsat Sentinel-2 (HLS) project [@hls]. 
 
-### Site Features
-|Column Name|Description|
-|-----|-----------|
-|ID|Site ID|
-|PixelID| Pixel ID|
-|Area_ha|Area of Site|
-|Season| Planting Year|
-|PlantDt| Planting Date|
-|prevUse| Previous Land Use of Site|
-|Planted| Number of Trees Planted|
-|SpcsCmp| Species Composition of Site|
-|Type| Species Type of Site|
-|SrvvR_1, ..., SrvvR_7| Field Measured Survival Rate at Year 1-7 (Target)|
-|AsssD_1, ..., AssD_7| Date of Field Survival Rate Measurement|
-|NmbrPlO| Number of Trees Originally Planted|
-|NmbrPlR| Number of Trees Replanted|
-|NmbrPlT| Total Number of Trees Planted|
-|ImgDate| Image Date of the Remote Sensing Data|
-|Year| Image Year of Remote Sensing Data|
-|DOY| Day of Year of the Remote Sensing Data|
+The combination of time-series satellite data and field-measured survival rate allows us to investigate how spectral signals change with survival rates and support the model development for survival prediction based on satellite data.
+
+### Features Description
+In the data, each site is divided into one or more pixels. Each row in the dataset represents a pixel-level satellite observation at a given time, with its corresponding site-level (@tbl-site) and pixel-level (@tbl-pixel) features. 
+
+|Category|Column Name|Description|
+|--|-----|-----------|
+|Identifier|`ID`|Site ID|
+|Spatial|`Area_ha`|Area of the Site (hectares)|
+||`prevUse`| Previous Land Use of the Site|
+|Temporal|`PlantDt`| Planting Date|
+||`Season`| Planting Year|
+||`AsssD_1` to `AssD_7`| Date of Field Survival Assessment (Years 1 to 7) |
+|Ecological|`SpcsCmp`| Species Composition of Site|
+||`Type`| Species Type (Conifer, Deciduous, Mixed)|
+||`Planted`| Number of Trees Planted (Initial Field Record)|
+||`NmbrPlO`| Number of Trees Originally Planted |
+||`NmbrPlR`| Number of Trees Replanted|
+||`NmbrPlT`| Total Number of Trees Planted (`NmbrPlO` + `NmbrPlR`)|
+|Target|`SrvvR_1` to `SrvvR_7`| Field Measured Survival Rate (Years 1 to 7)|
+: Summary of site-level features. The site-level features provide spatial, temporal and ecological information associated with each afforested site, including the site ID, area, previous land use, afforestation information, species type, and our target: field-measured survival rates from Year 1 to Year 7. {#tbl-site}
+
+<br>
+
+|Category|Column Name|Description|
+|--|-----|-----------|
+|Identifier|`PixelID`| Pixel ID|
+|Temporal|`ImgDate`| Image Date of the Remote Sensing Data|
+||`Year`| Image Year of the Remote Sensing Data|
+||`DOY`| Image Day of Year of the Remote Sensing Data|
+|Spectral Indicies|`NDVI`, `SAVI`, `MSAVI`, `EVI`, `EVI2`, `NDWI`, `NBR`, `TCB`, `TCG`, `TCW`|See @tbl-vi for details.|
+: Summary of pixel-level features. The pixel-level features include the pixel ID, the capture date of the satellite data, and our primary predictor: the spectral indices. {#tbl-pixel}
+
 
 ### Spectral Indicies
-|Type|Index|Description|
-|--|-----|-----------|
-|Vegetation Index|NDVI | Normalized Difference Vegetation Index|
-||SAVI |Soil-Adjusted Vegetation Index|
-||MSAVI |Modified Soil-Adjusted Vegetation Index|
-||EVI |Enhanced Vegetation Index|
-||EVI2|Two-band Enhanced Vegetation Index|
-|Water Index|NDWI |Normalized Difference Water Index|
-|Fire Index|NBR |Normalized Burn Ratio|
-|Tasseled Cap Transfored|TCB |Tasseled Cap Brightness|
-||TCG |Tasseled Cap Greenness|
-||TCW |Tasseled Cap Wetness|
+In this study, our primary predictor is the spectral indices. @tbl-vi describes the spectral indices used in this study. 
 
+|Type|Index|Description|Evaluation|
+|--|-----|-----------|---|
+|Vegetation Index|Normalized Difference Vegetation Index (NDVI) |Measures vegetation greenness and health by comparing near-infrared (NIR) and red reflectance.|Sensitive to vegetation changes, but tends to saturate under dense vegetation.|
+||Soil-Adjusted Vegetation Index (SAVI)| Adjusted NDVI that reduces background soil influence and corrects for soil brightness.| Less likely to saturate under dense vegetation, suitable for areas with sparse vegetation.|
+||Modified Soil-Adjusted Vegetation Index (MSAVI)| Improved SAVI that minimises soil background influence.|Compared to SAVI, more sensitive to vegetation changes in areas with sparse vegetation. Suitable for monitoring plant greenness and health for young trees or sparsely vegetated regions.|
+||Enhanced Vegetation Index (EVI)|Measures vegetation greenness using blue, red, and NIR bands to correct for atmospheric and canopy background influences.|Suitable for areas with dense vegetation.|
+||Two-band Enhanced Vegetation Index (EVI2)|Similar to EVI, but only uses red and NIR bands.|Suitable when the blue band is not available.|
+||Tasseled Cap Greenness (TCG)| Measures vegetation greenness using a tasselled cap transformation of spectral bands.|Less sensitive to vegetation changes compared to NDVI|
+|Water Index|Normalized Difference Water Index (NDWI)|Measures moisture content by comparing NIR and shortwave infrared (SWIR) reflectance. | Mostly used for identifying water bodies, but can be useful in monitoring vegetation growth as the water content in trees increases with time. Sensitive to changes in vegetation water content, as well as soil and atmospheric background noises.|
+||Tasseled Cap Wetness (TCW)| Measures soil and vegetation moisture using a tasselled cap transformation of spectral bands.|Compared to NDWI, TCB is less sensitive to atmospheric noises, but it is also less sensitive to changes in vegetation content. |
+|Fire Index|Normalized Burn Ratio (NBR)|Identify burned areas and measure burn severity using NIR and SWIR bands.|NBR has been used to monitor vegetation recovery rate after fire, which parallels afforestation survival monitoring. Although it is not designed for monitoring vegetation health, it may still be useful for prediction. |
+|Surface Reflectance|Tasseled Cap Brightness (TCB)|Measures soil brightness using a tasselled cap transformation of spectral bands.|Not designed for monitoring vegetation health, useful for detecting soil exposure and changes in vegetation cover.|
+: Description and evaluation of spectral indices available in the dataset.[@zeng2022optical;@tasselled;@NDVI;@EVI2;@NBR] {#tbl-vi tbl-colwidths="[10,20, 30, 40]"}
 
-### Out-of-range Values
-During EDA, we noticed out-of-range values in the vegetation indices and survival rates. With the exception of TCB, TCW and TCG, the vegetation indices should range between -1 to 1 [@NDVI; @EVI2; @NDWI]. Survival rates should not exceed 100%. Out-of-range records will be removed from the dataset.
+### Exploratory Insights {#sec-exploratory-insights}
 
+To better understand the data, we conducted exploratory data analysis (EDA) and identified 4 key data quality and structural issues that should be addressed before model training. First, there are out-of-range values in the survival rate and spectral indices columns, where the spectral indices should range between -1 to 1 and survival rates should not exceed 100%. We will remove these outliers during data cleaning.
 
-### Previous Land Use and Species Composition
+Secondly, we noticed severe class imbalance in `SpcsCmp`. There are over 300 categories in `SpcsCmp`, making it impractical to use directly in modelling. Likewise, >80% of values in `prevUse` correspond to the class `AG` (agriculture land). We will not be using these columns during modelling to avoid overfitting.
 
-Class imbalance was observed in `SpcsCmp`. With over 300 categories in `SpcsCmp`, it would not be practical to use it as a predictor for our model.  
+Thirdly, there is strong seasonality in spectral indices (@fig-vi_seasonality), where the signal peaks during summer, and drops during winter. This will be something we need to address during model development.
 
-Similarly, severe class imbalance was observed in `prevUse`, as such, it will also be excluded from our model. 
+![Plot showing seasonality in spectral indices. The seasonal fluctuation is consistent with known vegetation cycles. The signal peaks during summer, when canopy cover is densest and drops sharply in winter when trees shed their leaves.](../../img/vi_seasonality.png){#fig-vi_seasonality width=110%}
 
-### Species Type
-From `SpcsCmp`, we are able to impute the missing values in `Type`. Sites are classified as "Conifer" ("Deciduous") if $\ge 80 \%$ of the species are "Softwood" ("Hardwood"); otherwise, it would be classified as "Mixed" [@mixed]. 
+Finally, we observed strong collinearity among most spectral indices (@fig-correlation), suggesting the need for dimensionality reduction to prevent overfitting.
 
-As shown in @fig-diff_srvvR_vi, survival rates and spectral signals vary by species type, suggesting 'Type' could be a viable feature for our model. 
+![Correlation plot showing strong collinearity between vegetation indices. Notice the exception of TCB, which behaved differently as it is designed to detect soil exposure instead of vegetation. Notably, the correlation between vegetation indices and survival rates is much larger in Year 7 compared to previous years. This again highlights the challenges in early-stage survival rate prediction.](../../img/feat_target_correlation.png){#fig-correlation width=100%}
+
+Our EDA also revealed some interesting trends in the data. From @fig-diff_srvvR_vi, we can see that the relationship between spectral signals and survival rates varies significantly by species type, suggesting ‘Type’ could be a viable feature for our model. 
 
 ![Plot showing mean survival rate and vegetation index signals for different species types across Years 1, 2 and 5. There is a significant difference in the relationship between survival rate and spectral signals for different species types. Conifers show a weaker signal response to changes in survival rate. Deciduous shows the strongest response during the first two years. Mixed type shows a linear relationship between survival rate and spectral signal.](../../img/age_srvvR_vi.png){#fig-diff_srvvR_vi width=100%}
 
 
-### Trends and Seasonality
-From @fig-vi_seasonality, we observed clear seasonality in the spectral indices, where spectral signals peaked during the summer and dropped during winter. This would need to be accounted for during model development. 
+Additionally, a positive correlation between spectral indices and tree age was observed in @fig-age_vi, except for TCB. Minimal changes in spectral signals are observed between ages 1 to 4, suggesting potential challenges in predicting survival rates for younger trees.
 
-![Plot showing seasonality in spectral indices.](../../img/vi_seasonality.png){#fig-vi_seasonality width=100%}
-
-@fig-age_vi reveals a positive relationship between vegetation indices and tree age. Minimal changes in spectral signals are observed between ages 1 to 4, indicating potential difficulties in predicting the survival rates for younger trees. 
-
-![Plot showing mean spectral signal by tree age. With the exception of TCB, the spectral signal increases with age. A negative relationship was observed for TCB due to lower surface brightness from canopy cover.](../../img/age_vi.png){#fig-age_vi width=100%}
+![Plot showing mean spectral signal by tree age. Except for TCB, the spectral signal increases with age. A negative relationship was observed for TCB due to lower surface brightness from canopy cover.](../../img/age_vi.png){#fig-age_vi width=100%}
 
 
-### Collinearity
-As shown in @fig-correlation, there is strong collinearity between the vegetation indices, except for TCB. 
-The strongest correlation between survival rate and vegetation indices was observed in Year 7. 
 
-![Correlation plot showing strong collinearity between vegetation indicies.](../../img/feat_target_correlation.png){#fig-correlation width=100%}

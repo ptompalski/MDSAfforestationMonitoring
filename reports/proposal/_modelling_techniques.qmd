@@ -1,15 +1,46 @@
 
-### Logistic Regression
-Logistic regression will serve as a baseline to contrast performance against other, more complex models.
-It may also provide insight into feature importance through interpretable coefficients.
+@fig-model-flowchart provides a brief outline of the proposed modelling plan.
 
-### Aggregated Models: Random Forest and Gradient Boosting
-Studies by @bergmuller2022predicting suggest that aggregated tree models may effectively utitlize vegetation indices to
-predict tree mortality. Random Forests and GBMs complement each other well, as the former produces many 'overfit' trees in tandem
-to produce more accurate responses, whereas the ladder iteratively produces 'underfit' trees
-which correct on mistakes made by the previous [@scikit-learn].
+![A flowchart depicting the planned modelling during the analysis. 
+Models increase in complexity from left to right and will be implemented in this fashion.
+It is possible that not all models listed here will be implemented; 
+for example, there may be no need to implement RNNs if the aggregated tree models perform adequately, or if time does not
+permit their implementation.](../../img/flowchart-modelling.png){#fig-model-flowchart width=90%, fig-pos="H"}
 
-### Sequential Deep Learning Models: LSTMs, GRUs, etc.
-If time permits, we may consider implementing sequential RNN-based deep learning models such as LSTMs and/or GRUs.
-These models have the benefit of capturing non‑linear structure and may exploit changes in vegetation indices
-across time [@paszke2019pytorch]. 
+We will begin modeling with a baseline **Logistic Regression**, 
+followed by ensemble tree-based methods: **Random Forest** and **Gradient Boosting Machines**. 
+These models were selected based on their demonstrated effectiveness in utilizing vegetation indices 
+to predict tree mortality in similar studies [@bergmuller2022predicting]. 
+If time permits, we will implement sequential deep learning models such as **Recurrent Neural Networks (RNNs)**,
+**Long Short-Term Memory (LSTM)** networks, and/or **Gated Recurrent Units (GRUs)**. 
+These models are capable of capturing complex non-linear relationships and may leverage temporal patterns in vegetation indices 
+more effectively [@paszke2019pytorch]. A detailed comparison of all models is provided in @tbl-models.
+```{=latex}
+{\small
+\begin{longtable}{|p{3cm}|p{4cm}|p{4cm}|p{4cm}|}
+\caption{Descriptions of the various modelling techniques that are to be implemented in this analysis. \label{tbl-models}}
+\hline
+\rowcolor{gray!30}
+\textbf{Model} & \textbf{Description} & \textbf{Advantages} & \textbf{Disadvantages} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{gray!30}
+\textbf{Model} & \textbf{Description} & \textbf{Advantages} & \textbf{Disadvantages} \\
+\hline
+\endhead
+
+Logistic Regression & A generalized linear model for binary classification. The log-odds of class membership are modeled as a linear function of input features. & Simple and interpretable; outputs class probabilities; feature importance is directly interpretable via model coefficients. & Limited flexibility for modeling complex patterns; better suited as a benchmark model to be surpassed by more complex models. \\
+\hline
+Random Forest (RF) & An ensemble of rule-based decision trees are trained on bootstrapped subsets of data. Each tree is overfitted, but aggregation via majority vote reduces variance. & Strong prior performance on remote sensing data; naturally handles nonlinearities and interactions; training is easily parallelizable. & Ignores temporal structure in data; can be memory-intensive and slower to predict on large datasets. \\
+\hline
+Gradient Boosting Machine (GBM) & An ensemble method where trees are added sequentially, each one correcting errors of its predecessor. Unlike RFs, boosting relies on underfit learners and weighted combinations. & High predictive accuracy; handles complex patterns well; libraries like LightGBM and XGBoost offer efficient training. & Training is slow, sequential and cannot be fully parallelized; like RFs, does not incorporate temporal dependencies. \\
+\hline
+Recurrent Neural Network (RNN) & A type of neural network designed for sequential data. It processes inputs step-by-step, with hidden states carrying information forward in time. & Captures temporal dependencies; suitable for modeling changes in vegetation indices through time. & Suffers from vanishing gradients, making it difficult to learn long-term dependencies; may require extensive, complex data manipulation to implement; slow to train and requires large datasets. \\
+\hline
+Gated Recurrent Unit (GRU) and Long Short-Term Memory (LSTM) & Variants of RNNs that include gating mechanisms (GRU) or memory cells (LSTM) to better manage long-term dependencies in sequences. & May be useful when modeling long-term temporal and/or seasonal patterns in vegetation indices. & The most computationally intensive models of this selection; requires large training datasets; Unclear if long-term differences in vegetation indices will be important to capture for prediction. \\
+\hline
+\end{longtable}
+}
+```
