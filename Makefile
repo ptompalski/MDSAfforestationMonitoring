@@ -4,7 +4,7 @@ all: run_pipeline
 
 load_data: 
 	python src/data/load_data.py \
-		--input_path=data/raw/raw_data.rds \
+		--input_path=data/raw/AfforestationAssessmentDataUBCCapstone.rds \
     	--output_dir=data/raw/
 
 clean_data:
