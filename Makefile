@@ -30,4 +30,7 @@ test:
 test:
 	pytest
 
+test:
+	pytest
+
 clean:
