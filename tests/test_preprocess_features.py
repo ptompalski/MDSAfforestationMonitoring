@@ -11,10 +11,16 @@ expected_columns = [
     'ID', 'PixelID', 'Area_ha', 'Season', 'Planted', 'Type', 'SrvvR_1',
     'SrvvR_2', 'SrvvR_3', 'SrvvR_4', 'SrvvR_5', 'SrvvR_6', 'SrvvR_7',
     'AssD_1', 'AssD_2', 'AssD_3', 'AssD_4', 'AssD_5', 'AssD_6', 'AssD_7',
-    'ImgDate', 'Year', 'DOY', 'NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2',
+    'Year', 'DOY', 'NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2',
     'NDWI', 'NBR', 'TCB', 'TCG', 'TCW']
 
-# baseline test dataframe with no outliers
+feature_cols = [
+    'NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2',
+    'NDWI', 'NBR', 'TCB', 'TCG', 'TCW'
+]
+
+
+# baseline test dataframe with no outliers in vegetation indices
 df_no_outliers =  pd.DataFrame({
     'ID':np.arange(1,7),"PixelID":np.arange(101,107),"Area_ha": np.arange(100,700,100,dtype=float),
     "Season": np.arange(2001,2007,dtype=float),"PlantDt": [pd.NA]*6,"prevUse": ['AG']*6,
@@ -224,6 +230,115 @@ df_outlier_nbr =  pd.DataFrame({
     'TCW':   [0.3, -0.8, -0.2, 0.5, 0.6, -0.4],    
 })
 
+# several tests cases for missing indices
+df_missing_vis_1 = pd.DataFrame({
+    'ID':np.arange(1,7),"PixelID":np.arange(101,107),"Area_ha": np.arange(100,700,100,dtype=float),
+    "Season": np.arange(2001,2007,dtype=float),"PlantDt": [pd.NA]*6,"prevUse": ['AG']*6,
+    'Planted': np.arange(1000,7000,1000,dtype=float),'SpcsCmp': ['HW 100, SW 0']*6,'Type': ['Decidous']*6,
+    
+    'SrvvR_1':[pd.NA]*6,'SrvvR_2':[pd.NA]*6,'SrvvR_3':[pd.NA]*6,'SrvvR_4':[pd.NA]*6,
+    'SrvvR_5':[pd.NA]*6,'SrvvR_6':[pd.NA]*6,'SrvvR_7':[pd.NA]*6,
+    
+    'AssD_1':[pd.NA]*6,'AssD_2':[pd.NA]*6,'AssD_3':[pd.NA]*6,'AssD_4':[pd.NA]*6,
+    'AssD_5':[pd.NA]*6,'AssD_6':[pd.NA]*6,'AssD_7': [pd.NA]*6,
+    
+    'NmbrPlO':[pd.NA]*6,'NmbrPlR':[pd.NA]*6,'NmbrPlT':[pd.NA]*6,
+    'ImgDate':pd.date_range(start="2001-01-01", end="2007-01-01",freq='YE'),'Year':np.arange(2001,2007),'DOY':[1]*6,
+    
+    'NDVI':  [pd.NA, 0.6, 0.2, -0.5, -0.1, 0.3],  
+    'SAVI':  [0.7, pd.NA, 0.5, -0.5, 0.2, 0.1],
+    'MSAVI': [0.4, 0.9, 0.6, 0.1, -0.8, -0.2],  
+    'EVI':   [0.5, 0.4, -0.3, 0.7, 0.9, 0.1],    
+    'EVI2':  [0.3, -0.4, 0.8, -1.0, 0.2, -0.5],  
+    'NDWI':  [-0.7, 0.2, 0.6, 0.3, -0.2, -0.1],  
+    'NBR':   [0.9, -0.6, 0.2, -0.8, 0.3, 0.1],   
+    'TCB':   [-0.5, 0.3, 0.5, -0.9, 0.0, 0.7],   
+    'TCG':   [0.6, -0.2, 0.4, 0.5, -0.3, 0.2],   
+    'TCW':   [0.3, -0.8, -0.2, 0.5, 0.6, -0.4],    
+})
+
+df_missing_vis_2 = pd.DataFrame({
+    'ID':np.arange(1,7),"PixelID":np.arange(101,107),"Area_ha": np.arange(100,700,100,dtype=float),
+    "Season": np.arange(2001,2007,dtype=float),"PlantDt": [pd.NA]*6,"prevUse": ['AG']*6,
+    'Planted': np.arange(1000,7000,1000,dtype=float),'SpcsCmp': ['HW 100, SW 0']*6,'Type': ['Decidous']*6,
+    
+    'SrvvR_1':[pd.NA]*6,'SrvvR_2':[pd.NA]*6,'SrvvR_3':[pd.NA]*6,'SrvvR_4':[pd.NA]*6,
+    'SrvvR_5':[pd.NA]*6,'SrvvR_6':[pd.NA]*6,'SrvvR_7':[pd.NA]*6,
+    
+    'AssD_1':[pd.NA]*6,'AssD_2':[pd.NA]*6,'AssD_3':[pd.NA]*6,'AssD_4':[pd.NA]*6,
+    'AssD_5':[pd.NA]*6,'AssD_6':[pd.NA]*6,'AssD_7': [pd.NA]*6,
+    
+    'NmbrPlO':[pd.NA]*6,'NmbrPlR':[pd.NA]*6,'NmbrPlT':[pd.NA]*6,
+    'ImgDate':pd.date_range(start="2001-01-01", end="2007-01-01",freq='YE'),'Year':np.arange(2001,2007),'DOY':[1]*6,
+    
+    'NDVI':  [0.1, 0.6, 0.2, -0.5, -0.1, 0.3],  
+    'SAVI':  [0.7, 0.3, 0.5, -0.5, 0.2, 0.1],
+    'MSAVI': [0.4, 0.9, pd.NA, 0.1, -0.8, -0.2],  
+    'EVI':   [pd.NA, 0.4, -0.3, 0.7, 0.9, 0.1],    
+    'EVI2':  [0.3, -0.4, 0.8, pd.NA, 0.2, -0.5],  
+    'NDWI':  [-0.7, 0.2, 0.6, 0.3, pd.NA, -0.1],  
+    'NBR':   [0.9, -0.6, 0.2, -0.8, 0.3, 0.1],   
+    'TCB':   [-0.5, 0.3, 0.5, -0.9, 0.0, 0.7],   
+    'TCG':   [0.6, -0.2, 0.4, 0.5, -0.3, 0.2],   
+    'TCW':   [0.3, -0.8, -0.2, 0.5, 0.6, -0.4],    
+})
+ 
+df_missing_vis_3 = pd.DataFrame({
+    'ID':np.arange(1,7),"PixelID":np.arange(101,107),"Area_ha": np.arange(100,700,100,dtype=float),
+    "Season": np.arange(2001,2007,dtype=float),"PlantDt": [pd.NA]*6,"prevUse": ['AG']*6,
+    'Planted': np.arange(1000,7000,1000,dtype=float),'SpcsCmp': ['HW 100, SW 0']*6,'Type': ['Decidous']*6,
+    
+    'SrvvR_1':[pd.NA]*6,'SrvvR_2':[pd.NA]*6,'SrvvR_3':[pd.NA]*6,'SrvvR_4':[pd.NA]*6,
+    'SrvvR_5':[pd.NA]*6,'SrvvR_6':[pd.NA]*6,'SrvvR_7':[pd.NA]*6,
+    
+    'AssD_1':[pd.NA]*6,'AssD_2':[pd.NA]*6,'AssD_3':[pd.NA]*6,'AssD_4':[pd.NA]*6,
+    'AssD_5':[pd.NA]*6,'AssD_6':[pd.NA]*6,'AssD_7': [pd.NA]*6,
+    
+    'NmbrPlO':[pd.NA]*6,'NmbrPlR':[pd.NA]*6,'NmbrPlT':[pd.NA]*6,
+    'ImgDate':pd.date_range(start="2001-01-01", end="2007-01-01",freq='YE'),'Year':np.arange(2001,2007),'DOY':[1]*6,
+    
+    'NDVI':  [0.1, 0.6, 0.2, -0.5, -0.1, 0.3],  
+    'SAVI':  [0.7, 0.3, 0.5, -0.5, 0.2, 0.1],
+    'MSAVI': [0.4, 0.9, 0.1, 0.1, -0.8, -0.2],  
+    'EVI':   [0.1, 0.4, -0.3, 0.7, 0.9, 0.1],    
+    'EVI2':  [0.3, -0.4, 0.8, 0.1, 0.2, -0.5],  
+    'NDWI':  [-0.7, 0.2, 0.6, 0.3, 0.1, -0.1],  
+    'NBR':   [pd.NA, -0.6, 0.2, -0.8, 0.3, 0.1],   
+    'TCB':   [-0.5, pd.NA, 0.5, -0.9, 0.0, 0.7],   
+    'TCG':   [0.6, -0.2, pd.NA, 0.5, -0.3, 0.2],   
+    'TCW':   [0.3, -0.8, -0.2, pd.NA, 0.6, -0.4],    
+})
+
+# test case with imaging years before planting
+df_img_before_plant =  pd.DataFrame({
+    'ID':np.arange(1,7),"PixelID":np.arange(101,107),"Area_ha": np.arange(100,700,100,dtype=float),
+    "Season": np.arange(2001,2007,dtype=float),"PlantDt": [pd.NA]*6,"prevUse": ['AG']*6,
+    'Planted': np.arange(1000,7000,1000,dtype=float),'SpcsCmp': ['HW 100, SW 0']*6,'Type': ['Decidous']*6,
+    
+    'SrvvR_1':[pd.NA]*6,'SrvvR_2':[pd.NA]*6,'SrvvR_3':[pd.NA]*6,'SrvvR_4':[pd.NA]*6,
+    'SrvvR_5':[pd.NA]*6,'SrvvR_6':[pd.NA]*6,'SrvvR_7':[pd.NA]*6,
+    
+    'AssD_1':[pd.NA]*6,'AssD_2':[pd.NA]*6,'AssD_3':[pd.NA]*6,'AssD_4':[pd.NA]*6,
+    'AssD_5':[pd.NA]*6,'AssD_6':[pd.NA]*6,'AssD_7': [pd.NA]*6,
+    
+    'NmbrPlO':[pd.NA]*6,'NmbrPlR':[pd.NA]*6,'NmbrPlT':[pd.NA]*6,
+    'ImgDate':pd.date_range(start="2001-01-01", end="2007-01-01",freq='YE'),
+    
+    'Year':np.arange(1995,2011,3), # some years before planting
+    
+    'DOY':[1]*6, 
+    
+    'NDVI':  [0.8, 0.6, 0.2, -0.5, -0.1, 0.3],  
+    'SAVI':  [0.7, -0.9, 0.5, -0.5, 0.2, 0.1],
+    'MSAVI': [0.4, 0.9, 0.6, 0.1, -0.8, -0.2],  
+    'EVI':   [0.5, 0.4, -0.3, 0.7, 0.9, 0.1],    
+    'EVI2':  [0.3, -0.4, 0.8, -1.0, 0.2, -0.5],  
+    'NDWI':  [-0.7, 0.2, 0.6, 0.3, -0.2, 0.1],   
+    'NBR':   [0.9, -0.6, 0.2, -0.8, 0.3, 0.1],   
+    'TCB':   [-0.5, 0.3, 0.5, -0.9, 0.0, 0.7],   
+    'TCG':   [0.6, -0.2, 0.4, 0.5, -0.3, 0.2],   
+    'TCW':   [0.3, -0.8, -0.2, 0.5, 0.6, -0.4],    
+})
 def test_classify_species():
     '''
     Test for correctness of classify_species() function
@@ -250,13 +365,7 @@ def test_columns_dropped():
     ''' 
     # expected columns after cleaning
     assert data_cleaning(df_no_outliers).columns.to_list() ==  expected_columns
-
-def test_outlier_survival_rates():
-    '''
-    Test to ensure survival rates are between 0% and 100% after cleaning
-    '''
-    
-    
+ 
 @pytest.mark.parametrize(
     'input_df,expected_dropped_rows',
     [
@@ -276,17 +385,20 @@ def test_outlier_indices(input_df,expected_dropped_rows):
     expected_output = input_df.drop(index=expected_dropped_rows)[expected_columns]
     assert data_cleaning(input_df).equals(expected_output)
 
-    
-    
-def test_missingness():
+@pytest.mark.parametrize(
+    'input_df',
+    [df_missing_vis_1,df_missing_vis_2,df_missing_vis_3]
+)
+def test_missingness(input_df):
     '''
     Test to ensure no missing values in features after cleaning.
     Missing values in survival rate are allowed at this stage.
     '''
-    pass
-
+    assert not data_cleaning(input_df)[feature_cols].isna().any().any()
+    
 def test_image_year_after_planting():
     '''
     Test to ensure only records with imaging after planting are kept.
     '''
-    pass
+    output = data_cleaning(df_img_before_plant)
+    assert (output['Year'] >= output['Season']).all()
