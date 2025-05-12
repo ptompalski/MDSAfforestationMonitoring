@@ -1,0 +1,29 @@
+name: Python package (Conda)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          environment-file: environment-dev.yaml
+          activate-environment: mds-afforest-dev
+
+      - name: Verify environment
+        run: conda info --envs
+
+      - name: Run tests
+        shell: bash -l
+        run: pytest
