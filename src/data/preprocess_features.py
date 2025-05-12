@@ -63,9 +63,11 @@ def data_cleaning(df):
     # remove records before planting
     df = df[df['Year']>= df['Season']]
 
+    # NOTE: dropping survival rates will be done after pivoting
+    
     # drop out-of-range survival rates
-    for i in ['SrvvR_1', 'SrvvR_2', 'SrvvR_3', 'SrvvR_4', 'SrvvR_5', 'SrvvR_6', 'SrvvR_7']:
-        df = df[(df[i].between(0, 100, inclusive='both')) | df[i].isna()]
+    #for i in ['SrvvR_1', 'SrvvR_2', 'SrvvR_3', 'SrvvR_4', 'SrvvR_5', 'SrvvR_6', 'SrvvR_7']:
+    #   df = df[(df[i].between(0, 100, inclusive='both')) | df[i].isna()]
 
     # drop out-of-range indices
     for i in ['NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR']:
