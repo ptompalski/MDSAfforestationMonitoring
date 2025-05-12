@@ -17,4 +17,7 @@ data_split:
         --input_path=data/interim/clean_feats_data.parquet \
     	--output_dir=data/processed/
 
+test:
+	pytest
+
 clean:
