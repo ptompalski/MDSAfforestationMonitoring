@@ -15,6 +15,9 @@ dependencies:
   - pytest-cov=6.1.1
   - scikit-learn=1.6.1
   - xgboost=3.0.0 
+  - pytest-cov=6.1.1 
+  - click=8.1.8
+  - ipykernel=6.29.5
   - pip
   - pip:
     - altair-ally==0.1.1
