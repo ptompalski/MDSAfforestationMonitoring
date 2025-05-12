@@ -4,7 +4,7 @@ import pandas as pd
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from src.data.preprocess_features import classify_species,data_cleaning
+from src.data.preprocess_features import classify_species, data_cleaning, create_density_feature
 
 # expected columns of dataframe after cleaning
 expected_columns = [
@@ -402,3 +402,11 @@ def test_image_year_after_planting():
     '''
     output = data_cleaning(df_img_before_plant)
     assert (output['Year'] >= output['Season']).all()
+
+def test_create_density_feature():
+    '''
+    Test to ensure density feature is created correctly.
+    '''
+    output_with_density = create_density_feature(df_no_outliers)
+    assert ('Planted', 'Area_ha') not in output_with_density.columns
+    assert 'Density' in output_with_density.columns
