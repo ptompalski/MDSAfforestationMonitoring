@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import pandas as pd
-from ..src.data.preprocess_features import data_cleaning,classify_species
+from ..src.data.preprocess_features import target_to_bin
 
 #columns for creating test data
 columns = [

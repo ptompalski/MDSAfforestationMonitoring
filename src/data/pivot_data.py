@@ -49,14 +49,14 @@ def pivot_df(df):
 
     df['Age'] = df['Age'].astype('int32')
     df['target'] = df['target'].astype('float32')
-    df_target['SrvvR_Date'] = df_target['SrvvR_Date'].astype('datetime64[ns]')
+    df['SrvvR_Date'] = df['SrvvR_Date'].astype('datetime64[ns]')
     
     return df
 
 
 # Matching Survey Records with VIs Signals
 # Keep records with survival rate measurements but no satellite data.
-def mean_vi(df_melt, df, day_range, cols):
+def mean_vi(df_pivot, df, day_range, cols):
     """
     Calculate mean VI signal: average of ± specified window of Assessment Date.
         
@@ -80,12 +80,12 @@ def mean_vi(df_melt, df, day_range, cols):
         Averaged spectral indices as a series.
     """
 
-    date_b = df_melt['SrvvR_Date'] - timedelta(days=day_range)
-    date_a = df_melt['SrvvR_Date'] + timedelta(days=day_range)
+    date_b = df_pivot['SrvvR_Date'] - timedelta(days=day_range)
+    date_a = df_pivot['SrvvR_Date'] + timedelta(days=day_range)
 
     try:
-        df = df.loc[[((df_melt['PixelID'], date_b.year) & (df['DOY'] >= date_b.day_of_year)) | (
-            (df_melt['PixelID'], date_a.year) & (df['DOY'] <= date_a.day_of_year))]]
+        df = df.loc[[((df_pivot['ID'], df_pivot['PixelID'], date_b.year) & (df['DOY'] >= date_b.day_of_year)) | (
+            (df_pivot['ID'], df_pivot['PixelID'], date_a.year) & (df['DOY'] <= date_a.day_of_year))]]
         return df[cols].mean()
     except KeyError:
         return pd.Series([None] * len(cols), index=cols)
@@ -113,7 +113,7 @@ def match_vi(df_pivot, df, day_range):
     """
     cols = ['NDVI', 'SAVI', 'MSAVI', 'EVI',
             'EVI2', 'NDWI', 'NBR', 'TCB', 'TCG', 'TCW']
-    df['Key'] = list(zip(df['PixelID'], df['Year']))
+    df['Key'] = list(zip(df['ID'], df['PixelID'], df['Year']))
     df.set_index('Key', inplace=True)
     df = df[cols + 'DOY']
     df_pivot[cols] = None
@@ -168,7 +168,7 @@ def main(input_path, output_dir, day_range, threshold):
     
     # Target Feature Matching
     print('Matching image date with assessment date ...')
-    df_matched = match_vi(df_target, df, day_range, threshold)
+    df_matched = match_vi(df_target, df, day_range)
 
     # Target to Binary
     print('Matching target to binary classes...')
