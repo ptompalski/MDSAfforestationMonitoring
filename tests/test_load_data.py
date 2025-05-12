@@ -7,7 +7,7 @@ import numpy as np
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from src.data.load_data import load_data
 
-MOCK_DATA_RDS_PATH = "tests/data/test.rds"
+MOCK_DATA_RDS_PATH = "tests/test.rds"
 
 mock_data = pd.DataFrame({
     'ID':np.arange(1,7),"PixelID":np.arange(101,107),"Area_ha": np.arange(100,700,100,dtype=float),
