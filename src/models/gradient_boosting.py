@@ -11,6 +11,7 @@ from sklearn.compose import make_column_transformer
 
 def build_gbm_pipeline(
     feat_select: str = None,
+    drop_features: list = [],
     num_feats_RFE: int = 4,
     min_num_feats_RFECV: int = 4,
     num_folds: int = 5,
@@ -38,6 +39,10 @@ def build_gbm_pipeline(
         .. Note::
             by default, half of the input features are included in the model if feature selection
             is specified. Control this using the `n_features_to_select` parameter. 
+            
+    drop_features: list, default = []
+        Additional features to drop from model.
+        Can be used following feature selection to simplify modelling.
     
     num_feats_RFE: int, default 4
         Number of features to keep if using the RFE algorithm.
@@ -58,8 +63,8 @@ def build_gbm_pipeline(
         A Scikit-Learn model pipeline.
     '''
     # columns to preprocess
-    drop_cols = ['ID', 'PixelID']   # ID cols ignored
-    categorical_cols = ['Type']     # One-Hot Encode type columns  
+    drop_cols = ['ID', 'PixelID'] + drop_features   # ID cols ignored, option to drop others
+    categorical_cols = ['Type']                     # One-Hot Encode type columns  
     
     preprocessor = make_column_transformer(
             ('drop',drop_cols),
@@ -105,4 +110,3 @@ def build_gbm_pipeline(
         )
 
     return model_pipeline
-        
