@@ -76,7 +76,7 @@ def data_cleaning(df):
     ), 'Type'] = df.loc[df['NmbrPlR'].isna(), 'SpcsCmp'].apply(classify_species)
     
     # Drop unnecessary columns
-    df = df.drop(['NmbrPlO', 'NmbrPlR', 'NmbrPlT', 'prevUse', 'SpcsCmp','PlantDt'], axis=1)
+    df = df.drop(['NmbrPlO', 'NmbrPlR', 'NmbrPlT', 'prevUse', 'SpcsCmp','PlantDt','ImgDate'], axis=1)
 
     return df
 
