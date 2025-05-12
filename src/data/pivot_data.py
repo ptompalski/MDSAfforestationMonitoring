@@ -46,9 +46,10 @@ def pivot_df(df):
     df = df_sr.merge(df_ad, on=['ID', 'PixelID', 'Age'])
     df = df[df['target'].between(0, 100, inclusive='both')]
     
-
-    df['Age'] = df['Age'].astype('int32')
-    df['target'] = df['target'].astype('float32')
+    float_cols = ['target', 'Density']
+    int_cols = ['Season', 'Age', 'ID'] 
+    df[int_cols] = df[int_cols].astype('int32')
+    df[float_cols] = df[float_cols].astype('float32')
     df['SrvvR_Date'] = df['SrvvR_Date'].astype('datetime64[ns]')
     
     return df
@@ -59,21 +60,21 @@ def pivot_df(df):
 def mean_vi(df_pivot, df, day_range, cols):
     """
     Calculate mean VI signal: average of ± specified window of Assessment Date.
-        
+
     Parameters
     ----------
         df_melt : pd.DataFrame
             Single row from the pivoted DataFrame.
-        
+
         df : pd.DataFrame
             Original DataFrame
-        
+
         day_range : int
             Averaging window / 2, range = 1 to 182
-            
+
         cols : list
             List of spectral indices to average.
-    
+
     Returns
     ----------
     pd.Series
@@ -84,8 +85,8 @@ def mean_vi(df_pivot, df, day_range, cols):
     date_a = df_pivot['SrvvR_Date'] + timedelta(days=day_range)
 
     try:
-        df = df.loc[[((df_pivot['ID'], df_pivot['PixelID'], date_b.year) & (df['DOY'] >= date_b.day_of_year)) | (
-            (df_pivot['ID'], df_pivot['PixelID'], date_a.year) & (df['DOY'] <= date_a.day_of_year))]]
+        df = df.loc[[(df_pivot['ID'], df_pivot['PixelID'])]]
+        df = df[df['ImgDate'].between(date_b, date_a)]
         return df[cols].mean()
     except KeyError:
         return pd.Series([None] * len(cols), index=cols)
@@ -94,18 +95,18 @@ def mean_vi(df_pivot, df, day_range, cols):
 def match_vi(df_pivot, df, day_range):
     """
     Match mean vi signal to pixel by Assessment Date.
-    
+
     Parameters
     ----------
         df_melt : pd.DataFrame
             Single row from the pivoted DataFrame.
-        
+
         df : pd.DataFrame
             Original DataFrame
-        
+
         day_range : int
             Averaging window / 2, range = 0 to 182
-    
+
     Returns
     ----------
     pd.DataFrame
@@ -113,11 +114,11 @@ def match_vi(df_pivot, df, day_range):
     """
     cols = ['NDVI', 'SAVI', 'MSAVI', 'EVI',
             'EVI2', 'NDWI', 'NBR', 'TCB', 'TCG', 'TCW']
-    df['Key'] = list(zip(df['ID'], df['PixelID'], df['Year']))
-    df.set_index('Key', inplace=True)
-    df = df[cols + 'DOY']
-    df_pivot[cols] = None
-    df_pivot[cols] = df_pivot.apply(
+    df.set_index(['ID', 'PixelID'])
+    df.loc[:, 'ImgDate'] = df['ImgDate'].astype('datetime64[ns]')
+    df.loc[:, cols] = df[cols].astype('float32')
+    df = df[cols + ['ImgDate']]
+    df_pivot.loc[:, cols] = df_pivot.apply(
         lambda x: mean_vi(x, df, day_range, cols), axis=1)
     return df_pivot
 
