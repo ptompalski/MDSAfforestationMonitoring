@@ -1,87 +1,107 @@
-'''
-A pipeline, tools, and wrappers for feature selection, training, cross-validating, 
-and predicting with Gradient Boosting models (XGBoost)
-for usage on the CFS Remote Sensing Data.
-'''
 from xgboost import XGBClassifier
 from sklearn.feature_selection import RFE,RFECV
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import make_column_transformer
+from sklearn.model_selection import GroupKFold
 
 def build_gbm_pipeline(
     feat_select: str = None,
-    drop_features: list = [],
+    drop_features: list = None,
+    step_RFE: int = 1,
     num_feats_RFE: int = 4,
     min_num_feats_RFECV: int = 4,
     num_folds_RFECV: int = 5,
+    scoring_RFECV: str = 'f1',
+    random_state: int = 591,
     **kwargs
 ):
-    '''
-    A wrapper for building a Gradient Boosting model pipeline.
-    
-    Recursive Feature Elimination can be implemented to extract useful features.
-    Handles column dropping, etc.
-    
+    """
+    Constructs a Scikit-Learn pipeline for training a Gradient Boosting (XGBoost) model 
+    on afforestation data, with optional feature selection and preprocessing.
+
     Parameters
     ----------
-    feat_select: {None, 'RFE', 'RFECV'}, default None
-        Type of feature selection to be performed.
-        
-        * None: No feature engineering is performed; all features included in the model.
-        * RFE: Recursive Feature Elimination is implemented 
-          using an XGBoost model to measure feature importance.
-          see sklearn.feature_selection.RFE documentaton for details.
-          
-        * RFECV: Similar to RFE with built-in cross validation using F1 Score.
-          see sklearn.feature_selection.RFECV documentaton for details.
-    
-        .. Note::
-            by default, half of the input features are included in the model if feature selection
-            is specified. Control this using the `n_features_to_select` parameter. 
-            
-    drop_features: list, default = []
-        Additional features to drop from model.
-        Can be used following feature selection to simplify modelling.
-    
-    num_feats_RFE: int, default 4
-        Number of features to keep if using the RFE algorithm.
+    feat_select : {'RFE', 'RFECV', None}, default=None
+        Feature selection method to apply:
+        - 'RFE': Recursive Feature Elimination.
+        - 'RFECV': Recursive Feature Elimination with Cross-Validation.
+        - None: No feature selection is performed.
 
-    min_num_feats_RFECV: int, default 4
-        Minimum number of features selected if using the RFECV algorithm.
-        
-    num_folds_RFECV: int, default 5
-        Number of cross-validation folds if using RFECV algorithm
-        
-    **kwargs: 
-        Additonal arguments and hyperparameters passsed to XGBoost model.
-        See xgboost.XGBClassifier documentaton for full hyperparameter specifications.
-        
+    drop_features : list of str, optional
+        Additional features to drop from the dataset (e.g., indices dropped in prior selection steps). 
+        Always drops 'ID' and 'PixelID' by default.
+
+    step_RFE : int, default=1
+        Number of features to remove at each iteration of the RFE process.
+
+    num_feats_RFE : int, default=4
+        Number of features to retain when using RFE.
+
+    min_num_feats_RFECV : int, default=4
+        Minimum number of features to retain when using RFECV.
+
+    num_folds_RFECV : int, default=5
+        Number of cross-validation folds to use during RFECV.
+
+    scoring_RFECV : str, default='f1'
+        Scoring metric used during RFECV. Must be a valid scoring string recognized by scikit-learn.
+        See: https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
+
+    random_state : int, default=591
+        Random state seed for reproducibility.
+
+    **kwargs : dict
+        Additional keyword arguments passed to the `XGBClassifier` (e.g., hyperparameters like 
+        `n_estimators`, `max_depth`, `learning_rate`, etc.).
+
     Returns
     -------
     sklearn.pipeline.Pipeline
-        A Scikit-Learn model pipeline.
-    '''
-    # columns to preprocess
-    drop_cols = ['ID', 'PixelID'] + drop_features   # ID cols ignored, option to drop others
-    categorical_cols = ['Type']                     # One-Hot Encode type columns  
+        A pipeline consisting of preprocessing (column dropping, one-hot encoding) 
+        and the XGBoost classifier, optionally wrapped in RFE or RFECV.
+
+    Raises
+    ------
+    ValueError
+        If `feat_select` is not one of {None, 'RFE', 'RFECV'}.
+        If `drop_features` is not None or a list.
+    """
+    # error handling
+    feat_select = feat_select.upper() if feat_select is not None else None
+    if feat_select not in (None, 'RFE', 'RFECV'):
+        raise ValueError('feat_select must be one of: {None, \'RFE\', \'RFECV\'}')
+        
+    if drop_features is not None and not isinstance(drop_features, list):
+        raise ValueError('drop_features must be a list or None')
     
+    # preprocessor: dropping and one-hot encoding
+    drop_cols = (
+        ['ID', 'PixelID'] if drop_features == None 
+        else ['ID', 'PixelID'] + drop_features
+        )
+    
+    categorical_cols = ['Type']                     
+
     preprocessor = make_column_transformer(
             ('drop',drop_cols),
-            (OneHotEncoder(),categorical_cols),
+            (OneHotEncoder(handle_unknown="ignore"),categorical_cols),
             remainder='passthrough'
         )
     
-    if feat_select not in (None, 'RFE', 'RFECV'):
-        raise ValueError(
-            'feat_select must be one of: {None, \'RFE\', \'RFECV\'}'
-            )
-    
+    # XGBoost Classifier model
+    xgb_classifier = XGBClassifier(
+        use_label_encoder=False, 
+        eval_metric='logloss',
+        random_state=random_state,
+        **kwargs
+    )
+   
     # no feature selection
     if feat_select == None:
         model_pipeline = make_pipeline(
             preprocessor,
-            XGBClassifier(**kwargs)
+            xgb_classifier
         )  
         
     # feature selection with RFE 
@@ -89,10 +109,10 @@ def build_gbm_pipeline(
         model_pipeline = make_pipeline(
             preprocessor,
             RFE(
-                estimator = XGBClassifier(**kwargs),
-                n_features_to_select=num_feats_RFE
-            ),
-            XGBClassifier(**kwargs)
+                estimator=xgb_classifier,
+                n_features_to_select=num_feats_RFE,
+                step=step_RFE
+            )
         )
       
     # Feature selection with RFECV  
@@ -100,13 +120,14 @@ def build_gbm_pipeline(
         model_pipeline = make_pipeline(
             preprocessor,
             RFECV(
-                estimator = XGBClassifier(**kwargs),   
+                estimator=xgb_classifier,   
                 min_features_to_select=min_num_feats_RFECV,
-                scoring='f1',                                    # use f1 score to handle imbalance
-                n_jobs=-1,                                       # parallelize cross-validation if possible
-                cv=num_folds_RFECV
+                scoring=scoring_RFECV,                           
+                n_jobs=-1,                                  # parallelize cross-validation if possible
+                cv=GroupKFold(
+                    n_splits=num_folds_RFECV,
+                    )
             ),
-            XGBClassifier(**kwargs)
         )
 
     return model_pipeline
