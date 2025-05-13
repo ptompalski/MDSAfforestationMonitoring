@@ -125,6 +125,8 @@ def build_gbm_pipeline(
                 n_jobs=-1,                                  # parallelize cross-validation if possible
                 cv=GroupKFold(
                     n_splits=num_folds_RFECV,
+                    shuffle=True,
+                    random_state=random_state
                     )
             ),
         )
