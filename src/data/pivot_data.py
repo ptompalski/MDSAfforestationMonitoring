@@ -57,7 +57,7 @@ def pivot_df(df):
 
 # Matching Survey Records with VIs Signals
 # Keep records with survival rate measurements but no satellite data.
-def mean_vi(df_pivot, df, day_range, cols):
+def mean_vi(df_pivot, df, cols):
     """
     Calculate mean VI signal: average of ± specified window of Assessment Date.
 
@@ -80,14 +80,11 @@ def mean_vi(df_pivot, df, day_range, cols):
     pd.Series
         Averaged spectral indices as a series.
     """
-
-    date_b = df_pivot['SrvvR_Date'] - timedelta(days=day_range)
-    date_a = df_pivot['SrvvR_Date'] + timedelta(days=day_range)
-
     try:
         df = df.loc[[(df_pivot['ID'], df_pivot['PixelID'])]]
-        df = df[df['ImgDate'].between(date_b, date_a)]
-        return df[cols].mean()
+        df = df[df['ImgDate'].between(
+            df_pivot['date_b'], df_pivot['date_a'], inclusive='both')]
+        return df[cols].mean().astype('float32')
     except KeyError:
         return pd.Series([None] * len(cols), index=cols)
 
@@ -114,13 +111,17 @@ def match_vi(df_pivot, df, day_range):
     """
     cols = ['NDVI', 'SAVI', 'MSAVI', 'EVI',
             'EVI2', 'NDWI', 'NBR', 'TCB', 'TCG', 'TCW']
-    df.set_index(['ID', 'PixelID'])
-    df.loc[:, 'ImgDate'] = df['ImgDate'].astype('datetime64[ns]')
-    df.loc[:, cols] = df[cols].astype('float32')
+
+    df = df.set_index(['ID', 'PixelID'])
     df = df[cols + ['ImgDate']]
+    df.loc[:, 'ImgDate'] = df['ImgDate'].astype('datetime64[ns]').dt.date
+    df.loc[:, cols] = df[cols].astype('float32')
+    td = timedelta(days=day_range)
+    df_pivot.loc[:, 'date_b'] = df_pivot['SrvvR_Date'] - td
+    df_pivot.loc[:, 'date_a'] = df_pivot['SrvvR_Date'] + td
     df_pivot.loc[:, cols] = df_pivot.apply(
-        lambda x: mean_vi(x, df, day_range, cols), axis=1)
-    return df_pivot
+        lambda x: mean_vi(x, df, cols), axis=1)
+    return df_pivot.drop(columns=['date_b', 'date_a'])
 
 
 def target_to_bin(df, threshold=None):
