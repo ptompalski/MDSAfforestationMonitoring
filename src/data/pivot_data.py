@@ -4,15 +4,16 @@ import gc
 import os
 from datetime import timedelta
 
+
 def pivot_df(df):
     """
     Pivot data to combine Survival Rates and Assessment Dates into two separate columns. 
-    
+
     Parameters
     ----------
         df : pd.DataFrame
             Original DataFrame.
-    
+
     Returns
     ----------
     pd.DataFrame
@@ -22,8 +23,8 @@ def pivot_df(df):
     df_sr = df[['ID', 'PixelID', 'Density', 'Season',  'Type', 'SrvvR_1',
                 'SrvvR_2', 'SrvvR_3', 'SrvvR_4', 'SrvvR_5', 'SrvvR_6', 'SrvvR_7']]
     df_sr.columns = ['ID', 'PixelID', 'Density',
-                  'Season', 'Type', 1, 2, 3, 4, 5, 6, 7]
-    
+                     'Season', 'Type', 1, 2, 3, 4, 5, 6, 7]
+
     df_sr = df_sr.melt(
         id_vars=['ID', 'PixelID', 'Density', 'Type', 'Season'], value_vars=[1, 2, 3, 4, 5, 6, 7],
         var_name='Age',
@@ -35,23 +36,23 @@ def pivot_df(df):
                 'AsssD_3', 'AsssD_4', 'AsssD_5', 'AsssD_6', 'AsssD_7']]
 
     df_ad.columns = ['ID', 'PixelID', 1, 2, 3, 4, 5, 6, 7]
-    
+
     df_ad = df_ad.melt(
         id_vars=['ID', 'PixelID'],
         value_vars=[1, 2, 3, 4, 5, 6, 7],
         var_name='Age', value_name='SrvvR_Date'
     ).dropna(axis=0, subset='SrvvR_Date').drop_duplicates()
-    
+
     # Matching Survival Rate with Assessment Date Column
     df = df_sr.merge(df_ad, on=['ID', 'PixelID', 'Age'])
     df = df[df['target'].between(0, 100, inclusive='both')]
-    
+
     float_cols = ['target', 'Density']
-    int_cols = ['Season', 'Age', 'ID'] 
+    int_cols = ['Season', 'Age', 'ID']
     df[int_cols] = df[int_cols].astype('int32')
     df[float_cols] = df[float_cols].astype('float32')
-    df['SrvvR_Date'] = df['SrvvR_Date'].astype('datetime64[ns]')
-    
+    df['SrvvR_Date'] = df['SrvvR_Date'].astype('datetime64[ns]').dt.date
+
     return df
 
 
@@ -114,12 +115,13 @@ def match_vi(df_pivot, df, day_range):
 
     df = df.set_index(['ID', 'PixelID'])
     df = df[cols + ['ImgDate']]
-    df.loc[:, 'ImgDate'] = df['ImgDate'].astype('datetime64[ns]').dt.date
-    df.loc[:, cols] = df[cols].astype('float32')
+    df['ImgDate'] = df['ImgDate'].astype('datetime64[ns]').dt.date
+    df[cols] = df[cols].astype('float32')
     td = timedelta(days=day_range)
-    df_pivot.loc[:, 'date_b'] = df_pivot['SrvvR_Date'] - td
-    df_pivot.loc[:, 'date_a'] = df_pivot['SrvvR_Date'] + td
-    df_pivot.loc[:, cols] = df_pivot.apply(
+    df_pivot = df_pivot.copy()
+    df_pivot['date_b'] = df_pivot['SrvvR_Date'] - td
+    df_pivot['date_a'] = df_pivot['SrvvR_Date'] + td
+    df_pivot[cols] = df_pivot.apply(
         lambda x: mean_vi(x, df, cols), axis=1)
     return df_pivot.drop(columns=['date_b', 'date_a'])
 
@@ -127,15 +129,15 @@ def match_vi(df_pivot, df, day_range):
 def target_to_bin(df, threshold=None):
     """
     Map target to binary class "High"/"Low" survival rate base on given threshold.
-    
+
     Parameters
     ----------
         df : pd.DataFrame
             Pivoted DataFrame.
-        
+
         threshold : float
             Survival Rate Threshold. 0 to 100
-    
+
     Returns
     ----------
     pd.DataFrame
