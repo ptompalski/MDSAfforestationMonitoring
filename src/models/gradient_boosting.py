@@ -68,7 +68,6 @@ def build_gbm_pipeline(
         If `drop_features` is not None or a list.
     """
     # error handling
-    feat_select = feat_select.upper() if feat_select is not None else None
     if feat_select not in (None, 'RFE', 'RFECV'):
         raise ValueError('feat_select must be one of: {None, \'RFE\', \'RFECV\'}')
         
@@ -86,12 +85,12 @@ def build_gbm_pipeline(
     preprocessor = make_column_transformer(
             ('drop',drop_cols),
             (OneHotEncoder(handle_unknown="ignore"),categorical_cols),
-            remainder='passthrough'
+            remainder='passthrough',
+            force_int_remainder_cols=False
         )
     
     # XGBoost Classifier model
     xgb_classifier = XGBClassifier(
-        use_label_encoder=False, 
         eval_metric='logloss',
         random_state=random_state,
         **kwargs
