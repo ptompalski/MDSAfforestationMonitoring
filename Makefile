@@ -27,7 +27,4 @@ data_split:
 test:
 	pytest
 
-test:
-	pytest
-
 clean:
