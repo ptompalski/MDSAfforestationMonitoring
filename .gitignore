@@ -25,6 +25,9 @@ data/interim/*
 data/processed/*
 !data/processed/.gitkeep
 
+# hide test data
+tests/*.rds
+
 # Quarto
 reports/.quarto/*
 

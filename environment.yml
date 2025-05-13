@@ -1,3 +1,4 @@
+name: mds-afforest
 channels:
   - conda-forge
   - defaults
