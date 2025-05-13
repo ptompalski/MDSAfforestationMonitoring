@@ -14,7 +14,7 @@ def build_gbm_pipeline(
     drop_features: list = [],
     num_feats_RFE: int = 4,
     min_num_feats_RFECV: int = 4,
-    num_folds: int = 5,
+    num_folds_RFECV: int = 5,
     **kwargs
 ):
     '''
@@ -50,7 +50,7 @@ def build_gbm_pipeline(
     min_num_feats_RFECV: int, default 4
         Minimum number of features selected if using the RFECV algorithm.
         
-    num_folds: int, default 5
+    num_folds_RFECV: int, default 5
         Number of cross-validation folds if using RFECV algorithm
         
     **kwargs: 
@@ -104,7 +104,7 @@ def build_gbm_pipeline(
                 min_features_to_select=min_num_feats_RFECV,
                 scoring='f1',                                    # use f1 score to handle imbalance
                 n_jobs=-1,                                       # parallelize cross-validation if possible
-                cv=num_folds
+                cv=num_folds_RFECV
             ),
             XGBClassifier(**kwargs)
         )
