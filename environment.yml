@@ -3,14 +3,15 @@ channels:
   - defaults
 dependencies:
   - python=3.12
-  - altair=5.5.0 
+  - altair=5.5.0
   - vegafusion=2.0.2
   - pyreadr=0.5.3
   - seaborn=0.13.2
   - matplotlib=3.10.0
   - pandas=2.2.3
   - pyarrow=20.0.0
+  - scikit-learn=1.6.1
   - click=8.1.8
   - pip
   - pip:
-    - altair-ally==0.1.1
+      - altair-ally==0.1.1
