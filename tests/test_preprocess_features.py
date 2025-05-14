@@ -401,7 +401,8 @@ def test_image_year_after_planting():
     Test to ensure only records with imaging after planting are kept.
     '''
     output = data_cleaning(df_img_before_plant)
-    assert (output['Year'] >= output['Season']).all()
+    output_year = output['ImgDate'].astype('datetime64[ns]').dt.year
+    assert (output_year >= output['Season']).all()
 
 def test_create_density_feature():
     '''

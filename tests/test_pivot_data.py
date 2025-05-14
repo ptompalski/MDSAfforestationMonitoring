@@ -1,8 +1,10 @@
-from ..src.data.target_to_binary import target_to_bin
 import pytest
 import pandas as pd
 import numpy as np
-from ..src.data.pivot_data import pivot_df, mean_vi, match_vi, target_to_bin
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from src.data.pivot_data import pivot_df, match_vi, target_to_bin
 
 # Test data for pivot_df()
 test_pivot_df = pd.DataFrame({
