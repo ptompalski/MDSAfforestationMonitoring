@@ -16,8 +16,10 @@ def sample_data():
     sample_data = pd.DataFrame({
     'ID':np.arange(1,10),
     "PixelID":np.arange(101,110),
+    "Density": [10]*3 + [20]*3 + [30]*3,
+    "Season": np.arange(2001,2010),
     'Type':['Decidous']*3 + ['Mixed']*3 + ['Conifer']*3 ,
-    'SrvvR_Date': [1,1,3,5,2,3,6,7,5],
+    'Age': [1,1,3,5,2,3,6,7,5],
     'NDVI':  [0.8, 0.6, 0.2, -0.5, -0.1, 0.3, 0.3, 0.6, 0.7],   
     'SAVI':  [0.7, -0.9, 0.5, -0.5, 0.2, 0.1, 0.1, 0.5, 0.9], 
     'MSAVI': [0.4, 0.9, 0.6, 0.1, -0.8, -0.2, -0.9, 0.5, -0.5],   
@@ -28,7 +30,8 @@ def sample_data():
     'TCB':   [-0.5, 0.3, 0.5, -0.9, 0.0, 0.7, 0.3, -0.4, 0.8],   
     'TCG':   [0.6, -0.2, 0.4, 0.5, -0.3, 0.2, -0.2, 0.1, 0.1,],   
     'TCW':   [0.3, -0.8, -0.2, 2.5, 0.6, -0.4, 0.9, 0.6, 0.1,], 
-    'target': [0]*4 + [1]*5   
+    'target': [0]*4 + [1]*5,
+    'SrvvR_Date': pd.date_range(start="2001-01-01", end="2009-01-01", freq="YS")
     })
     X = sample_data.drop(columns='target')
     y = sample_data['target']
@@ -128,7 +131,7 @@ def test_pipeline_all_parameters(
     # Check preprocessor drop column setup
     preprocessor = pipeline.named_steps['columntransformer']
     dropped = preprocessor.transformers[0][2]
-    expected_drops = ['ID', 'PixelID'] + (drop_features if drop_features else [])
+    expected_drops = ['ID', 'PixelID', 'Season', 'SrvvR_Date'] + (drop_features if drop_features else [])
     assert sorted(dropped) == sorted(expected_drops)
 
 def test_pipeline_fit_no_feat_select(sample_data):
