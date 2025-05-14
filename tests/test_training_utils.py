@@ -6,7 +6,7 @@ import sys
 from scipy.stats import randint, uniform
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from src.models.gradient_boosting import build_gbm_pipeline
-from src.models.training_utils import cross_validation_wrapper
+from src.utils.cv_tuning import cross_validation_wrapper
 
 @pytest.fixture()
 def sample_data():
