@@ -27,10 +27,10 @@ def build_gbm_pipeline(
         - 'RFE': Recursive Feature Elimination.
         - 'RFECV': Recursive Feature Elimination with Cross-Validation.
         - None: No feature selection is performed.
-
+        
     drop_features : list of str, optional
         Additional features to drop from the dataset (e.g., indices dropped in prior selection steps). 
-        Always drops 'ID' and 'PixelID' by default.
+        Always drops 'ID', 'PixelID', 'Season', and 'SrvvR_Date' by default.
 
     step_RFE : int, default=1
         Number of features to remove at each iteration of the RFE process.
@@ -76,8 +76,8 @@ def build_gbm_pipeline(
     
     # preprocessor: dropping and one-hot encoding
     drop_cols = (
-        ['ID', 'PixelID'] if drop_features == None 
-        else ['ID', 'PixelID'] + drop_features
+        ['ID', 'PixelID', 'Season','SrvvR_Date' ] if drop_features == None 
+        else ['ID', 'PixelID', 'Season','SrvvR_Date' ] + drop_features
         )
     
     categorical_cols = ['Type']                     
