@@ -52,13 +52,13 @@ def cross_validation_wrapper(
         Folds are split using `sklearn.model_selection.GroupKFold` to ensure sites
         do not overlap between folds.
     
-    scoring: int, default='f1'
+    scoring: str, default='f1'
         Scoring metric used to rank hyperparameters during CV. 
         Must be a valid scoring string recognized by scikit-learn.
         See: https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
         
     return_results: bool, default=False
-        if True, also returns scoring for every tested hyperparameter configuration
+        if True, also returns a dataframe with performance metrics for every tested hyperparameter configuration.
     
     random_state : int, default=591
         Random state seed for reproducibility.
@@ -70,6 +70,7 @@ def cross_validation_wrapper(
         - 'best_model': the fitted sklearn pipeline with the best found parameters
         - 'best_score': the highest cross-validated score achieved
         - 'best_params': the parameter configuration corresponding to the best score
+        - 'results': (optional) A dataframe with cross-validation results.
     '''
     # check for correct method specification
     if method not in ('random','grid'):
@@ -96,7 +97,8 @@ def cross_validation_wrapper(
             scoring = scoring,
             n_jobs=-1,
             refit=True,
-            cv = group_kfold
+            cv = group_kfold,
+            random_state=random_state
         )
     else:
         cross_validator = GridSearchCV(

@@ -33,3 +33,4 @@ reports/.quarto/*
 
 # Pytest
 .pytest_cache
+.coverage*
