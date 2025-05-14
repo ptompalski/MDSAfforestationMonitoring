@@ -150,9 +150,9 @@ def target_to_bin(df, threshold=None):
     """
     if threshold is None:
         raise ValueError("Threshold for classifying survival rate required. Please enter a value between 0 and 1.")
-    elif not (0 <= threshold <=1) :
+    if not (0 <= threshold <=1) :
         raise ValueError(f"The threshold must be between 0 and 1, got {threshold}.")
-
+    df = df.copy()
     df['target'] = (df['target'] < threshold*100).map(
         {True: 'Low', False: 'High'})
     
