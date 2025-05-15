@@ -5,9 +5,9 @@ F1 scores, accuracy, and AUC.
 from sklearn.model_selection import cross_val_predict,GroupKFold
 from sklearn.metrics import (
     roc_auc_score, average_precision_score, 
-    roc_curve, precision_recall_curve, confusion_matrix
-)
-from sklearn.metrics import f1_score, accuracy_score
+    roc_curve, precision_recall_curve, confusion_matrix,
+    f1_score, fbeta_score, accuracy_score, 
+    precision_score, recall_score)
 from sklearn.pipeline import Pipeline
 import pandas as pd
 import click
@@ -15,7 +15,7 @@ import numpy as np
 
 def get_preds_and_truth(
     model: Pipeline,
-    df: pd.DataFrame,
+    df_train: pd.DataFrame,
     num_folds: int = 5,
     random_state: int = 591
 ):
@@ -41,16 +41,15 @@ def get_preds_and_truth(
         
     Returns
     -------
-    tuple: (y_pred, y_pred_proba, y_true)
-        A tuple of three one-dimensional arrays:
-        - y_pred: directly predict binary class labels.
-        - y_pred_proba: output probabilistic predictions for ROC and PR curves
-        - y_true: The ground-truth class labels.
+    dict
+        A dictionary containing:
+        - y_pred: Predicted class labels.
+        - y_prob: Predicted probabilities for the class labelled as 1 (high survival rate).
+        - y_true: True binary labels (0 for 'Low Survival Rate' or 1 for 'High Survival Rate').
     '''
-    
     # get features and target
-    X = df.drop(columns='target'); y_true = df['target']
-    site_ids = df['ID']
+    X = df_train.drop(columns='target'); y_true = df_train['target']
+    site_ids = df_train['ID']
     
     # cross validate by group k-fold to ensure site IDs do not overlap between each group
     group_kfold = GroupKFold(
@@ -75,41 +74,171 @@ def get_preds_and_truth(
     
     return {
         'y_pred':y_pred,
-        'y_prob':y_prob[:, 1], # want binary output, probability of high survival rate
-        'y_true':y_true.to_numpy()
+        'y_prob':y_prob[:, 0], # Probability of class 0 ("Low survival rate" = positive class)
+        'y_true':y_true.values
         }
     
-def get_class_imbalance()
+def get_valid_roc_curve(
+    y_prob: np.array, 
+    y_true: np.array
+):  
+    '''
+    Return a dataframe containing points along the ROC curve.
 
-def get_valid_roc_curve(y_prob: np.array, y_true: np.array):
-    # need to flip labels, as we should consider 'Low survival rate' to be positive cases (1)
-    return roc_curve(1 - y_true, 1 - y_prob)
+    This function computes the Receiver Operating Characteristic (ROC) curve for binary classification. 
+    Note the 'Low survival rate' class (label 0) is treated as the positive class.
 
+    Parameters
+    ----------
+    y_prob : np.array
+        Predicted probabilities for the class labelled as 0 (e.g., low survival).
 
-def get_valid_pr_curve(y_prob: np.array, y_true: np.array):
-    return precision_recall_curve(1 - y_true, 1 - y_prob)
+    y_true : np.array
+        True binary labels (0 or 1).
 
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame containing:
+        - 'False Positive Rate': Array of FPR values
+        - 'True Positive Rate': Array of TPR values
+        - 'Thresholds': Decision thresholds used to compute FPR/TPR
+    '''
+    # need to flip labels, as we should consider 'Low survival rate' (with labels 0) to be positive cases
+    fpr,tpr, threshold = roc_curve(y_true, y_prob,pos_label=0)
+
+    return pd.DataFrame({
+        'False Positive Rate':fpr,
+        'True Positive Rate': tpr,
+        'Thresholds': threshold
+    })
+
+def get_valid_pr_curve(
+    y_prob: np.array,
+    y_true: np.array, 
+):
+    '''
+    Return a dataframe containing points along the Precision-Recall curve.
+
+    This function computes the Precision-Recall (PR) curve for binary classification.
+    Note the 'Low survival rate' class (label 0) is treated as the positive class.
+
+    Parameters
+    ----------
+    y_prob : np.array
+        Predicted probabilities for the class labelled as 0 (e.g., low survival).
+        
+    y_true : np.array
+        True binary labels (0 or 1).
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame containing:
+        - 'Precision': Precision values
+        - 'Recall': Recall values
+        - 'Thresholds': Decision thresholds used to compute Precision/Recall
+    '''
+    # need to flip labels, as we should consider 'Low survival rate' (with labels 0) to be positive cases
+    precision,recall,threshold = precision_recall_curve(y_true, y_prob,pos_label=0)
+
+    return pd.DataFrame({
+        'Precision':precision[:-1],
+        'Recall': recall[:-1],
+        'Thresholds': threshold
+    })
+
+def get_conf_matrix(
+    y_pred: np.array,
+    y_true: np.array, 
+):
+    '''
+    Compute the confusion matrix for predicted and true labels.
+
+    This function returns the confusion matrix treating class 0 ('Low survival rate') 
+    as the positive class. The matrix is returned as a pandas DataFrame for readability.
+
+    Parameters
+    ----------
+    y_true : np.array
+        True binary labels (0 for 'low survival rate' or 1 for 'high survival rate').
+
+    y_pred : np.array
+        Predicted binary class labels.
+
+    Returns
+    -------
+    pd.DataFrame
+        A 2x2 labeled confusion matrix showing predicted vs. actual class counts.
+    '''
+    conf_mat = pd.DataFrame(confusion_matrix(y_true,y_pred,labels=[0, 1]))
+    conf_mat.index = ['True Low','True High']
+    conf_mat.columns = ['Predicted Low','Predicted High']
+    return conf_mat
+    
 def get_error_metrics(y_pred: np.array, y_prob: np.array, y_true: np.array):
+    '''
+    Compute and return a dictionary of classification error metrics.
+
+    This function computes various evaluation metrics for binary classification
+    including F1 Score, F2 Score, Precision, Recall, Accuracy, ROC AUC,
+    Average Precision (AP), and class proportions to assess imbalance.
+
+    Parameters
+    ----------
+    y_true : np.ndarray
+        True class labels: 0 for 'Low Survival Rate' or 1 for 'High Survival Rate'
+        Note that 'Low Survival Rate' is considered the positive class.
     
-    # AUC score (area under ROC)
-    roc_auc = roc_auc_score(1 - y_true, 1 - y_prob)
+    y_pred : np.ndarray
+        Predicted class labels.
     
-    # AP score (area under PR curve)
-    ap_score = average_precision_score(1 - y_true, 1 - y_prob)
+    y_prob : np.ndarray
+        Predicted probabilities for the positive class (pos_label).
     
-    # F1 score
-    f1 = f1_score(y_true,y_pred,pos_label=0)
+    Returns
+    -------
+    dict
+        A dictionary containing:
+        - 'F1 Score': F1 score
+        - 'F2 Score': F2 score (β=2)
+        - 'Precision': Precision score
+        - 'Recall': Recall score
+        - 'Accuracy': Accuracy score
+        - 'AUC': ROC AUC score
+        - 'AP': Average Precision score
+        - '% Low Risk': Percentage of samples predicted as class 0
+        - '% High Risk': Percentage of samples predicted as class 1
+    '''
+    # ROC and AP scores
+    # Need to flip label, as these functions expect 1 to be the positive class
+    # and pos_label cannot be set. 
+    roc_auc = float(round(roc_auc_score(1 - y_true, y_prob), 3))
+    ap_score = float(round(average_precision_score(1 - y_true, y_prob), 3))
     
-    # accuracy
-    accuracy = accuracy_score(y_true,y_pred)
+    # F1 and F2 score
+    f1 = round(f1_score(y_true,y_pred,pos_label=0),3)
+    f2 = round(fbeta_score(y_true,y_pred,pos_label=0,beta=2),3)
+    
+    # accuracy, precision, recall
+    accuracy = round(accuracy_score(y_true,y_pred),3)
+    precision = round(precision_score(y_true,y_pred,pos_label=0),3)
+    recall = round(recall_score(y_true,y_pred,pos_label=0),3)
+    
+    # class proportions
+    pct_low = float(round(sum(y_true == 0)/len(y_true),3)*100)   
+    pct_high = float(round(sum(y_true == 1)/len(y_true),3)*100)   
     
     return {
         'F1 Score':f1,
+        'F2 Score':f2,
+        'Precision':precision,
+        'Recall': recall,
         'Accuracy':accuracy,
         'AUC':roc_auc,
         'AP': ap_score,
+        '% Low Risk': pct_low,
+        '% High Risk': pct_high
     }
 
 
-def get_conf_matrix(y_pred: np.array, y_true: np.array):
-    return confusion_matrix(y_true,y_pred)
