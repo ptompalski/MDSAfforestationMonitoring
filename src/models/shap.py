@@ -189,3 +189,114 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
 
         # Refit estimator with selected features
         return self.estimator.fit(X_enc[self.selected_features], y, **routed_params.estimator.fit)
+
+    @available_if(_estimator_has("predict"))
+    def predict(self, X, **predict_params):
+        """Reduce X to the selected features and predict using the estimator.
+
+        Parameters
+        ----------
+        X : array of shape [n_samples, n_features]
+            The input samples.
+
+        **predict_params : dict
+            Parameters to route to the ``predict`` method of the
+            underlying estimator.
+
+        Returns
+        -------
+        y : array of shape [n_samples]
+            The predicted target values.
+        """
+        check_is_fitted(self)
+        routed_params = process_routing(self, "predict", **predict_params)
+        return self.estimator.predict(
+            self.transform(X), **routed_params.estimator.predict
+        )
+
+    @available_if(_estimator_has("score"))
+    def score(self, X, y, **score_params):
+        """Reduce X to the selected features and return the score of the estimator.
+
+        Parameters
+        ----------
+        X : array of shape [n_samples, n_features]
+            The input samples.
+
+        y : array of shape [n_samples]
+            The target values.
+
+        **score_params : dict
+
+        Returns
+        -------
+        score : float
+            Score of the estimator computed with the selected features.
+        """
+        check_is_fitted(self)
+        routed_params = process_routing(self, "score", **score_params)
+        return self.estimator.score(
+            self.transform(X), y, **routed_params.estimator.score
+        )
+
+    @available_if(_estimator_has("predict_proba"))
+    def predict_proba(self, X):
+        """Predict class probabilities for X.
+
+        Parameters
+        ----------
+        X : array of shape (n_samples, n_features)
+            The input samples. 
+
+        Returns
+        -------
+        p : array of shape (n_samples, n_classes)
+            The class probabilities of the input samples.
+        """
+        check_is_fitted(self)
+        return self.estimator.predict_proba(self.transform(X))
+
+    @available_if(_estimator_has("predict_log_proba"))
+    def predict_log_proba(self, X):
+        """Predict class log-probabilities for X.
+
+        Parameters
+        ----------
+        X : array of shape (n_samples, n_features)
+            The input samples.
+
+        Returns
+        -------
+        p : array of shape (n_samples, n_classes)
+            The class log-probabilities of the input samples. 
+        """
+        check_is_fitted(self)
+        return self.estimator.predict_log_proba(self.transform(X))
+
+    @available_if(_estimator_has("get_params"))
+    def get_params(self):
+        """Get parameters for this estimator.
+
+        Returns
+        -------
+        params : dict
+            Parameter names mapped to their values.
+        """
+        check_is_fitted(self)
+        return self.estimator.get_params()
+
+    def get_metadata_routing(self):
+        """Get metadata routing of this object.
+
+        Returns
+        -------
+        routing : MetadataRouter
+        """
+        router = MetadataRouter(owner=self.__class__.__name__).add(
+            estimator=self.estimator,
+            method_mapping=MethodMapping()
+            .add(caller="fit", callee="fit")
+            .add(caller="predict", callee="predict")
+            .add(caller="score", callee="score"),
+        )
+        return router
