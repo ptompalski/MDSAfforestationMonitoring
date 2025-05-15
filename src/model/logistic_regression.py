@@ -58,7 +58,10 @@ def build_logreg_pipeline(
     # Pre-processing: drop ID columns + optional extra, scale numerics,   #
     # one-hot 'Type'. The numeric list is the same as in the GBM tests.   #
     # ------------------------------------------------------------------ #
-    drop_cols = ["ID", "PixelID"] + (drop_features or [])
+   drop_cols = (
+        ['ID', 'PixelID', 'Season','SrvvR_Date' ] if drop_features == None 
+        else ['ID', 'PixelID', 'Season', 'SrvvR_Date' ] + drop_features
+        )
 
     numeric_cols = [
         "NDVI", "SAVI", "MSAVI", "EVI", "EVI2", "NDWI", "NBR",
