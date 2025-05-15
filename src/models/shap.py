@@ -56,6 +56,27 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
         self.scaler = scaler
         self.selected_features = None
 
+    @property
+    def feature_importances_(self):
+        """Feature importance of the features.
+
+        Returns
+        -------
+        feature_importances_ : ndarray of shape (n_features,)
+        """
+        check_is_fitted(self)
+        return self.estimator.feature_importances_()
+
+    @property
+    def classes_(self):
+        """Class labels for the target feature.
+
+        Returns
+        -------
+        ndarray of shape (n_classes,)
+        """
+        return self.estimator.classes_
+
     def get_feature_names(self):
         """Get feature names from the preprocessor.
 
