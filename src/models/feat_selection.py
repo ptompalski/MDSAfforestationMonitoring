@@ -1,19 +1,20 @@
-import shap
+import src.models.feat_selection as feat_selection
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import make_column_transformer
 from sklearn.base import MetaEstimatorMixin, TransformerMixin, clone
-from sklearn.utils._metadata_requests import MetadataRouter, MethodMapping, process_routing
+from sklearn.utils._metadata_requests import MetadataRouter, MethodMapping, process_routing, _routing_enabled
 from sklearn.utils.metaestimators import available_if
 from sklearn.utils.validation import _estimator_has, check_is_fitted
+from sklearn.inspection import permutation_importance
+from sklearn.utils import Bunch
 
 
-class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
+class ImportanceFeatureSelector(MetaEstimatorMixin, TransformerMixin):
     """Feature Selection with SHAP Global Feature Importance.
 
-    Given an external estimator that assigns weights to features (e.g., the
-    coefficients of a linear model), SHAPFeatureSelector will select a specified 
-    number of features with the highest mean absolute SHAP value. 
+    Given an external estimator that assigns weights to features, ImportanceFeatureSelector will perform feature selection
+    using SHAP (SHapley Additive exPlanations) or sklearn's `permutation_importance()`. 
 
     Parameters
     ----------
@@ -26,12 +27,16 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
     drop_features : list of str, default=None
         Features to exclude from the model.
 
-    keep_features : list of str, default=None
+    keep_features : list of str, default=[]
         Features to keep during feature selection.
 
     scaler : bool, default=False
         Whether to apply StandardScaler to numeric columns.    
 
+    method : str, {'SHAP', 'permute'}
+        Method to evaluate feature importance.
+        - 'SHAP': Uses SHAP (SHapley Additive exPlanations) to compute global feature importance. Features are selected based on their mean absolute SHAP value.
+        - 'permute': Uses permutation importance (`sklearn.inspection.permutation_importance`) to compute feature importance.
 
     Attributes
     ----------
@@ -44,17 +49,36 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
     preprocessor_ : ColumnTransformer
         The fitted preprocessor for X.
 
-    values : pd.Series
-        Global SHAP value for the selected features.
+    values : dict 
+        Dictionary-like object with the following attributes:
+        - If method = 'SHAP',
+            values : ndarray of shape (n_samples, n_features)
+                SHAP values for each sample.
+            base_values : ndarray of shape (n_classes,)
+                Expected value for the model output (proportion for each class).
+            data : ndarray of shape (n_samples, n_features)
+                The input data corresponding to the SHAP values. 
+        - If method = 'permute',
+            importances_mean : ndarray of shape (n_features, )
+                Mean feature importance over 5 repeats.
+            importances_std : ndarray of shape (n_features, )
+                Standard deviation over 5 repeats.
+            importances : ndarray of shape (n_features, 5)
+                Raw permutation importance scores for each repeat.
+
+    plot_data : pd.Series
+         Feature importance scores indexed by feature name.
+
     """
 
-    def __init__(self, estimator, num_feats=5, drop_features=None, keep_features=None, scaler=False):
+    def __init__(self, estimator, method, num_feats=5, drop_features=None, keep_features=[], scaler=False):
         self.estimator = estimator
         self.num_feats = num_feats
         self.drop_features = drop_features
         self.keep_features = keep_features
         self.scaler = scaler
         self.selected_features = None
+        self.method = method
 
     @property
     def feature_importances_(self):
@@ -65,7 +89,7 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
         feature_importances_ : ndarray of shape (n_features,)
         """
         check_is_fitted(self)
-        return self.estimator.feature_importances_()
+        return self.estimator.feature_importances_
 
     @property
     def classes_(self):
@@ -86,6 +110,25 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
         """
         return (self.preprocessor_.named_transformers_['onehotencoder'].get_feature_names_out().tolist() +
                 self.preprocessor_.named_transformers_[('standardscaler' if self.scaler else 'remainder')].get_feature_names_out().tolist())
+
+    def selector(self):
+        """Get mean feature importance and select features with highest importances.
+        """
+        if self.method == 'SHAP':
+            self.plot_data = pd.DataFrame(
+                self.values.values,
+                columns=self.get_feature_names()
+            ).abs().mean()
+
+        if self.method == 'permute':
+            self.plot_data = pd.Series(
+                self.values.importances_mean,
+                index=self.get_feature_names()
+            )
+
+        self.selected_features = self.plot_data.sort_values(
+            ascending=False).drop(index=self.keep_features).head(
+            self.num_feats).index.tolist() + self.keep_features
 
     def transform(self, X):
         """Transformer for training data.
@@ -108,6 +151,22 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
         )
         return X[:] if self.selected_features is None else X[self.selected_features]
 
+    def get_metadata_routing(self):
+        """Get metadata routing of this object.
+
+        Returns
+        -------
+        routing : MetadataRouter
+        """
+        router = MetadataRouter(owner=self.__class__.__name__).add(
+            estimator=self.estimator,
+            method_mapping=MethodMapping()
+            .add(caller="fit", callee="fit")
+            .add(caller="predict", callee="predict")
+            .add(caller="score", callee="score"),
+        )
+        return router
+
     def fit(self, X, y, **fit_params):
         """
         Fit the estimator and conduct feature selection through evaluating SHAP global feature importance.
@@ -116,8 +175,8 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
         This method performs the following steps:
         1. Preprocess the training data (X).
         2. Fit the estimator with the preprocessed data.
-        3. Pass the fitted estimator to SHAP explainer and calculate the mean absolute SHAP values for each feature.
-        4. Select features with the highest SHAP values to refit the estimator.
+        3. Calculate feature importance for each feature.
+        4. Select features with the importance to refit the estimator.
 
         Parameters
         ----------
@@ -129,7 +188,9 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
             Target feature.
 
         **fit_params : dict
-            Parameters to passed to the ``fit`` method of the estimator.
+            Additional parameters to pass to the ``fit`` method of the estimator.
+            Call `estimator.set_fit_request()` prior to fitting for metadata routing.
+
         Returns
         -------
         self : object
@@ -164,31 +225,33 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
         X_enc = self.transform(X)
 
         # Fit model
-        routed_params = process_routing(self, "fit", **fit_params)
-        self.model_ = clone(self.estimator)
-        self.model_.fit(X_enc, y, **routed_params.estimator.fit)
-
-        # SHAP Explanation
-        explainer = shap.Explainer(self.model_)
-        shap_values = explainer.shap_values(X_enc, approximate=True)
-
-        # Select top features
-        self.values = pd.DataFrame(
-            (shap_values[:, :, 0] if shap_values.ndim == 3 else shap_values),
-            index=X_enc.index,
-            columns=self.get_feature_names()
-        ).abs().mean().sort_values(ascending=False)
-
-        if not (self.keep_features == None):
-            self.values = self.values.drop(columns=self.keep_features)
-            self.selected_features = self.values.head(
-                self.num_feats).index.tolist() + self.keep_features
+        if _routing_enabled():
+            routed_params = process_routing(self, "fit", **fit_params)
         else:
-            self.selected_features = self.values.head(
-                self.num_feats).index.tolist()
+            routed_params = Bunch(estimator=Bunch(fit=fit_params))
+        estimator = clone(self.estimator)
+        estimator.fit(X_enc, y, **routed_params.estimator.fit)
+
+        if self.method == 'SHAP':
+            # SHAP Explanation
+            explainer = feat_selection.Explainer(estimator)
+            shap_values = explainer.shap_values(X_enc, approximate=True)
+            self.values = feat_selection.Explanation(
+                (shap_values[:, :, 0]
+                 if shap_values.ndim == 3 else shap_values),
+                data=np.array(X_enc),
+                base_values=explainer.expected_value,
+                feature_names=self.get_feature_names()
+            )
+            self.selector()
+
+        if self.method == 'permute':
+            # Permutation Importance
+            self.values = permutation_importance(estimator, X_enc, y)
+            self.selector()
 
         # Refit estimator with selected features
-        return self.estimator.fit(X_enc[self.selected_features], y, **routed_params.estimator.fit)
+        return self.estimator.fit(X_enc[self.selected_features], y,  **routed_params.estimator.fit)
 
     @available_if(_estimator_has("predict"))
     def predict(self, X, **predict_params):
@@ -200,8 +263,8 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
             The input samples.
 
         **predict_params : dict
-            Parameters to route to the ``predict`` method of the
-            underlying estimator.
+            Additional parameters to pass to the ``predict`` method of the
+            underlying estimator. Call `estimator.set_predict_request()` prior to fitting for metadata routing.
 
         Returns
         -------
@@ -209,7 +272,11 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
             The predicted target values.
         """
         check_is_fitted(self)
-        routed_params = process_routing(self, "predict", **predict_params)
+        if _routing_enabled():
+            routed_params = process_routing(self, "predict", **predict_params)
+        else:
+            routed_params = Bunch(estimator=Bunch(predict=predict_params))
+
         return self.estimator.predict(
             self.transform(X), **routed_params.estimator.predict
         )
@@ -227,6 +294,8 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
             The target values.
 
         **score_params : dict
+            Additional parameters to pass to the ``score`` method of the underlying estimator.
+             Call `estimator.set_score_request()` prior to fitting for metadata routing.
 
         Returns
         -------
@@ -234,7 +303,11 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
             Score of the estimator computed with the selected features.
         """
         check_is_fitted(self)
-        routed_params = process_routing(self, "score", **score_params)
+        if _routing_enabled():
+            routed_params = process_routing(self, "score", **score_params)
+        else:
+            routed_params = Bunch(estimator=Bunch(score=score_params))
+
         return self.estimator.score(
             self.transform(X), y, **routed_params.estimator.score
         )
@@ -284,19 +357,3 @@ class SHAPFeatureSelector(MetaEstimatorMixin, TransformerMixin):
         """
         check_is_fitted(self)
         return self.estimator.get_params()
-
-    def get_metadata_routing(self):
-        """Get metadata routing of this object.
-
-        Returns
-        -------
-        routing : MetadataRouter
-        """
-        router = MetadataRouter(owner=self.__class__.__name__).add(
-            estimator=self.estimator,
-            method_mapping=MethodMapping()
-            .add(caller="fit", callee="fit")
-            .add(caller="predict", callee="predict")
-            .add(caller="score", callee="score"),
-        )
-        return router
