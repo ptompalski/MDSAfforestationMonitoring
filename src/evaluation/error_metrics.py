@@ -13,7 +13,7 @@ import pandas as pd
 import click
 import numpy as np
 
-def get_preds_and_truth(
+def get_validation_preds(
     model: Pipeline,
     df_train: pd.DataFrame,
     num_folds: int = 5,
@@ -78,6 +78,54 @@ def get_preds_and_truth(
         'y_true':y_true.values
         }
     
+def get_test_errors(
+    model: Pipeline,
+    df_train: pd.DataFrame,
+    df_test: pd.DataFrame,
+    random_state: int = 591  
+):
+    '''
+    Train the given model on the given training data and
+    output error metrics on the test data.
+    
+    This allows for more precise error analysis, eg. for comparing test error across site years (`Age`) 
+    
+    Parameters
+    ----------
+    model: sklearn.pipeline.Pipeline
+        The model pipeline. The model should have been and tuned for optimal hyperparameters
+        at this stage.
+        
+    df_train: pd.DataFrame
+        The input training data.
+        
+    df_test: pd.DataFrame
+        The input test data.
+        
+    Returns
+    -------
+    dict
+        A dictionary containing:
+        - y_pred: Predicted class labels on test data.
+        - y_prob: Predicted probabilities for the class labelled as 1 (high survival rate).
+        - y_true: True binary labels (0 for 'Low Survival Rate' or 1 for 'High Survival Rate') of test data.
+    '''
+    # split training and testinng data 
+    X_train = df_train.drop(columns='target'); y_train = df_train['target']
+    X_test = df_test.drop(columns='target'); y_test = df_test['target']
+    
+    # fit model on training data
+    model.fit(X_train,y_train)
+    
+    # get predictions
+    y_pred = model.predict(X_test)
+    y_prob = model.predict_proba(X_test)
+    
+    # get error metrics
+    test_errors = get_error_metrics(y_pred,y_prob[:, 0],y_test)
+    
+    return test_errors
+
 def get_valid_roc_curve(
     y_prob: np.array, 
     y_true: np.array

@@ -5,8 +5,9 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from src.models.gradient_boosting import build_gbm_pipeline
+from sklearn.model_selection import train_test_split
 from src.evaluation.error_metrics import (
-    get_preds_and_truth,get_valid_roc_curve,get_valid_pr_curve,
+    get_validation_preds,get_test_errors,get_valid_roc_curve,get_valid_pr_curve,
     get_conf_matrix,get_error_metrics
 )
 
@@ -48,16 +49,16 @@ def test_get_preds_and_truth(dummy_model, dummy_data):
     '''
     Test to make sure output of get_preds_and_truth is as expected
     '''
-    result = get_preds_and_truth(dummy_model, dummy_data, num_folds=3)
+    result = get_validation_preds(dummy_model, dummy_data, num_folds=3)
     assert set(result.keys()) == {'y_pred', 'y_prob', 'y_true'}
     assert len(result['y_pred']) == len(dummy_data)
     assert np.all((0 <= result['y_prob']) & (result['y_prob'] <= 1))
-    
+
 def test_get_valid_roc_curve(dummy_model, dummy_data):
     '''
     Test to ensure output ROC curve is as expected.
     '''
-    preds = get_preds_and_truth(dummy_model, dummy_data, num_folds=3)
+    preds = get_validation_preds(dummy_model, dummy_data, num_folds=3)
     df_roc = get_valid_roc_curve(preds['y_prob'], preds['y_true'])
     assert {'False Positive Rate', 'True Positive Rate', 'Thresholds'}.issubset(df_roc.columns)
 
@@ -65,12 +66,12 @@ def test_get_valid_pr_curve(dummy_model, dummy_data):
     '''
     Test to ensure output PR curve is as expected.
     '''
-    preds = get_preds_and_truth(dummy_model, dummy_data, num_folds=3)
+    preds = get_validation_preds(dummy_model, dummy_data, num_folds=3)
     df_pr = get_valid_pr_curve(preds['y_prob'], preds['y_true'])
     assert {'Precision', 'Recall', 'Thresholds'}.issubset(df_pr.columns)
     
 def test_get_conf_matrix(dummy_model, dummy_data):
-    preds = get_preds_and_truth(dummy_model, dummy_data, num_folds=3)
+    preds = get_validation_preds(dummy_model, dummy_data, num_folds=3)
     cm = get_conf_matrix(preds['y_pred'], preds['y_true'])
     assert cm.shape == (2, 2)
     assert all(label in cm.columns for label in ['Predicted Low', 'Predicted High'])
@@ -96,8 +97,41 @@ def test_get_error_metrics(dummy_model, dummy_data):
     '''
     Test to ensure type and formatting of get_error_metrics output is correct
     '''
-    preds = get_preds_and_truth(dummy_model, dummy_data, num_folds=3)
+    preds = get_validation_preds(dummy_model, dummy_data, num_folds=3)
     scores = get_error_metrics(preds['y_pred'], preds['y_prob'], preds['y_true'])
+    expected_keys = {
+        'F1 Score', 'F2 Score', 'Precision', 'Recall', 'Accuracy',
+        'AUC', 'AP', '% Low Risk', '% High Risk'
+    }
+    assert expected_keys.issubset(scores.keys())
+    assert all(isinstance(v, float) for v in scores.values())
+    
+def test_get_test_errors(dummy_model, dummy_data):
+    '''
+    Test to ensure type and formatting of get_error_metrics output is correct
+    '''
+    dummy_test = pd.DataFrame({
+    'ID': np.arange(1, 16),
+    "PixelID": np.arange(201, 216),
+    "Density": [15]*5 + [25]*5 + [35]*5,
+    'Type': ['Mixed']*5 + ['Conifer']*5 + ['Decidous']*5,
+    "Season": np.arange(2002, 2017),
+    'Age': [2, 2, 4, 6, 3, 4, 7, 8, 6, 6, 8, 2, 4, 5, 6],
+    'NDVI':  [0.7, 0.5, 0.3, -0.4, 0.0, 0.4, 0.4, 0.5, 0.6, 0.9, 0.7, 0.3, -0.4, 0.0, 0.4],
+    'SAVI':  [0.6, -0.8, 0.6, -0.4, 0.3, 0.2, 0.2, 0.4, 1.0, 1.0, -0.5, 0.3, -0.7, 0.4, 0.8],
+    'MSAVI': [0.3, 1.0, 0.7, 0.2, -0.7, -0.1, -0.8, 0.6, -0.4, 0.8, -0.8, 0.6, -0.4, 0.3, 0.2],
+    'EVI':   [0.6, 0.3, -0.2, 0.6, 1.0, 0.1, 0.4, -0.7, -0.1, 0.6, -0.8, 0.6, -0.4, 0.3, 0.2],
+    'EVI2':  [0.4, -0.3, 0.9, -0.9, 0.3, -0.4, 1.0, -0.5, 0.3, 0.8, -0.8, 0.6, -0.4, 0.3, 0.2],
+    'NDWI':  [-0.6, 0.3, 0.7, 0.4, -0.1, 0.2, 0.2, 0.2, 0.6, -0.4, 0.4, 0.6, -0.8, 0.1, 0.8],
+    'NBR':   [1.0, -0.5, 0.3, -0.7, 0.4, 0.2, -0.1, 0.5, 0.6, 0.4, -0.7, -0.1, 2.6, 0.7, -0.3],
+    'TCB':   [-0.4, 0.4, 0.6, -0.8, 0.1, 0.8, 0.4, -0.3, 0.9, 0.4, -0.7, -0.1, 2.6, 0.7, -0.3],
+    'TCG':   [0.7, -0.1, 0.5, 0.6, -0.2, 0.3, -0.1, 0.2, 0.2, 0.4, -0.7, -0.1, 2.6, 0.7, -0.3],
+    'TCW':   [0.4, -0.7, -0.1, 2.6, 0.7, -0.3, 1.0, 0.7, 0.2, -0.1, 2.6, 0.7, -0.3, 1.0, 0.7],
+    'target': [1]*6 + [0]*9,
+    'SrvvR_Date': pd.date_range(start="2002-01-01", end="2016-01-01", freq="YS")
+})
+    
+    scores = get_test_errors(dummy_model, dummy_data, dummy_test)
     expected_keys = {
         'F1 Score', 'F2 Score', 'Precision', 'Recall', 'Accuracy',
         'AUC', 'AP', '% Low Risk', '% High Risk'
