@@ -1,9 +1,12 @@
 '''
 Tools for training and cross-validating models.
 '''
+import click
+import joblib
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import RandomizedSearchCV,GridSearchCV, GroupKFold
+from sklearn.preprocessing import LabelEncoder
 
 def cross_validation_wrapper(
     model_pipeline: Pipeline, 
@@ -77,11 +80,11 @@ def cross_validation_wrapper(
         raise ValueError(
             'method must be one of: {\'random\', \'grid\'}'
             )
-    
+
     # get features and target
     X = df.drop(columns='target'); y = df['target']
     site_ids = df['ID']
-    
+
     # cross validate by group k-fold to ensure site IDs do not overlap between each group
     group_kfold = GroupKFold(
         n_splits=num_folds,
@@ -110,7 +113,7 @@ def cross_validation_wrapper(
             cv = group_kfold
         )
     
-    cross_validator.fit(X,y,groups=site_ids)
+    cross_validator.fit(X, y_encoded, groups=site_ids)
     
     output_dict = {
         'best_model': cross_validator.best_estimator_,
@@ -135,4 +138,40 @@ def cross_validation_wrapper(
         output_dict['results'] = results_df
        
     return output_dict
-    
+
+@click.command()
+@click.option('--model_path', type=click.Path(file_okay=False), required=True,
+              help='Directory to load pipeline model')
+@click.option('--training_data_path', type=click.Path(file_okay=False), required=True, help='Directory to training parquet file')
+@click.option('--test_data_path', type=click.Path(file_okay=False), required=True, help='Directory to test parquet file')
+@click.option('--tuning_method', type=click.Choice(['grid', 'random'], case_sensitive=False), required=True, help='Method for tuning the model. Options: grid, random')
+@click.option('--param_grid', type=click.Dict(), help='Parameter grid for tuning the model. Should be a dictionary with parameter names as keys and lists of values as values.')
+@click.option('--num_iter', type=int, default=10, help='Number of parameter configurations to test if using randomized search')
+@click.option('--num_folds', type=int, default=5, help='Number of folds used in cross-validation')
+@click.option('--scoring', type=str, default='f1', help='Scoring metric used to rank hyperparameters during CV')
+@click.option('--random_state', type=int, default=591, help='Random seed for reproducibility')
+@click.option('--return_results', type=bool, default=False, help='Whether to return cross-validation results')
+@click.option('--output_dir', type=click.Path(file_okay=False), help='Directory to save the tuning results')
+def main(model_path, training_data, test_data, tuning_method, param_grid, 
+         num_iter, num_folds, scoring, random_state, output_dir):
+    pipeline = joblib.load(model_path)
+    df_train = pd.read_parquet(training_data)
+    df_test = pd.read_parquet(test_data)
+    X_train, y_train = df_train.drop(['target'], axis=1), df_train['target']
+    X_test, y_test = df_test.drop(['target'], axis=1), df_test['target']
+
+    result = cross_validation_wrapper(
+        model_pipeline=pipeline,
+        df=df_train,
+        param_grid=param_grid,
+        method=tuning_method,
+        num_iter=num_iter,
+        num_folds=num_folds,
+        scoring=scoring,
+        random_state=random_state,
+        return_results=True
+    )
+
+
+    joblib.dump(result['best_model'], output_dir)
+    print(f"Model saved to {output_dir}")
