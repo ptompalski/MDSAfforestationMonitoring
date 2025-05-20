@@ -3,7 +3,9 @@ import pandas as pd
 import pytest
 from sklearn.utils.validation import check_is_fitted
 from sklearn.pipeline import Pipeline
-
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.models.logistic_regression import build_logreg_pipeline
 from src.training.cv_tuning import cross_validation_wrapper
