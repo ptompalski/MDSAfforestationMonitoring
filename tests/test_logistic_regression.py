@@ -10,9 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.models.logistic_regression import build_logreg_pipeline
 from src.training.cv_tuning import cross_validation_wrapper
 
-# ------------------------------------------------------------------ #
-# Fixtures                                                           #
-# ------------------------------------------------------------------ #
+
 @pytest.fixture()
 def sample_data():
     '''
@@ -41,33 +39,33 @@ def sample_data():
     return sample_data
 
 
-# ------------------------------------------------------------------ #
-# Basic construction & error handling                                #
-# ------------------------------------------------------------------ #
 @pytest.mark.parametrize("fs", [None, "RFE", "RFECV"])
 def test_is_pipeline(fs):
+    """Test that `build_logreg_pipeline` returns a Pipeline for each feature selection option."""
+
     pipe = build_logreg_pipeline(feat_select=fs)
     assert isinstance(pipe, Pipeline)
 
 
 def test_invalid_feat_select():
+    """Test that providing an invalid feature selection string raises a ValueError."""
+
     with pytest.raises(ValueError):
         build_logreg_pipeline(feat_select="banana")
 
 
-# ------------------------------------------------------------------ #
-# Fit end-to-end                                                     #
-# ------------------------------------------------------------------ #
+
 def test_pipeline_fits(sample_data):
+    """Test that the logistic regression pipeline can be fitted and yields a valid accuracy."""
+
     pipe = build_logreg_pipeline()
-    # Run CV with no hyperparameters to get a fitted model and accuracy
     result = cross_validation_wrapper(
         model_pipeline=pipe,
         df=sample_data,
-        param_grid={},         # empty grid
-        method='grid',         # run a single grid search pass
-        num_folds=2,           # use 2 folds for speed
-        scoring='accuracy',    # compute accuracy
+        param_grid={},         
+        method='grid',         
+        num_folds=2,           
+        scoring='accuracy',    
     )
     trained = result['best_model']
     accuracy = result['best_score']
