@@ -154,8 +154,7 @@ def target_to_bin(df, threshold=None):
         raise ValueError(f"The threshold must be between 0 and 1, got {threshold}.")
     df = df.copy()
     df['target'] = (df['target'] < threshold*100).map(
-        {True: 'Low', False: 'High'})
-    
+        {True: 0, False: 1})
     return df
 
 

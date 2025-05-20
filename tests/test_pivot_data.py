@@ -118,7 +118,7 @@ df_bin = pd.DataFrame(
     }
 )
 # Expected classified classes
-exp_bin = ['High', 'High', 'High', 'Low', 'Low', 'Low']
+exp_bin = [1, 1, 1, 0, 0, 0]
 
 
 

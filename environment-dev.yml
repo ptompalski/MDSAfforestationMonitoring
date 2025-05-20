@@ -4,19 +4,21 @@ channels:
   - defaults
 dependencies:
   - python=3.12
-  - altair=5.5.0 
+  - altair=5.5.0
   - vegafusion=2.0.2
   - pyreadr=0.5.3
   - seaborn=0.13.2
   - matplotlib=3.10.0
   - pandas=2.2.3
   - pyarrow=20.0.0
+  - scikit-learn=1.6.1
   - pytest=8.3.5
-  - pytest-cov=6.1.1 
+  - pytest-cov=6.1.1
+  - xgboost=3.0.0 
   - click=8.1.8
   - ipykernel=6.29.5
   - scikit-learn=1.6.1
   - shap=0.47.2
   - pip
   - pip:
-    - altair-ally==0.1.1
+      - altair-ally==0.1.1
