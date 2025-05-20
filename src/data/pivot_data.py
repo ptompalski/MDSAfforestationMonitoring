@@ -155,7 +155,6 @@ def target_to_bin(df, threshold=None):
     df = df.copy()
     df['target'] = (df['target'] < threshold*100).map(
         {True: 0, False: 1})
-    
     return df
 
 

@@ -17,6 +17,8 @@ dependencies:
   - xgboost=3.0.0 
   - click=8.1.8
   - ipykernel=6.29.5
+  - scikit-learn=1.6.1
+  - shap=0.47.2
   - pip
   - pip:
       - altair-ally==0.1.1
