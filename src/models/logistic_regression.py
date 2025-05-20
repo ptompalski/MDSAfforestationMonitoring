@@ -1,14 +1,4 @@
-"""
-Pipeline builder for Logistic Regression on the afforestation data.
-
-Features
---------
-* Column dropping + One-Hot encoding (same as GBM pipeline)
-* Optional feature-selection with RFE or RFECV
-"""
-
 from typing import List, Optional
-
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_selection import RFE, RFECV
 from sklearn.pipeline import make_pipeline
@@ -29,24 +19,35 @@ def build_logreg_pipeline(
     **logreg_kwargs,
 ):
     """
-    Construct a Scikit-Learn pipeline for Logistic Regression
-    with the same signature as `build_gbm_pipeline`.
+    Build a pipeline for logistic regression on the afforestation dataset.
 
     Parameters
     ----------
-    feat_select   : {None,'RFE','RFECV'}
-    drop_features : list[str] | None
-    step_RFE      : int      – step size for RFE elimination
-    num_feats_RFE : int
-    min_num_feats_RFECV : int
-    num_folds_RFECV     : int
-    scoring_RFECV       : str  – e.g. 'f1'
-    random_state        : int
-    **logreg_kwargs     : any extra kwargs -> LogisticRegression
+    feat_select : {None, 'RFE', 'RFECV'}, default=None
+        Optional feature selection strategy: None, recursive feature elimination ('RFE'),
+        or recursive feature elimination with cross-validation ('RFECV').
+    drop_features : list of str or None, default=None
+        Additional columns to drop.
+    step_RFE : int, default=1
+        Step size for RFE elimination.
+    num_feats_RFE : int, default=6
+        Number of features to select with RFE.
+    min_num_feats_RFECV : int, default=6
+        Minimum number of features for RFECV.
+    num_folds_RFECV : int, default=5
+        Number of folds for RFECV.
+    scoring_RFECV : str, default='f1'
+        Scoring metric for RFECV.
+    random_state : int, default=591
+        Random seed for reproducibility.
+    **logreg_kwargs : dict
+        Additional keyword arguments passed to `LogisticRegression`.
 
     Returns
     -------
     sklearn.pipeline.Pipeline
+        An sklearn Pipeline object that applies preprocessing, optional feature selection,
+        and logistic regression.
     """
 
     if feat_select not in (None, "RFE", "RFECV"):
