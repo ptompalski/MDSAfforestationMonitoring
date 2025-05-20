@@ -140,7 +140,7 @@ def build_gbm_pipeline(
 @click.command()
 @click.option('--feat_select', type=click.Choice([None, 'RFE', 'RFECV']), default=None,
                 help='Feature selection method to apply')
-@click.option('--drop_features', type=str, default=None,
+@click.option('--drop_features', type=list, default=None,
                 help='Comma-separated list of features to drop (e.g., "feat1,feat2")')
 @click.option('--step_rfe', type=int, default=1,
                 help='Number of features to remove at each iteration of RFE')
@@ -175,14 +175,13 @@ def main(feat_select, drop_features, step_rfe, num_feats_rfe,
         **kwargs
     )
 
-    model_name = "gbm_model_pipeline.joblib"
+    model_name = "gbm_model.joblib"
     model_path = os.path.join(output_dir, model_name)
 
     os.makedirs(output_dir, exist_ok=True)
 
     joblib.dump(pipeline, model_path)
     print(f"Model saved to {model_path}")
-
 
 if __name__ == '__main__':
     main()
