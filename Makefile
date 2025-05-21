@@ -21,7 +21,7 @@ preprocess_data:
 
 data_split:
 	python src/data/data_split.py \
-        --input_path=data/interim/processed_data50.0.parquet \
+        --input_path=data/interim/50/processed_data.parquet \
     	--output_dir=data/processed/ 
 
 random_forest_pipeline:
@@ -51,8 +51,8 @@ gradient_boosting_pipeline:
 cv_tuning:
 	python src/training/cv_tuning.py \
 		--model_path=models/gbm_model.joblib \
-		--training_data=data/processed/train_data.parquet \
-		--test_data=data/processed/test_data.parquet \
+		--training_data=data/processed/50/train_data.parquet \
+		--test_data=data/processed/50/test_data.parquet \
 		--tuning_method=random \
 		--param_grid='{"xgbclassifier__n_estimators": [1,10], "xgbclassifier__learning_rate": [0.001,10], "xgbclassifier__max_depth":[1,2]}' \
 		--num_iter=2 \

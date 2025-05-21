@@ -172,7 +172,7 @@ def main(feat_select, drop_features, step_rfe, num_feats_rfe,
         **kwargs
     )
 
-    model_name = "rf_model.joblib"
+    model_name = f"rf_model.joblib"
     model_path = os.path.join(output_dir, model_name)
 
     os.makedirs(output_dir, exist_ok=True)

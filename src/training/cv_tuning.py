@@ -172,6 +172,7 @@ def main(model_path, training_data, test_data, tuning_method, param_grid,
     )
 
     model_name = f"best_{model_path.split('/')[-1]}"
+    output_dir = os.path.join(output_dir, training_data.split('/')[-2])
     model_path = os.path.join(output_dir, model_name)
     os.makedirs(output_dir, exist_ok=True)
 

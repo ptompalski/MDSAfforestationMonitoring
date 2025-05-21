@@ -69,9 +69,10 @@ def main(input_path,output_dir,prop_train,seed):
     print('Saving data...')
     
     # save training and testing data
-    output_path_train = os.path.join(output_dir,'train_data.parquet')
-    output_path_test = os.path.join(output_dir,'test_data.parquet')
-    
+    output_dir = os.path.join(output_dir, str(input_path.split('/')[-2]))
+    os.makedirs(output_dir, exist_ok=True)
+    output_path_train = os.path.join(output_dir, 'train_data.parquet')
+    output_path_test = os.path.join(output_dir, 'test_data.parquet')
     df_train.to_parquet(output_path_train)
     print(f'Training data saved to {output_path_train}')
     
