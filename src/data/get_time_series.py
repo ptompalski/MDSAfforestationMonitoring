@@ -2,19 +2,25 @@ import numpy as np
 import pandas as pd
 import os
 import json
-from pivot_data import pivot_df
+from .pivot_data import pivot_df
+import click
 
-
-def _get_summary_statistics(train_df: pd.DataFrame) -> dict:
+def _get_summary_statistics(density_col: pd.Series, tc_cols: pd.DataFrame) -> dict:
     """
     Compute summary statistics (mean, std) for features requiring standard scaling.
 
+    Separately computes:
+    - Summary statistics for 'Density' from the lookup table
+    - Summary statistics for 'TCW', 'TCG', 'TCB' from the remote sensing table
+
     Parameters
     ----------
-    train_df : pd.DataFrame
-        Training set used to compute statistics. Should already be split
-        from the test set to avoid leakage.
+    density_col : pd.Series
+        The 'Density' column extracted from the lookup table.
 
+    tc_cols : pd.DataFrame
+        DataFrame containing the 'TCW', 'TCG', and 'TCB' columns from the remote sensing table.
+        
     Returns
     -------
     dict
@@ -26,7 +32,14 @@ def _get_summary_statistics(train_df: pd.DataFrame) -> dict:
             'std':  {'TCW': ..., 'TCG': ..., ...}
         }
     """
-    pass
+    stats_dict = {}
+    stats_dict['mean'] = tc_cols.mean().to_dict()
+    stats_dict['std'] = tc_cols.std().to_dict()
+    
+    stats_dict['mean']['Density'] = float(density_col.mean())
+    stats_dict['std']['Density'] = float(density_col.std())
+    
+    return stats_dict
 
 
 def _get_raw_sequence(
@@ -54,9 +67,9 @@ def _get_raw_sequence(
         Sorted subset of imaging data for that record (ascending by ImgDate).
     """
     pass
+    
 
-
-def split_interim_dataframe(interim_df: pd.DataFame) -> dict:
+def split_interim_dataframe(interim_df: pd.DataFrame) -> dict:
     """
     Split the interim feature-engineered DataFrame into:
     - A lookup table of survival records
@@ -78,12 +91,12 @@ def split_interim_dataframe(interim_df: pd.DataFame) -> dict:
     """
     pass
 
-def save_sequences(
+def process_and_save_sequences(
     survival_df: pd.DataFrame,
     imaging_df: pd.DataFrame,
-    seq_out_dir: os.Path,
-    lookup_out_path: os.Path,
-    tc_norm_stats: dict
+    seq_out_dir: str,
+    lookup_out_path: str,
+    norm_stats: dict
 ) -> None:
     """
     Preprocess and save vegetation index time series for each (ID, PixelID, SrvvR_Date) triplet
@@ -107,7 +120,7 @@ def save_sequences(
     lookup_out_path : Path
         Path where the consolidated lookup Parquet file will be written.
 
-    tc_norm_stats : dict
+    norm_stats : dict
         Dictionary with mean and std values for 'TCW', 'TCG', 'TCB', and 'Density':
         {
             'mean': {'TCW': ..., 'TCG': ..., 'TCB': ..., 'Density': ...},
@@ -133,3 +146,24 @@ def save_sequences(
     - Skips samples with no available imaging records.
     """
     pass
+
+
+def main():
+    '''
+    Command-line interface for processing and saving time series for each survival rate record.
+    '''
+    
+    # split interim data into remote sensing and lookup table
+    
+    # if working on training data and norm_stats.json doesnt exist, compute and save it.
+    
+    # if not training data and norm_stats.json doesn't exist, throw error
+    
+    # process and save time series data.
+    
+    pass
+    
+    
+    
+if __name__ == '__main__':
+    main()
