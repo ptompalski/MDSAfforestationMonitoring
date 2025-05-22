@@ -82,7 +82,8 @@ cv_tuning:
 		--model_path=models/gbm_model.joblib \
 		--training_data=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
 		--test_data=data/processed/$(THRESHOLD_PCT)/test_data.parquet \
-		--tuning_method=$(TUNING_METHOD)
+		--tuning_method=$(TUNING_METHOD) \
+
 		--param_grid='{"xgbclassifier__n_estimators": [1,10], "xgbclassifier__learning_rate": [0.001,10], "xgbclassifier__max_depth":[1,2]}' \
 		--num_iter=$(NUM_ITER) \
 		--num_folds=$(NUM_FOLDS) \
