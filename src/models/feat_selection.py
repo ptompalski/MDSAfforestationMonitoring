@@ -1,4 +1,3 @@
-import src.models.feat_selection as feat_selection
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import make_column_transformer
@@ -8,13 +7,17 @@ from sklearn.utils.metaestimators import available_if
 from sklearn.utils.validation import _estimator_has, check_is_fitted
 from sklearn.inspection import permutation_importance
 from sklearn.utils import Bunch
+from sklearn.linear_model import LogisticRegression
+import shap 
+import numpy as np
 
 
 class ImportanceFeatureSelector(MetaEstimatorMixin, TransformerMixin):
     """Feature Selection with SHAP Global Feature Importance.
 
-    Given an external estimator that assigns weights to features, ImportanceFeatureSelector will perform feature selection
-    using SHAP (SHapley Additive exPlanations) or sklearn's `permutation_importance()`. 
+    Given an external estimator that assigns weights to features (e.g., the
+    coefficients of a linear model), ImportanceFeatureSelector will select a specified 
+    number of features with the highest mean absolute SHAP value/Permutation Importance. 
 
     Parameters
     ----------
@@ -24,7 +27,7 @@ class ImportanceFeatureSelector(MetaEstimatorMixin, TransformerMixin):
     num_feats : int, default=5
         The number of features to select. 
 
-    drop_features : list of str, default=None
+    drop_features : list of str, default=[]
         Features to exclude from the model.
 
     keep_features : list of str, default=[]
@@ -35,7 +38,7 @@ class ImportanceFeatureSelector(MetaEstimatorMixin, TransformerMixin):
 
     method : str, {'SHAP', 'permute'}
         Method to evaluate feature importance.
-        - 'SHAP': Uses SHAP (SHapley Additive exPlanations) to compute global feature importance. Features are selected based on their mean absolute SHAP value.
+        - 'SHAP': Uses SHAP (SHapley Additive exPlanations) to compute feature importance.
         - 'permute': Uses permutation importance (`sklearn.inspection.permutation_importance`) to compute feature importance.
 
     Attributes
@@ -67,11 +70,34 @@ class ImportanceFeatureSelector(MetaEstimatorMixin, TransformerMixin):
                 Raw permutation importance scores for each repeat.
 
     plot_data : pd.Series
-         Feature importance scores indexed by feature name.
+         Feature importance scores indexed by feature name. Used as input for plotting feature importance.
 
     """
 
-    def __init__(self, estimator, method, num_feats=5, drop_features=None, keep_features=[], scaler=False):
+    def __init__(self, estimator, method=None, num_feats=5, drop_features=[], keep_features=[], scaler=False):
+        
+        # Exception Handling
+        if method == None:
+            raise ValueError('Please choose a feature selection method: "SHAP" or "permute".')
+        if method not in ['SHAP', 'permute']:
+            raise ValueError(
+                'Feature selection method should be either "SHAP" or "permute".')
+        if not isinstance(drop_features, list):
+            raise ValueError(
+                f'List expected for "drop_features", got {type(drop_features)}')
+        if not isinstance(keep_features, list):
+            raise ValueError(
+                f'List expected for "keep_features", got {type(keep_features)}')
+        if not isinstance(num_feats, int):
+            raise ValueError(
+                f'"num_feats" expectes an integer, got {type(num_feats)}')
+        if num_feats <= 0:
+            raise ValueError(
+                f'"num_feats" expects an integer > 0, got {num_feats}'
+            )
+        if not isinstance(scaler, bool):
+            raise ValueError(
+                f'"scaler" expectes an bool, got {type(scaler)}')
         self.estimator = estimator
         self.num_feats = num_feats
         self.drop_features = drop_features
@@ -79,7 +105,7 @@ class ImportanceFeatureSelector(MetaEstimatorMixin, TransformerMixin):
         self.scaler = scaler
         self.selected_features = None
         self.method = method
-
+        
     @property
     def feature_importances_(self):
         """Feature importance of the features.
@@ -234,11 +260,16 @@ class ImportanceFeatureSelector(MetaEstimatorMixin, TransformerMixin):
 
         if self.method == 'SHAP':
             # SHAP Explanation
-            explainer = feat_selection.Explainer(estimator)
-            shap_values = explainer.shap_values(X_enc, approximate=True)
-            self.values = feat_selection.Explanation(
+            if isinstance(estimator, LogisticRegression):
+                explainer = shap.Explainer(
+                    estimator, X_enc, feature_names=self.get_feature_names())
+                shap_values = explainer.shap_values(X_enc)
+            else:
+                explainer = shap.Explainer(estimator)
+                shap_values = explainer.shap_values(X_enc, approximate=True)
+            self.values = shap.Explanation(
                 (shap_values[:, :, 0]
-                 if shap_values.ndim == 3 else shap_values),
+                if shap_values.ndim == 3 else shap_values),
                 data=np.array(X_enc),
                 base_values=explainer.expected_value,
                 feature_names=self.get_feature_names()
