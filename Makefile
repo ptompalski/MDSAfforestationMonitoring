@@ -74,7 +74,8 @@ gradient_boosting_pipeline:
 		--num_feats_rfe=$(NUM_FEATS_RFE) \
 		--min_num_feats_rfecv=$(MIN_NUM_FEATS_RFECV) \
 		--num_folds_rfecv=$(NUM_FOLDS_RFECV) \
-		--scoring_rfecv="$(SCORING_RFECV)" \
+		--scoring_rfecv="$(SCORING)" \
+
 		--kwargs_json='{}' \
 		--output_dir=models/
 
