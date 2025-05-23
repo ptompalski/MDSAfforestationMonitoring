@@ -123,6 +123,10 @@ def split_interim_dataframe(interim_df: pd.DataFrame) -> dict:
     remote_sensing_df = interim_df[remote_sensing_cols].drop_duplicates()
     remote_sensing_df['ImgDate'] = pd.to_datetime(remote_sensing_df['ImgDate'])
     
+    # type conversion for consistency
+    remote_sensing_df['target'] = remote_sensing_df['target'].astype(float)
+    remote_sensing_df['Age'] = remote_sensing_df['Age'].astype(int)
+    
     return {
         'lookup_df':lookup_df,
         'remote_sensing_df': remote_sensing_df
@@ -219,7 +223,7 @@ def process_and_save_sequences(
         # save sequence as parquet file
         fname = f"{site_key['ID']}_{site_key['PixelID']}_{site_key['SrvvR_Date'].strftime('%Y-%m-%d')}.parquet"
         fnames.append(fname)
-        seq_out_dir.to_parquet(seq_out_dir/fname, index=False)
+        sequence_df.to_parquet(seq_out_dir/fname, index=False)
         
         # store row
         valid_indices.append(idx)
