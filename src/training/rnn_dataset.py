@@ -51,11 +51,18 @@ class AfforestationDataset(Dataset):
     ------
     A zero-filled tensor of shape (1, 10) is returned if the sequence file fails to load.
     """
-    def __init__(self, lookup_dir : str, seq_dir : str):
+    def __init__(
+            self, 
+            lookup_dir : str, 
+            seq_dir : str, 
+            site_cols : List[str],
+            seq_cols : List[str]
+        ):
+                
         self.original_lookup = pd.read_parquet(lookup_dir)
         self.seq_dir = seq_dir
-        self.site_cols = ['Density', 'Type_Conifer',
-                          'Type_Decidous', 'Type_Mixed', 'Age']
+        self.site_cols = site_cols
+        self.seq_cols = seq_cols
         self.reshuffle()
         
     def __len__(self):
@@ -128,7 +135,12 @@ def dataloader_wrapper(
     seq_dir : str,
     batch_size : int = 32,
     num_workers : int = 0,
-    pin_memory : bool = True
+    pin_memory : bool = True,
+    site_cols: List[str] = ['Density', 'Type_Conifer',
+                            'Type_Decidous', 'Type_Mixed', 'Age'],
+    seq_cols: List[str] = ['neg_cos_DOY', 'log_dt', 'NDVI', 'SAVI',
+                           'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR',
+                           'TCB', 'TCG', 'TCW']
 ):
     """
     Creates a PyTorch Dataset and DataLoader for batching satellite sequence data with site features.
