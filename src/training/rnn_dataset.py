@@ -39,3 +39,24 @@ def collate_fn(batch : List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
         'target' : torch.stack(target),
         'sequence_length' : torch.tensor(sequence_length, dtype=torch.int16)
     }
+
+
+def data_loader(
+    lookup_dir : str,
+    seq_dir : str,
+    batch_size : int = 32,
+    num_workers : int = 0,
+    pin_memory : bool = True
+):
+    dataset = AfforestationDataset(lookup_dir=lookup_dir, seq_dir=seq_dir)
+    loader = DataLoader(
+        dataset=dataset, 
+        batch_size=batch_size, 
+        shuffle=False, 
+        num_workers=num_workers, 
+        pin_memory=pin_memory, 
+        collate_fn=collate_fn
+    )
+    return dataset, loader
+
+
