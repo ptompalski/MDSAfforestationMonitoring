@@ -21,11 +21,13 @@ class AfforestationDataset(Dataset):
         Path to the Parquet file containing the site features, target values, and file references.
     seq_dir : str
         Directory containing the satellite data files. The 'file_name' column in the lookup table specifies the file to load for each row.
+    site_cols : List of str
+        List of columns in the lookup table to be used as site features.
+    seq_cols : List of str
+        List of columns in the sequence to be used as satellite features. `len(seq_cols)` should match the `input_size` for the rNN model.
 
     Attributes
     ----------
-    site_cols : List of str
-        List of column names in the lookup table to be used as site features.
     original_lookup : pd.DataFrame
         The full, unshuffled lookup DataFrame loading from the lookup parquet file.
     lookup : pd.DataFrame
@@ -40,9 +42,9 @@ class AfforestationDataset(Dataset):
     Returns
     -------
     Tuple[torch.Tensor, torch.Tensor, torch.Tensor]
-        - site_features : torch.Tensor of shape [5,]
+        - site_features : torch.Tensor of shape [num_site_features,]
             Site records.
-        - sequence : torch.Tensor of shape [seq_len, 10]
+        - sequence : torch.Tensor of shape [seq_len, input_size]
             Variable-length satellite data.
         - target : torch.Tensor of shape [1,]
             Survival rate.
@@ -66,13 +68,22 @@ class AfforestationDataset(Dataset):
         self.reshuffle()
         
     def __len__(self):
+        """
+        Return the number of samples in the dataset, that is the number of survival records in the lookup table.
+        """
         return len(self.lookup)
     
     def reshuffle(self):
+        """
+        Regenerates a randomised lookup table by shuffling samples within 'Age' groups.
+        """
         self.lookup = self.original_lookup.groupby(
-            'age').sample(frac=1, replace=False).reset_index(drop=True)
+            'Age').sample(frac=1, replace=False).reset_index(drop=True)
 
     def __getitem__(self, idx : int):
+        """
+        Load the satellite data and return a dictionary containing the site data, satellite data and target as Pytorch tensors.
+        """
         row = self.lookup.iloc[idx]
         seq_path = os.path.join(self.seq_dir, row['file_name'])
         site_features = torch.tensor(row[self.site_cols].values, dtype=torch.float32)
@@ -99,9 +110,9 @@ def collate_fn(batch : List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
     ----------
     batch : List of Tuple[torch.Tensor, torch.Tensor, torch.Tensor]
         A list of tuples where each tuple corresponds to a sample in the batch, containing:
-            - site_features : torch.Tensor of shape [5,]
+            - site_features : torch.Tensor of shape [num_site_features,]
                 Site records.
-            - sequence : torch.Tensor of shape [seq_len, 10]
+            - sequence : torch.Tensor of shape [seq_len, input_size]
                 Variable-length satellite data.
             - target : torch.Tensor of shape [1,]
                 Survival rate.
@@ -109,9 +120,9 @@ def collate_fn(batch : List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
     Returns
     --------
     Dict[str, torch.Tensor]
-        - site_features : torch.Tensor of shape [batch_size, 5]
+        - site_features : torch.Tensor of shape [batch_size, ]
             Stacked site records.
-        - sequence : torch.Tensor of shape [batch_size, max_seq_len, 10]
+        - sequence : torch.Tensor of shape [batch_size, max_seq_len, input_size]
             Padded satellite sequences.
         - target : torch.Tensor of shape [batch_size,]
             Stacked target values.
@@ -161,6 +172,10 @@ def dataloader_wrapper(
         Number of subprocesses to use for data loading.
     pin_memory : bool, default=True
         If True, data is copied into device/CUDA pinned memory before returning. 
+    site_cols : List of str, default=['Density', 'Type_Conifer', 'Type_Decidous', 'Type_Mixed', 'Age']
+        List of columns in the lookup table to be used as site features.
+    seq_cols : List of str, default=['neg_cos_DOY', 'log_dt', 'NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR', 'TCB', 'TCG', 'TCW']
+        List of columns in the sequence to be used as satellite features. `len(seq_cols)` should match the `input_size` for the rNN model.
 
     Returns
     -------
