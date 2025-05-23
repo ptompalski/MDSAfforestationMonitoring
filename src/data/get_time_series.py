@@ -124,8 +124,8 @@ def split_interim_dataframe(interim_df: pd.DataFrame) -> dict:
     remote_sensing_df['ImgDate'] = pd.to_datetime(remote_sensing_df['ImgDate'])
     
     # type conversion for consistency
-    remote_sensing_df['target'] = remote_sensing_df['target'].astype(float)
-    remote_sensing_df['Age'] = remote_sensing_df['Age'].astype(int)
+    lookup_df['target'] = lookup_df['target'].astype(float)
+    lookup_df['Age'] = lookup_df['Age'].astype(int)
     
     return {
         'lookup_df':lookup_df,
