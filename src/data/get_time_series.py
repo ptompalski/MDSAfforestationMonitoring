@@ -290,7 +290,7 @@ def main(input_path,output_seq_dir,norm_stats_path,output_lookup_path,compute_no
     if compute_norm_stats:
         # compute norm stats
         norm_stats = _get_summary_statistics(
-            density_col=split_df_dict['lookup_df']['Density']
+            density_col=split_df_dict['lookup_df']['Density'],
             tc_cols=split_df_dict['remote_sensing_df'][['TCW','TCG','TCB']]
         )
         # save to JSON file
