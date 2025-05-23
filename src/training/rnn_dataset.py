@@ -11,7 +11,7 @@ class AfforestationDataset(Dataset):
 
     This dataset:
     1. Loads a lookup table containing site records, target values, and the file names of associated satellite data stored as Parquet files.
-    2. Shuffles the lookup table within 'Age' groups to improve batching efficiency.
+    2. Shuffles the lookup table within 'Age' groups to enable randomised batches while minimising sequence padding.
     3. For each row in the lookup table, loads the corresponding variable-length satellite sequence.
     4. Returns a tuple containing site features, satellite sequence, and target value as torch tensors.
 
@@ -26,8 +26,16 @@ class AfforestationDataset(Dataset):
     ----------
     site_cols : List of str
         List of column names in the lookup table to be used as site features.
+    original_lookup : pd.DataFrame
+        The full, unshuffled lookup DataFrame loading from the lookup parquet file.
     lookup : pd.DataFrame
-        Shuffled lookup DataFrame grouped by 'Age' to reduce padding in batching.
+        A shuffled copy of the lookup table, regenerated when `reshuffled()` is called.
+        Samples are randomly shuffled within 'Age' groups to optimise batch efficiency.
+    
+    Methods
+    -------
+    reshuffle() : 
+        Regenerates a randomised lookup table by shuffling samples within 'Age' groups. Should be called at the start of each training epoch.
 
     Returns
     -------
@@ -41,18 +49,22 @@ class AfforestationDataset(Dataset):
 
     Notes
     ------
-    - A zero-filled tensor of shape (1, 10) is returned if the sequence file fails to load.
+    A zero-filled tensor of shape (1, 10) is returned if the sequence file fails to load.
     """
     def __init__(self, lookup_dir : str, seq_dir : str):
-        self.lookup = pd.read_parquet(
-            lookup_dir).groupby(['age']).sample(frac=1)
+        self.original_lookup = pd.read_parquet(lookup_dir)
         self.seq_dir = seq_dir
         self.site_cols = ['Density', 'Type_Conifer',
                           'Type_Decidous', 'Type_Mixed', 'Age']
+        self.reshuffle()
         
     def __len__(self):
         return len(self.lookup)
     
+    def reshuffle(self):
+        self.lookup = self.original_lookup.groupby(
+            'age').sample(frac=1, replace=False).reset_index(drop=True)
+
     def __getitem__(self, idx : int):
         row = self.lookup.iloc[idx]
         seq_path = os.path.join(self.seq_dir, row['file_name'])
