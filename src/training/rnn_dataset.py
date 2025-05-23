@@ -118,6 +118,38 @@ def data_loader(
     num_workers : int = 0,
     pin_memory : bool = True
 ):
+    """
+    Creates a PyTorch Dataset and DataLoader for batching satellite sequence data with site features.
+
+    This function:
+    1. Initializes a custom Dataset that loads site records and their corresponding satellite records.
+    2. Initiates a DataLoader using a custom collate function to handle variable-length sequences.
+ 
+    Parameters
+    ----------
+    lookup_dir : str
+        Path to the Parquet file containing the lookup table.
+    seq_dir : str
+        Directory containing the satellite data files referenced in the lookup table.
+    batch_size : int, default=32
+        Number of samples per batch.
+    num_worker : int, default=0
+        Number of subprocesses to use for data loading.
+    pin_memory : bool, default=True
+        If True, data is copied into device/CUDA pinned memory before returning. 
+
+    Returns
+    -------
+    Tuple[Dataset, DataLoader]
+        - dataset : Dataset
+            Instantiated custom Dataset for site and satellite data.
+        - loader : DataLoader
+            PyTorch DataLoader with batching and custom collation for variable-length sequences.
+
+    Notes
+    -----
+    - Shuffling is disabled to preserve sample order for efficient dynamic padding of variable-length sequences.
+    """
     dataset = AfforestationDataset(lookup_dir=lookup_dir, seq_dir=seq_dir)
     loader = DataLoader(
         dataset=dataset, 
