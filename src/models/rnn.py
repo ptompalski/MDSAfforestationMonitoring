@@ -43,7 +43,7 @@ class RNNSurvivalPredictor(nn.Module):
         self.linear = nn.Linear(site_features_size + hidden_size, 1)
         self.dropout = nn.Dropout(dropout_rate)
 
-    def forward(self, sequence, sequence_length, site_features):
+    def forward(self, sequence, sequence_length, site_features, concat_features=False):
         batch_size = sequence.size(0)
         h0 = torch.zeros(self.rnn_layers, batch_size, self.rnn_hidden_size).to(sequence.device)
 
@@ -60,7 +60,7 @@ class RNNSurvivalPredictor(nn.Module):
             packed_output, hn = self.rnn(packed_input, h0)
 
         last_hidden_state = hn[-1]
-        concatenated_features = torch.cat((last_hidden_state, site_features), dim=1)
+        concatenated_features = torch.cat((last_hidden_state, site_features), dim=1) if concat_features else last_hidden_state
         input_dropped = self.dropout(concatenated_features)
         hidden_output = self.activation(input_dropped)
         hidden_dropped = self.dropout(hidden_output)
