@@ -89,9 +89,9 @@ class AfforestationDataset(Dataset):
         site_features = torch.tensor(row[self.site_cols].values, dtype=torch.float32)
         target = torch.tensor(row['target'], dtype=torch.float32)
         try:
-            sequence = torch.tensor(pd.read_parquet(seq_path), dtype=torch.float32)
-        except:
-            sequence = torch.zeros((1, 10), dtype=torch.float32)
+            sequence = torch.tensor(pd.read_parquet(seq_path, columns=self.seq_cols), dtype=torch.float32)
+        except FileNotFoundError:
+            sequence = torch.zeros((1, len(self.seq_cols)), dtype=torch.float32)
         return site_features, sequence, target
          
 
@@ -184,12 +184,32 @@ def dataloader_wrapper(
             Instantiated custom Dataset for site and satellite data.
         - loader : DataLoader
             PyTorch DataLoader with batching and custom collation for variable-length sequences.
+    
+    Raises
+    ------
+    ValueError
+        If any of the following conditions occur:
+        - `lookup_dir` or `seq_dir` is not a string.
+        - `site_cols` or `seq_cols` is not a list of strings.
 
     Notes
     -----
     - Shuffling is disabled to preserve sample order for efficient dynamic padding of variable-length sequences.
     """
-    dataset = AfforestationDataset(lookup_dir=lookup_dir, seq_dir=seq_dir)
+    # Exception handling
+    for name, var, exp_type in [
+        ("lookup_dir", lookup_dir, str),
+        ("seq_dir", seq_dir, str),
+        ("site_cols", site_cols, list),
+        ("seq_cols", seq_cols, list),
+        ]:
+        if not isinstance(var, exp_type):
+            raise ValueError(f'"{name}" expects {exp_type.__name__}, got {type(var).__name__}')
+        if exp_type == list and not all(isinstance(col, str) for col in var):
+            error_type = set(type(col).__name__ for col in var)
+            raise ValueError(f"'{name}' expects a list of str, got {error_type}")
+    
+    dataset = AfforestationDataset(lookup_dir=lookup_dir, seq_dir=seq_dir, site_cols=site_cols, seq_cols=seq_cols)
     loader = DataLoader(
         dataset=dataset, 
         batch_size=batch_size, 
