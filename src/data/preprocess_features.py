@@ -79,7 +79,7 @@ def data_cleaning(df):
     
     # Drop unnecessary columns
 
-    df = df.drop(['NmbrPlO', 'NmbrPlR', 'NmbrPlT', 'prevUse', 'SpcsCmp','PlantDt','Year', 'DOY'], axis=1)
+    df = df.drop(['NmbrPlO', 'NmbrPlR', 'NmbrPlT', 'prevUse', 'SpcsCmp','PlantDt','Year'], axis=1)
 
 
     return df

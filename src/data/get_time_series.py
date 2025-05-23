@@ -193,8 +193,9 @@ def process_and_save_sequences(
         mu, sigma = norm_stats['mean'][col], norm_stats['std'][col]
         remote_sensing_df[col] = (remote_sensing_df[col] - mu) / sigma
         
-    # iterate through rows and get sequences for each. 
+    # iterate through rows and get sequences and filenames for each.
     valid_indices = []
+    fnames = []
     for idx, row in lookup_df.iterrows():
         
         # get key for site
@@ -203,7 +204,7 @@ def process_and_save_sequences(
         site_key['SrvvR_Date'] = pd.to_datetime(site_key['SrvvR_Date'])
         
         # get raw sequence, do not add to lookup table if no sequence found
-        # NOTE: in my EDA on training date it seems that ~12,500 records do not have matching sequences.
+        # NOTE: in my EDA on training data it seems that ~12,500 records do not have matching sequences.
         sequence_df = _get_raw_sequence(site_key, remote_sensing_df)
         if sequence_df is None:
             continue
@@ -218,6 +219,7 @@ def process_and_save_sequences(
         
         # save sequence as parquet file
         fname = f"{site_key['ID']}_{site_key['PixelID']}_{site_key['SrvvR_Date'].strftime('%Y-%m-%d')}.parquet"
+        fnames.append(fname)
         seq_out_dir.to_parquet(seq_out_dir/fname, index=False)
         
         # store row
@@ -236,10 +238,18 @@ def process_and_save_sequences(
     ohe_type = pd.get_dummies(lookup_df['Type'], prefix='Type',dtype=int).drop(columns=['Type_Mixed'])
     lookup_df = pd.concat([lookup_df.drop(columns='Type'), ohe_type], axis=1)
     
-    # save lookup table
+    # create filename column for lookup table and save
+    lookup_df['filename'] = pd.Series(fnames)
     lookup_df.to_parquet(lookup_out_path, index=False)
     
     return
+
+@click.command()
+@click.option('--input_path')
+@click.option('--output_seq_dir')
+@click.option('--norm_stats_path')
+@click.option('--output_lookup_path')
+@click.option('--compute_norm_stats')
 
 def main():
     '''
@@ -247,6 +257,7 @@ def main():
     '''
     
     # split interim data into remote sensing and lookup table
+    
     
     # if working on training data and norm_stats.json doesnt exist, compute and save it.
     
