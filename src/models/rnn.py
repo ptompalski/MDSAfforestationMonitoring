@@ -61,10 +61,10 @@ class RNNSurvivalPredictor(nn.Module):
 
         last_hidden_state = hn[-1]
         concatenated_features = torch.cat((last_hidden_state, site_features), dim=1)
-        ffn_input_dropped = self.dropout(concatenated_features)
-        ffn_hidden_output = self.activation_ffn(self.ffn_layer1(ffn_input_dropped))
-        ffn_hidden_dropped = self.dropout(ffn_hidden_output)
-        predicted_value_raw = self.ffn_output_layer(ffn_hidden_dropped)
+        input_dropped = self.dropout(concatenated_features)
+        hidden_output = self.activation(input_dropped)
+        hidden_dropped = self.dropout(hidden_output)
+        output = self.linear(hidden_dropped)
 
-        clamped_output = torch.clamp(predicted_value_raw, 0, 100)
-        return clamped_output
+        clamped_output = torch.clamp(output, 0, 100)
+        return clamped_output.squeeze()
