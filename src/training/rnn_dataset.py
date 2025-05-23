@@ -26,3 +26,16 @@ class AfforestationDataset(Dataset):
         except:
             sequence = torch.zeros((1, 10), dtype=torch.float32)
         return site_features, sequence, target
+         
+
+def collate_fn(batch : List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
+    batch = sorted(batch, key=lambda x: len(x[1]), reverse=True)
+    site_features, sequence, target = zip(*batch)
+    sequence_length = [len(i) for i in sequence]
+    sequence = pad_sequence(sequence, batch_first=True)
+    return {
+        'site_features' : torch.stack(site_features),
+        'sequence' : sequence,
+        'target' : torch.stack(target),
+        'sequence_length' : torch.tensor(sequence_length, dtype=torch.int16)
+    }
