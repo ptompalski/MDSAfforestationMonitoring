@@ -26,12 +26,16 @@ class RNNSurvivalPredictor(nn.Module):
     """
     def __init__(self, input_size, hidden_size,
                  site_features_size, rnn_type="GRU",
-                 num_layers=1, dropout_rate=0.2):
+                 num_layers=1, dropout_rate=0.2, concat_features=False):
         super(RNNSurvivalPredictor, self).__init__()
 
         self.rnn_layers = num_layers
         self.rnn_hidden_size = hidden_size
         self.rnn_type = rnn_type
+        self.concat_features = concat_features
+
+        if rnn_type not in ['GRU', 'LSTM']:
+            raise ValueError("rnn_type must be either 'GRU' or 'LSTM'")
 
         if rnn_type == 'GRU':
             self.rnn = nn.GRU(input_size, hidden_size, num_layers=num_layers,
@@ -40,10 +44,10 @@ class RNNSurvivalPredictor(nn.Module):
             self.rnn = nn.LSTM(input_size, hidden_size, num_layers=num_layers,
                                batch_first=True, dropout=dropout_rate if num_layers > 1 else 0)
         self.activation = nn.ReLU()
-        self.linear = nn.Linear(site_features_size + hidden_size, 1)
+        self.linear = nn.Linear(site_features_size + hidden_size if self.concat_features else hidden_size, 1)
         self.dropout = nn.Dropout(dropout_rate)
 
-    def forward(self, sequence, sequence_length, site_features, concat_features=False):
+    def forward(self, sequence, sequence_length, site_features):
         batch_size = sequence.size(0)
         h0 = torch.zeros(self.rnn_layers, batch_size, self.rnn_hidden_size).to(sequence.device)
 
@@ -60,7 +64,7 @@ class RNNSurvivalPredictor(nn.Module):
             packed_output, hn = self.rnn(packed_input, h0)
 
         last_hidden_state = hn[-1]
-        concatenated_features = torch.cat((last_hidden_state, site_features), dim=1) if concat_features else last_hidden_state
+        concatenated_features = torch.cat((last_hidden_state, site_features), dim=1) if self.concat_features else last_hidden_state
         input_dropped = self.dropout(concatenated_features)
         hidden_output = self.activation(input_dropped)
         hidden_dropped = self.dropout(hidden_output)
