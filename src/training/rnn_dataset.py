@@ -111,7 +111,7 @@ def collate_fn(batch : List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
     }
 
 
-def data_loader(
+def dataloader_wrapper(
     lookup_dir : str,
     seq_dir : str,
     batch_size : int = 32,
