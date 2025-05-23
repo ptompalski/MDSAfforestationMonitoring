@@ -43,18 +43,18 @@ class RNNSurvivalPredictor(nn.Module):
         self.linear = nn.Linear(site_features_size + hidden_size, 1)
         self.dropout = nn.Dropout(dropout_rate)
 
-    def forward(self, x, site_features, sequence_lengths):
-        batch_size = x.size(0)
-        h0 = torch.zeros(self.rnn_layers, batch_size, self.rnn_hidden_size).to(x.device)
+    def forward(self, sequence, sequence_length, site_features):
+        batch_size = sequence.size(0)
+        h0 = torch.zeros(self.rnn_layers, batch_size, self.rnn_hidden_size).to(sequence.device)
 
         packed_input = rnn_utils.pack_padded_sequence(
-                        x,
-                        sequence_lengths.cpu().long(),
+                        sequence,
+                        sequence_length.cpu().long(),
                         batch_first=True,
                         enforce_sorted=False)
 
         if self.rnn_type == 'LSTM':
-            c0 = torch.zeros(self.rnn_layers, batch_size, self.rnn_hidden_size).to(x.device)
+            c0 = torch.zeros(self.rnn_layers, batch_size, self.rnn_hidden_size).to(sequence.device)
             packed_output, (hn, cn) = self.rnn(packed_input, (h0, c0))
         else:
             packed_output, hn = self.rnn(packed_input, h0)
