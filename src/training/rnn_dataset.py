@@ -66,6 +66,39 @@ class AfforestationDataset(Dataset):
          
 
 def collate_fn(batch : List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
+    """
+    Collate function for batching variable-length satellite sequences with their corresponding site features and targets.
+
+    This function:
+    1. Sorts the batch in descending order by sequence length.
+    2. Calculate the length of each sequence.
+    3. Pads the sequences to the maximum seuquence length in the batch.
+    4. Stacks site features and target tensors.
+    5. Returns a dictionary with keys: `site_features`, `sequence`, `target` and `sequence_length`.
+
+    Parameters
+    ----------
+    batch : List of Tuple[torch.Tensor, torch.Tensor, torch.Tensor]
+        A list of tuples where each tuple corresponds to a sample in the batch, containing:
+            - site_features : torch.Tensor of shape [5,]
+                Site records.
+            - sequence : torch.Tensor of shape [seq_len, 10]
+                Variable-length satellite data.
+            - target : torch.Tensor of shape [1,]
+                Survival rate.
+
+    Returns
+    --------
+    Dict[str, torch.Tensor]
+        - site_features : torch.Tensor of shape [batch_size, 5]
+            Stacked site records.
+        - sequence : torch.Tensor of shape [batch_size, max_seq_len, 10]
+            Padded satellite sequences.
+        - target : torch.Tensor of shape [batch_size,]
+            Stacked target values.
+        - sequence_length : torch.Tensor of shape [batch_size,]
+            Sequence lengths before padding.
+    """
     batch = sorted(batch, key=lambda x: len(x[1]), reverse=True)
     site_features, sequence, target = zip(*batch)
     sequence_length = [len(i) for i in sequence]
