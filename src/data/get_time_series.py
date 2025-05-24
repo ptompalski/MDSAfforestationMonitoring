@@ -288,9 +288,11 @@ def main(input_path,output_seq_dir,norm_stats_path,output_lookup_path,compute_no
             f"Provide a correct path or rerun with --compute-norm-stats flag."
         )
     
+    click.echo('Splitting into lookup and remote sensing dataframe...')
     # split interim data into remote sensing and lookup table
     split_df_dict = split_interim_dataframe(pd.read_parquet(input_path))
     
+    click.echo('Compute summary statistics...')
     if compute_norm_stats:
         # compute norm stats
         norm_stats = _get_summary_statistics(
@@ -307,7 +309,7 @@ def main(input_path,output_seq_dir,norm_stats_path,output_lookup_path,compute_no
             norm_stats = json.load(f)
         click.echo(f"Loaded normalization statistics from {norm_stats_path}")
         
-    click.echo('Beginning processing of sequence data...')
+    click.echo('Processing sequence data...')
     # process and save time series data.
     process_and_save_sequences(
         **split_df_dict,
