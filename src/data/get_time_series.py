@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 import json
-from .pivot_data import pivot_df
+from src.data.pivot_data import pivot_df
 import click
 from pathlib import Path
 
