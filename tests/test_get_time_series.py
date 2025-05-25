@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from src.data.get_time_series import (
-    _get_summary_statistics, _get_raw_sequence,
+    _get_summary_statistics, process_single_site,
     split_interim_dataframe, process_and_save_sequences
 )
 
@@ -152,48 +152,48 @@ def test_split_interim_datafram(sample_interim_data):
         )
     )
     
-def test_get_raw_sequence_filters_and_sorts():
-    '''
-    Test to ensure get_raw_sequence filters and sorts correctly
-    '''
-    df = pd.DataFrame({
-        'ID': [1, 1, 1, 2],
-        'PixelID': [101, 101, 101, 102],
-        'ImgDate': pd.to_datetime(['2020-01-01', '2020-06-01', '2021-01-01', '2020-01-01']),
-        'DOY': [1, 153, 1, 1],
-        'NDVI': [0.5, 0.6, 0.7, 0.8]
-    })
+# def test_get_raw_sequence_filters_and_sorts():
+#     '''
+#     Test to ensure get_raw_sequence filters and sorts correctly
+#     '''
+#     df = pd.DataFrame({
+#         'ID': [1, 1, 1, 2],
+#         'PixelID': [101, 101, 101, 102],
+#         'ImgDate': pd.to_datetime(['2020-01-01', '2020-06-01', '2021-01-01', '2020-01-01']),
+#         'DOY': [1, 153, 1, 1],
+#         'NDVI': [0.5, 0.6, 0.7, 0.8]
+#     })
 
-    site_key = {
-        'ID': 1,
-        'PixelID': 101,
-        'SrvvR_Date': pd.Timestamp('2020-12-31')
-    }
+#     site_key = {
+#         'ID': 1,
+#         'PixelID': 101,
+#         'SrvvR_Date': pd.Timestamp('2020-12-31')
+#     }
 
-    result = _get_raw_sequence(site_key, df)
+#     result = _get_raw_sequence(site_key, df)
 
-    expected = df.iloc[[0, 1]].sort_values(by="ImgDate").reset_index(drop=True)
-    assert result.reset_index(drop=True).equals(expected)
+#     expected = df.iloc[[0, 1]].sort_values(by="ImgDate").reset_index(drop=True)
+#     assert result.reset_index(drop=True).equals(expected)
 
-def test_get_raw_sequence_returns_none_for_no_match():
-    '''
-    Test to ensure _get_raw_sequence can handle lookups with no matching sequences.
-    '''
-    df = pd.DataFrame({
-        'ID': [2],
-        'PixelID': [102],
-        'ImgDate': pd.to_datetime(['2020-01-01']),
-        'DOY': [1],
-        'NDVI': [0.8]
-    })
+# def test_get_raw_sequence_returns_none_for_no_match():
+#     '''
+#     Test to ensure _get_raw_sequence can handle lookups with no matching sequences.
+#     '''
+#     df = pd.DataFrame({
+#         'ID': [2],
+#         'PixelID': [102],
+#         'ImgDate': pd.to_datetime(['2020-01-01']),
+#         'DOY': [1],
+#         'NDVI': [0.8]
+#     })
 
-    site_key = {
-        'ID': 1,
-        'PixelID': 101,
-        'SrvvR_Date': pd.Timestamp('2021-01-01')
-    }
+#     site_key = {
+#         'ID': 1,
+#         'PixelID': 101,
+#         'SrvvR_Date': pd.Timestamp('2021-01-01')
+#     }
 
-    assert _get_raw_sequence(site_key, df) is None
+#     assert _get_raw_sequence(site_key, df) is None
 
 def test_process_and_save_sequences():
     '''

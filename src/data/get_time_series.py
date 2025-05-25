@@ -5,6 +5,10 @@ import json
 from src.data.pivot_data import pivot_df
 import click
 from pathlib import Path
+from functools import partial
+from multiprocessing import Pool, cpu_count
+from tqdm import tqdm
+from typing import Tuple, Union
 
 def _get_summary_statistics(density_col: pd.Series, tc_cols: pd.DataFrame) -> dict:
     """
@@ -43,34 +47,42 @@ def _get_summary_statistics(density_col: pd.Series, tc_cols: pd.DataFrame) -> di
     return stats_dict
 
 
-def _get_raw_sequence(
-    site_key: dict, 
-    remote_sensing_df: pd.DataFrame
-) -> pd.DataFrame:
+def process_single_site(
+    row: Tuple[int, pd.Series],
+    remote_sensing_df: pd.DataFrame,
+    seq_out_dir: Union[str, Path]
+) -> Union[Tuple[int, str], None]:
     """
-    Retrieve remote sensing records for a given site-pixel-date tuple.
+    Process a single site record and generate a remote sensing sequence file.
 
-    Filters the imaging dataset to all records for a specific (ID, PixelID)
-    where ImgDate ≤ SrvvR_Date.
+    For the given survival record (by ID, PixelID, SrvvR_Date), this function:
+    - Filters the remote sensing dataset up to the survey date
+    - Computes time-based features (log time delta, cosine-transformed DOY)
+    - Saves the sequence as a Parquet file to the specified output directory
 
     Parameters
     ----------
-    site_key : dict
-        Unique identifiers of one survival record in the lookup table. Keys are:
-        - ID
-        - PixelID
-        - SrvvR_Date
+    row : Tuple[int, pd.Series]
+        A tuple where:
+        - The first element is the index of the row in the original lookup DataFrame
+        - The second element is the row itself as a pandas Series
 
     remote_sensing_df : pd.DataFrame
-        Full DataFrame of remote sensing records, must include:
-        'ID', 'PixelID', 'ImgDate', 'DOY', and vegetation indices.
+        Full remote sensing dataset containing at least the following columns:
+        'ID', 'PixelID', 'ImgDate', 'DOY', and vegetation indices including 'TCW', 'TCG', 'TCB'.
+
+    seq_out_dir : Union[str, Path]
+        Directory where the generated sequence Parquet file should be saved.
 
     Returns
     -------
-    pd.DataFrame
-        Sorted subset of imaging data for that record (ascending by ImgDate).
-        Returns None if no matching remote sensing data.
-    """    
+    Union[Tuple[int, str], None]
+        Returns (row index, filename) if a sequence was successfully created,
+        otherwise returns None if no matching remote sensing records were found.
+    """
+    idx, row = row
+    site_key = row[["ID", "PixelID", "SrvvR_Date"]].to_dict()
+    site_key["SrvvR_Date"] = pd.to_datetime(site_key["SrvvR_Date"])
     
     # apply filtering by ID, PixelID and image date
     filter_logic = (
@@ -78,14 +90,25 @@ def _get_raw_sequence(
     (remote_sensing_df['PixelID'] == site_key['PixelID']) &
     (remote_sensing_df['ImgDate'] <= site_key['SrvvR_Date']))
     
-    raw_sequence = remote_sensing_df[filter_logic]
+    sequence_df = remote_sensing_df[filter_logic].copy()
     
     # if no matching rows, return None 
-    if raw_sequence.empty:
+    if sequence_df.empty:
         return None
-    else:
-        return raw_sequence.sort_values(by='ImgDate')
+    
+    # Process time-based features
+    time_delta = (site_key["SrvvR_Date"] - sequence_df["ImgDate"]).dt.days
+    sequence_df["log_dt"] = np.log1p(time_delta)
+    sequence_df["neg_cos_DOY"] = -np.cos(2 * np.pi * sequence_df["DOY"] / 365)
+    sequence_df = sequence_df.drop(columns=["DOY"])
 
+    # get filename and store sequence data
+    fname = f"{site_key['ID']}_{site_key['PixelID']}_{site_key['SrvvR_Date'].strftime('%Y-%m-%d')}.parquet"
+    out_path = seq_out_dir/ fname
+    sequence_df.to_parquet(out_path, index=False)
+
+    return idx, fname
+    
 def split_interim_dataframe(interim_df: pd.DataFrame) -> dict:
     """
     Split the interim feature-engineered DataFrame into:
@@ -196,55 +219,44 @@ def process_and_save_sequences(
         mu, sigma = norm_stats['mean'][col], norm_stats['std'][col]
         remote_sensing_df[col] = (remote_sensing_df[col] - mu) / sigma
         
-    # iterate through rows and get sequences and filenames for each.
-    valid_indices = []
-    fnames = []
-    for idx, row in lookup_df.iterrows():
-        
-        # get key for site
-        site_key = row[['ID','PixelID','SrvvR_Date']].to_dict()
-        # for some reason type converts when I store in dict, need to convert back.
-        site_key['SrvvR_Date'] = pd.to_datetime(site_key['SrvvR_Date'])
-        
-        # get raw sequence, do not add to lookup table if no sequence found
-        # NOTE: in my EDA on training data it seems that ~12,500 records do not have matching sequences.
-        sequence_df = _get_raw_sequence(site_key, remote_sensing_df)
-        if sequence_df is None:
-            continue
-        
-        # Feature engineering time columns
-        time_delta = (site_key['SrvvR_Date'] - sequence_df['ImgDate']).dt.days
-        sequence_df['log_dt'] = np.log1p(time_delta)
-        sequence_df['neg_cos_DOY'] = -np.cos(2 * np.pi * sequence_df['DOY'] / 365)
-        
-        # drop DOY column
-        sequence_df = sequence_df.drop(columns=['DOY'])  #NOTE: FIX preprocess_features.py SO WE KEEP DOY
-        
-        # save sequence as parquet file
-        fname = f"{site_key['ID']}_{site_key['PixelID']}_{site_key['SrvvR_Date'].strftime('%Y-%m-%d')}.parquet"
-        fnames.append(fname)
-        sequence_df.to_parquet(seq_out_dir/fname, index=False)
-        
-        # store row
-        valid_indices.append(idx)
-        
-    # filter lookup table for rows with sequences
-    lookup_df = lookup_df.iloc[valid_indices]
+    # Setup multiprocessing
+    args = [(idx, row) for idx, row in lookup_df.iterrows()]
     
-    # Normalize Density
-    lookup_df['Density'] = (
-        lookup_df['Density'] - norm_stats['mean']['Density']
-    ) / norm_stats['std']['Density']
-    
-    # one-hot encode Type variable, drop one redundant column to reduce dimension (might help with less model parameters later!)
-    # Mixed can be treated as reference category.
-    ohe_type = pd.get_dummies(lookup_df['Type'], prefix='Type',dtype=int).drop(columns=['Type_Mixed'])
-    lookup_df = pd.concat([lookup_df.drop(columns='Type'), ohe_type], axis=1)
-    
-    # create filename column for lookup table and save
-    lookup_df['filename'] = pd.Series(fnames)
-    lookup_df.to_parquet(lookup_out_path, index=False)
+    # wrapper to only expose row as input
+    func = partial(
+        process_single_site,
+        remote_sensing_df=remote_sensing_df,
+        seq_out_dir=seq_out_dir
+    )
 
+    # use multiprocessing to get sequences for each row in lookup table
+    with Pool(cpu_count()) as pool:
+        results = list(
+            tqdm(
+                pool.imap_unordered(func, args), 
+                total=len(args), 
+                desc="Processing sequences"
+                )
+            )
+
+    # filter lookup table rows with no rows
+    valid_results = [res for res in results if res is not None]
+    valid_indices, fnames = zip(*valid_results) if valid_results else ([], [])
+
+    # normalize density column
+    filtered_lookup = lookup_df.iloc[list(valid_indices)].copy()
+    filtered_lookup["Density"] = (
+        filtered_lookup["Density"] - norm_stats["mean"]["Density"]
+    ) / norm_stats["std"]["Density"]
+
+    # One-hot encoding of Type
+    ohe_type = pd.get_dummies(filtered_lookup["Type"], prefix="Type", dtype=int).drop(columns=["Type_Mixed"], errors="ignore")
+    filtered_lookup = pd.concat([filtered_lookup.drop(columns="Type"), ohe_type], axis=1)
+
+    # add filename column to lookup table
+    filtered_lookup["filename"] = pd.Series(fnames)
+    filtered_lookup.to_parquet(lookup_out_path, index=False)
+      
 @click.command()
 @click.option(
     '--input_path', type=click.Path(exists=True,dir_okay=False), required=True,
