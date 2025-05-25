@@ -9,6 +9,7 @@ from functools import partial
 from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
 from typing import Tuple, Union
+import sys
 
 def _get_summary_statistics(density_col: pd.Series, tc_cols: pd.DataFrame) -> dict:
     """
@@ -235,7 +236,8 @@ def process_and_save_sequences(
             tqdm(
                 pool.imap_unordered(func, args), 
                 total=len(args), 
-                desc="Processing sequences"
+                desc="Processing sequences",
+                file=sys.stdout
                 )
             )
 

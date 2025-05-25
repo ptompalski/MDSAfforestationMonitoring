@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=11:00:00
-#SBATCH --account=st-alexro+                   
+#SBATCH --account=st-alexrod6-1            
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=10                           # 10 CPUs for multiprocessing           
@@ -15,9 +15,6 @@
 module load gcc
 module load miniconda3
 
-# Activate your conda environment
-conda activate mds-afforest-dev
-
 # Define a timestamped scratch run directory
 TS=$(date +%s)
 SCRATCH_RUN_DIR=/scratch/st-alexrod6-1/$USER/afforest_run_$TS
@@ -31,5 +28,8 @@ cd "$SCRATCH_RUN_DIR"
 # Make sure the logs directory exists for SLURM output files
 mkdir -p logs
 
+# go to root of repo
+cd "$SCRATCH_RUN_DIR/MDSAfforestationMonitoring"
+
 # Run Makefile command
-make time_series_train_data
+conda run -n mds-afforest-dev make time_series_train_data
