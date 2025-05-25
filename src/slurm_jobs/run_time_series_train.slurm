@@ -15,6 +15,9 @@
 module load gcc
 module load miniconda3
 
+eval "$(conda shell.bash hook)"
+conda activate mds-afforest-dev
+
 # Define a timestamped scratch run directory
 TS=$(date +%s)
 SCRATCH_RUN_DIR=/scratch/st-alexrod6-1/$USER/afforest_run_$TS
@@ -32,4 +35,4 @@ mkdir -p logs
 cd "$SCRATCH_RUN_DIR/MDSAfforestationMonitoring"
 
 # Run Makefile command
-conda run -n mds-afforest-dev make time_series_train_data
+make time_series_train_data
