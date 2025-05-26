@@ -17,10 +17,10 @@ class AfforestationDataset(Dataset):
 
     Parameters
     ----------
-    lookup_dir : str
+    lookup_dir : str | os.PathLike
         Path to the Parquet file containing the site features, target values, and file references.
-    seq_dir : str
-        Directory containing the satellite data files. The 'file_name' column in the lookup table specifies the file to load for each row.
+    seq_dir : str | os.PathLike
+        Directory containing the satellite data files. The 'filename' column in the lookup table specifies the file to load for each row.
     site_cols : List of str
         List of columns in the lookup table to be used as site features.
     seq_cols : List of str
@@ -54,13 +54,13 @@ class AfforestationDataset(Dataset):
     A zero-filled tensor of shape (1, 10) is returned if the sequence file fails to load.
     """
     def __init__(
-            self, 
-            lookup_dir : str, 
-            seq_dir : str, 
-            site_cols : List[str],
-            seq_cols : List[str]
-        ):
-                
+        self,
+        lookup_dir: str | os.PathLike,
+        seq_dir: str | os.PathLike,
+        site_cols: List[str],
+        seq_cols: List[str]
+    ):
+
         self.original_lookup = pd.read_parquet(lookup_dir)
         self.seq_dir = seq_dir
         self.site_cols = site_cols
@@ -142,11 +142,11 @@ def collate_fn(batch : List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
 
 
 def dataloader_wrapper(
-    lookup_dir : str,
-    seq_dir : str,
-    batch_size : int = 32,
-    num_workers : int = 0,
-    pin_memory : bool = True,
+    lookup_dir: str | os.PathLike,
+    seq_dir: str | os.PathLike,
+    batch_size: int = 32,
+    num_workers: int = 0,
+    pin_memory: bool = True,
     site_cols: List[str] = ['Density', 'Type_Conifer',
                             'Type_Decidous', 'Type_Mixed', 'Age'],
     seq_cols: List[str] = ['DOY', 'neg_cos_DOY', 'log_dt', 'NDVI', 'SAVI',
@@ -162,9 +162,9 @@ def dataloader_wrapper(
  
     Parameters
     ----------
-    lookup_dir : str
+    lookup_dir : str | os.PathLike
         Path to the Parquet file containing the lookup table.
-    seq_dir : str
+    seq_dir : str | os.PathLike
         Directory containing the satellite data files referenced in the lookup table.
     batch_size : int, default=32
         Number of samples per batch.
@@ -189,7 +189,7 @@ def dataloader_wrapper(
     ------
     ValueError
         If any of the following conditions occur:
-        - `lookup_dir` or `seq_dir` is not a string.
+        - `lookup_dir` or `seq_dir` is not a string or PathLike objects.
         - `site_cols` or `seq_cols` is not a list of strings.
 
     Notes
@@ -198,13 +198,14 @@ def dataloader_wrapper(
     """
     # Exception handling
     for name, var, exp_type in [
-        ("lookup_dir", lookup_dir, str),
-        ("seq_dir", seq_dir, str),
+        ("lookup_dir", lookup_dir, (str, os.PathLike)),
+        ("seq_dir", seq_dir, (str, os.PathLike)),
         ("site_cols", site_cols, list),
         ("seq_cols", seq_cols, list),
         ]:
         if not isinstance(var, exp_type):
-            raise ValueError(f'"{name}" expects {exp_type.__name__}, got {type(var).__name__}')
+            raise ValueError(
+                f'"{name}" expects {exp_type}, got {type(var).__name__}')
         if exp_type == list and not all(isinstance(col, str) for col in var):
             error_type = set(type(col).__name__ for col in var)
             raise ValueError(f"'{name}' expects a list of str, got {error_type}")
