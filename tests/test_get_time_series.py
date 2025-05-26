@@ -76,7 +76,7 @@ def sample_remote_sensing_data():
     remote_df = pd.DataFrame({
         'ID': [1,1,1,1,2,3],
         'PixelID': ['1_102','1_101','1_101','1_101','2_102','3_103'],
-        'ImgDate': pd.to_datetime(['2019-01-01','2020-05-01','2020-06-01','2020-06-02','2019-01-01','2019-01-01']),
+        'ImgDate': pd.to_datetime(['2019-01-01','2020-05-01','2020-06-01','2020-06-02','2024-01-01','2019-01-01']),
         'NDVI':  [0.3,0.3,0.3,0.3,0.3,0.3],
         'SAVI':  [0.3,0.3,0.3,0.3,0.3,0.3],
         'MSAVI': [0.3,0.3,0.3,0.3,0.3,0.3],
@@ -202,7 +202,7 @@ def test_split_interim_datafram(sample_interim_data):
         )
     )
 
-def test_process_single_site_with_records(sample_lookup_data,sample_remote_sensing_data,sample_norm_stats):
+def test_process_single_site_with_records(sample_lookup_data,sample_remote_sensing_data):
     '''
     Test to ensure records are filtered and normalized correctly if sequences exist for a site
     '''
@@ -249,6 +249,28 @@ def test_process_single_site_with_records(sample_lookup_data,sample_remote_sensi
     # get rid of tmp directory once finished 
     shutil.rmtree(tmp_output_dir)
     
+def test_process_single_site_no_records(sample_lookup_data,sample_remote_sensing_data):
+    '''
+    Test to ensure process_single_site correctly handles lookup rows with no valid sequence data.
+    '''
+     #Setup temporary output paths
+    tmp_output_dir = Path('tmp')
+    tmp_output_dir.mkdir(exist_ok=True)
+    
+    # obtain a row and data with remote sensing data outside of time range
+    row_no_sequences = sample_lookup_data.iloc[1]
+    test_group_df = sample_remote_sensing_data.query("ID == 2 and PixelID == '2_102'")
+    
+    # get output, should be None as the matching record is out of time range
+    output = process_single_site(
+        row=(1,row_no_sequences),
+        group_df=test_group_df,
+        seq_out_dir=tmp_output_dir
+    )
+    assert output is None
+    
+    # get rid of tmp directory once finished 
+    shutil.rmtree(tmp_output_dir)
 
 def test_process_and_save_sequences():
     '''
