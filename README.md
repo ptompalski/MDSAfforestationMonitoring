@@ -49,7 +49,7 @@ conda env create -f environment.yml
 After creating the environment, activate it using:
 
 ```bash
-conda activate mds-afforestation-monitoring
+conda activate mds-afforest
 ```
 
 ### Running the Scripts
@@ -82,6 +82,8 @@ Note: some scripts may require additional arguments. You can check the `Makefile
   - Calculates the threshold as a percentage (e.g., 0.7 becomes 70). This is used for naming directories or files.
 
 ### Feature Selection Parameters
+
+Note that these variables are specific to feature selection with the Logistic Regression, Gradient Boosting, and Random Forest algorithms only.
 
 - `FEAT_SELECT ?= None`
   - Specifies the feature selection method to be used. Defaults to `None`, meaning no explicit feature selection method is applied by default.
