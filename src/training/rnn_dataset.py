@@ -154,10 +154,10 @@ def dataloader_wrapper(
     num_workers: int = 0,
     pin_memory: bool = True,
     site_cols: List[str] = ['Density', 'Type_Conifer',
-                            'Type_Decidous', 'Type_Mixed', 'Age'],
-    seq_cols: List[str] = ['DOY', 'neg_cos_DOY', 'log_dt', 'NDVI', 'SAVI',
+                            'Type_Decidous', 'Age'],
+    seq_cols: List[str] = ['NDVI', 'SAVI',
                            'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR',
-                           'TCB', 'TCG', 'TCW']
+                           'TCB', 'TCG', 'TCW', 'log_dt', 'neg_cos_DOY']
 ):
     """
     Creates a PyTorch Dataset and DataLoader for batching satellite sequence data with site features.
@@ -178,9 +178,9 @@ def dataloader_wrapper(
         Number of subprocesses to use for data loading. Expects a non-negative integer.
     pin_memory : bool, default=True
         If True, data is copied into device/CUDA pinned memory before returning. 
-    site_cols : List of str, default=['Density', 'Type_Conifer', 'Type_Decidous', 'Type_Mixed', 'Age']
+    site_cols : List of str, default=['Density', 'Type_Conifer', 'Type_Decidous', 'Age']
         List of columns in the lookup table to be used as site features.
-    seq_cols : List of str, default=['DOY', 'neg_cos_DOY', 'log_dt', 'NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR', 'TCB', 'TCG', 'TCW']
+    seq_cols : List of str, default=['NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR', 'TCB', 'TCG', 'TCW', 'log_dt', 'neg_cos_DOY' ]
         List of columns in the sequence to be used as satellite features. `len(seq_cols)` should match the `input_size` for the rNN model.
 
     Returns

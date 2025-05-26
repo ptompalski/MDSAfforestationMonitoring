@@ -11,11 +11,10 @@ from typing import Tuple
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 # Test data
-SITE_COLS = ['Density', 'Type_Conifer', 'Type_Decidous', 'Type_Mixed', 'Age']
-SEQ_COLS = ['DOY', 'neg_cos_DOY', 'log_dt', 'NDVI',
-            'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 
-            'NBR', 'TCB', 'TCG', 'TCW']
-EXP_SEQ_SHAPE = [(2, 13)]*3 + [(4, 13)]*2 + [(6, 13)] + [(1, 13)]
+SITE_COLS = ['Density', 'Type_Conifer', 'Type_Decidous', 'Age']
+SEQ_COLS = ['NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 
+            'NBR', 'TCB', 'TCG', 'TCW', 'log_dt', 'neg_cos_DOY']
+EXP_SEQ_SHAPE = [(2, 12)]*3 + [(4, 12)]*2 + [(6, 12)] + [(1, 12)]
 
 mock_lookup_df = pd.DataFrame({
     'ID': np.arange(1, 8),
@@ -25,7 +24,6 @@ mock_lookup_df = pd.DataFrame({
     'Density': [1431.4]*7,
     'Type_Conifer': [0]*7,
     'Type_Decidous': [0]*7,
-    'Type_Mixed': [1]*7,
     'target': np.arange(71, 78),
     'filename': ['mock_seq_1.parquet']*3 + ['mock_seq_2.parquet']*2 + ['mock_seq_3.parquet'] + ['na.parquet'],
 })
@@ -34,7 +32,6 @@ mock_seq_data_1 = pd.DataFrame({
     'ID': [1]*2,
     "PixelID": [11]*2,
     'ImgDate': ['2001-11-01']*2,
-    'DOY': np.arange(1, 3),
     'NDVI':  [0.8, 0.6],
     'SAVI':  [0.8, 0.6],
     'MSAVI': [0.8, 0.6],
@@ -53,7 +50,6 @@ mock_seq_data_2 = pd.DataFrame({
     'ID': [1]*4,
     "PixelID": [11]*4,
     'ImgDate': ['2001-11-01']*4,
-    'DOY': np.arange(3, 7),
     'NDVI':  [0.8, 0.6]*2,
     'SAVI':  [0.8, 0.6]*2,
     'MSAVI': [0.8, 0.6]*2,
@@ -72,7 +68,6 @@ mock_seq_data_3 = pd.DataFrame({
     'ID': [1]*6,
     "PixelID": [11]*6,
     'ImgDate': ['2001-11-01']*6,
-    'DOY': np.arange(7, 13),
     'NDVI':  [0.8, 0.6]*3,
     'SAVI':  [0.8, 0.6]*3,
     'MSAVI': [0.8, 0.6]*3,
@@ -88,17 +83,17 @@ mock_seq_data_3 = pd.DataFrame({
 })
 
 mock_batch = [
-    (torch.tensor([1, 2, 3, 4, 5]),
-     torch.tensor([[1]*13, [2]*13]),
+    (torch.tensor([1, 2, 3, 4]),
+     torch.tensor([[1]*12, [2]*12]),
      torch.tensor(71.0)),
-    (torch.tensor([6, 7, 8, 9, 10]),
-     torch.tensor([[3]*13, [4]*13, [5]*13]),
+    (torch.tensor([5, 6, 7, 8]),
+     torch.tensor([[3]*12, [4]*12, [5]*12]),
      torch.tensor(72.0))
 ]
 
 exp_batch_out = {
-    'site_features': torch.tensor([[6, 7, 8, 9, 10], [1, 2, 3, 4, 5]]),
-    'sequence': torch.tensor([[[3]*13, [4]*13, [5]*13], [[1]*13, [2]*13, [0]*13]]),
+    'site_features': torch.tensor([[5, 6, 7, 8], [1, 2, 3, 4]]),
+    'sequence': torch.tensor([[[3]*12, [4]*12, [5]*12], [[1]*12, [2]*12, [0]*12]]),
     'target': torch.tensor([72.0, 71.0]),
     'sequence_length': torch.tensor([3, 2])
 }
