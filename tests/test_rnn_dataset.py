@@ -110,3 +110,60 @@ def mock_dataset(setup_mock_data):
     return AfforestationDataset(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR, SITE_COLS, SEQ_COLS)
 
 
+
+# TESTS: Dataset Class
+def test_dataset_init(mock_dataset):
+    """
+    Test if dataset class initiates properly
+    """
+    dataset = mock_dataset
+    assert isinstance(dataset.original_lookup, pd.DataFrame)
+    assert isinstance(dataset.lookup, pd.DataFrame)
+    assert dataset.site_cols == SITE_COLS
+    assert dataset.seq_cols == SEQ_COLS
+
+def test_dataset_reshuffle(mock_dataset):
+    """
+    Test if the reshuffle function regenerates a randomised lookup table when called.
+    """
+    dataset = mock_dataset
+    lookup1 = dataset.lookup  # save original shuffled lookup table
+    dataset.reshuffle() # reshuffle lookup table
+    lookup2 = dataset.lookup
+    
+    # Allow 3 reshuffling attempts due to limited randomness in mock data.
+    fail_count = 0
+    while fail_count < 3:     
+        if lookup1.equals(lookup2):
+            dataset.reshuffle()
+            lookup2 = dataset.lookup
+            fail_count += 1
+        else:
+            break
+    assert not lookup1.equals(lookup2)
+    assert lookup1.shape == lookup2.shape
+    assert set(lookup1['ID']) == set(lookup2['ID'])
+    assert all(lookup2['Age'] == [1, 1, 1, 2, 2, 3, 4])
+
+def test_dataset_len(mock_dataset):
+    """
+    Test if function returns the length of lookup table when `len()` is used.
+    """
+    dataset = mock_dataset
+    assert len(dataset) == len(mock_lookup_df)
+
+def test_dataset_getitem(mock_dataset):
+    """
+    Test if dataset returns data and returns the data in the correct format.
+    """
+    data = mock_dataset
+    assert all(isinstance(idx, Tuple) for idx in data)
+    assert all(len(idx) == 3 for idx in data)
+    assert all(torch.is_tensor(i) for idx in data for i in idx)
+    assert all(len(idx[0]) == len(SITE_COLS) for idx in data)
+    assert [idx[1].shape for idx in data] == EXP_SEQ_SHAPE 
+    assert data[6][1].equal(torch.zeros((1, len(SEQ_COLS)), dtype=torch.float32)) # Fall back to zero if FileNotFound
+    assert all(idx[2].ndim == 0 for idx in data)  # Target tensor is a scalar
+    assert [idx[2].item() for idx in data] == dataset.lookup['target'].to_list()
+    
+
