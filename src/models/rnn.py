@@ -95,13 +95,13 @@ def main(input_size, hidden_size, site_features_size, rnn_type, num_layers, drop
     print(f"Model created with {model.rnn_layers} layers and {model.rnn_hidden_size} hidden size using {model.rnn_type}.")
 
     os.makedirs(output_dir, exist_ok=True)
-    joblib_model_filename = "rnn_model.joblib"
-    joblib_model_path = os.path.join(output_dir, joblib_model_filename)
+    model_filename = "rnn_survival_model.pth"
+    model_path = os.path.join(output_dir, model_filename)
     try:
-        joblib.dump(model, joblib_model_path)
-        print(f"Model saved to {joblib_model_path} using joblib.")
+        torch.save(model.state_dict(), model_path)
+        print(f"Model saved to {model_path}.")
     except Exception as e:
-        print(f"Error saving model with joblib: {e}")
+        print(f"Error saving model {e}")
 
 if __name__ == "__main__":
     main()
