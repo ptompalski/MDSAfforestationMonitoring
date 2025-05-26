@@ -85,6 +85,23 @@ mock_seq_data_3 = pd.DataFrame({
     'log_dt': np.arange(57, 63),
     'neg_cos_DOY': np.arange(27, 33)
 })
+
+mock_batch = [
+    (torch.tensor([1, 2, 3, 4, 5]),
+     torch.tensor([[1]*13, [2]*13]),
+     torch.tensor(71.0)),
+    (torch.tensor([6, 7, 8, 9, 10]),
+     torch.tensor([[3]*13, [4]*13, [5]*13]),
+     torch.tensor(72.0))
+]
+
+exp_batch_out = {
+    'site_features': torch.tensor([[6, 7, 8, 9, 10], [1, 2, 3, 4, 5]]),
+    'sequence': torch.tensor([[[3]*13, [4]*13, [5]*13], [[1]*13, [2]*13, [0]*13]]),
+    'target': torch.tensor([72.0, 71.0]),
+    'sequence_length': torch.tensor([3, 2])
+}
+
 @pytest.fixture
 def setup_mock_data():
     """
@@ -166,4 +183,17 @@ def test_dataset_getitem(mock_dataset):
     assert all(idx[2].ndim == 0 for idx in data)  # Target tensor is a scalar
     assert [idx[2].item() for idx in data] == dataset.lookup['target'].to_list()
     
+
+
+# TESTS : Collation Function
+def test_collate_fn():
+    """
+    Test if collate function process the sequences correctly.
+    """
+    c_batch = collate_fn(mock_batch)
+    assert isinstance(c_batch, dict)
+    assert list(c_batch.keys()) == ['site_features', 'sequence', 'target', 'sequence_length']
+    assert all(isinstance(i, torch.Tensor) for i in list(c_batch.values()))
+    assert all(torch.equal(c_batch[i], exp_batch_out[i]) for i in c_batch)
+
 
