@@ -19,6 +19,15 @@ SCORING ?= f1
 RANDOM_STATE ?= 591
 RETURN_RESULTS ?= True
 
+# RNN Hyperparameters
+INPUT_SIZE ?=
+HIDDEN_SIZE ?=
+SITE_FEATURES_SIZE ?=
+RNN_TYPE ?= GRU
+NUM_LAYERS ?= 1
+DROPOUT_RATE ?= 0.2
+CONCAT_FEATURES ?= False
+
 load_data: 
 	python src/data/load_data.py \
 		--input_path=$(RAW_DATA_PATH) \
@@ -76,6 +85,18 @@ gradient_boosting_pipeline:
 		--scoring_rfecv="$(SCORING)" \
 		--kwargs_json='{}' \
 		--output_dir=models/
+
+rnn_pipeline:
+	python src/models/rnn.py \
+		--input_size=$(INPUT_SIZE) \
+		--hidden_size=$(HIDDEN_SIZE) \
+		--site_features_size=$(SITE_FEATURES_SIZE) \
+		--rnn_type=$(RNN_TYPE) \
+		--num_layers=$(NUM_LAYERS) \
+		--dropout_rate=$(DROPOUT_RATE) \
+		--concat_features=$(CONCAT_FEATURES) \
+		--output_dir=models/
+
 
 cv_tuning:
 	python src/training/cv_tuning.py \
