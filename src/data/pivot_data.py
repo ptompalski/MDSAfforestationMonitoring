@@ -189,8 +189,8 @@ def main(input_path, output_dir, day_range, threshold):
     
     # Saving Preprocessed DataFrame
     print('Saving preprocessed dataset...')
-    output_path_processed = os.path.join(
-        output_dir, f'processed_data{threshold*100}.parquet')
+    os.makedirs(output_dir, exist_ok=True)
+    output_path_processed = os.path.join(output_dir, 'processed_data.parquet')
     df_matched_bin.to_parquet(output_path_processed)
 
     print(f'target data saved to {output_path_processed}')
