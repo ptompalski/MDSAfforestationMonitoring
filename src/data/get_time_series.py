@@ -51,7 +51,7 @@ def _get_summary_statistics(density_col: pd.Series, tc_cols: pd.DataFrame) -> di
 def process_single_site(
     row: Tuple[int, pd.Series],
     group_df: pd.DataFrame,
-    seq_out_dir: Union[str, Path]
+    seq_out_dir: Path
 ) -> Union[Tuple[int, str], None]:
     """
     Process a single site record and generate a remote sensing sequence file.
@@ -68,11 +68,12 @@ def process_single_site(
         - The first element is the index of the row in the original lookup DataFrame
         - The second element is the row itself as a pandas Series
 
-    remote_sensing_df : pd.DataFrame
-        Full remote sensing dataset containing at least the following columns:
-        'ID', 'PixelID', 'ImgDate', 'DOY', and vegetation indices including 'TCW', 'TCG', 'TCB'.
+    group_df : pd.DataFrame
+        partition of remote sensing dataset containing at least the following columns:
+        'ID', 'PixelID', 'ImgDate', 'DOY', and vegetation indices including 'TCW', 'TCG', 'TCB', etc.
+        'ID' and 'PixelID' match that of the given lookup table row.
 
-    seq_out_dir : Union[str, Path]
+    seq_out_dir : Path
         Directory where the generated sequence Parquet file should be saved.
 
     Returns
@@ -100,7 +101,12 @@ def process_single_site(
 
     # get filename and store sequence data
     fname = f"{row["ID"]}_{row["PixelID"]}_{record_date.strftime('%Y-%m-%d')}.parquet"
-    out_path = seq_out_dir/ fname
+    out_path = seq_out_dir/fname
+
+    # drop uneeded columns: ID, PixelID, ImgDate before saving and arrange by log dt in descending order
+    sequence_df = sequence_df.drop(columns=['ID', 'PixelID', 'ImgDate']).sort_values(by='log_dt',ascending=False)
+    
+    # save file
     sequence_df.to_parquet(out_path, index=False)
 
     return idx, fname
@@ -126,7 +132,7 @@ def split_interim_dataframe(interim_df: pd.DataFrame) -> dict:
         }
     """
     remote_sensing_cols = [
-    'ID','PixelID','ImgDate','DOY', # NOTE: FIX preprocess_features.py SO WE KEEP DOY
+    'ID','PixelID','ImgDate','DOY',
     'NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR', 'TCB', 'TCG', 'TCW' 
     ]
     
@@ -135,16 +141,16 @@ def split_interim_dataframe(interim_df: pd.DataFrame) -> dict:
     ]
     
     # get lookup table and remove duplicate rows if they exist (but they shouldn't), and convert to datetime
-    lookup_df = pivot_df(interim_df).drop_duplicates()[lookup_cols]
+    lookup_df = pivot_df(interim_df).drop_duplicates()[lookup_cols].reset_index(drop=True)
     lookup_df['SrvvR_Date'] = pd.to_datetime(lookup_df['SrvvR_Date'])
-    
-    # some of the remote sensing cols are duplicated, should be dropped. Also convert ImgDate to datetime
-    remote_sensing_df = interim_df[remote_sensing_cols].drop_duplicates()
-    remote_sensing_df['ImgDate'] = pd.to_datetime(remote_sensing_df['ImgDate'])
     
     # type conversion for consistency
     lookup_df['target'] = lookup_df['target'].astype(float)
     lookup_df['Age'] = lookup_df['Age'].astype(int)
+    
+    # some of the remote sensing cols are duplicated, should be dropped. Also convert ImgDate to datetime
+    remote_sensing_df = interim_df[remote_sensing_cols].drop_duplicates().reset_index(drop=True)
+    remote_sensing_df['ImgDate'] = pd.to_datetime(remote_sensing_df['ImgDate'])
     
     return {
         'lookup_df':lookup_df,
@@ -155,7 +161,7 @@ def split_interim_dataframe(interim_df: pd.DataFrame) -> dict:
 def process_and_save_sequences(
     lookup_df: pd.DataFrame,
     remote_sensing_df: pd.DataFrame,
-    seq_out_dir: Path,
+    seq_out_dir: str,
     lookup_out_path: Path,
     norm_stats: dict
 ) -> None:
@@ -175,7 +181,7 @@ def process_and_save_sequences(
         'ID', 'PixelID', 'ImgDate', 'DOY', and vegetation features such as 
         'NDVI', 'NDWI', 'EVI', 'SAVI', 'MSAVI', 'TCW', 'TCG', 'TCB', 'NBR', etc.
 
-    seq_out_dir : Path
+    seq_out_dir : str
         Directory where individual Parquet time series will be saved.
 
     lookup_out_path : Path
@@ -221,13 +227,14 @@ def process_and_save_sequences(
     # set up multiprocessing: pass idx,row, and matching group
     args = []
     for idx, row in lookup_df.iterrows():
-        key = (row["ID"], row["PixelID"])
-        if key in rs_grouped.indices:
-            group_df = rs_grouped.get_group(key).sort_values("ImgDate")
+        site_key = (row["ID"], row["PixelID"])
+        if site_key in rs_grouped.indices:
+            group_df = rs_grouped.get_group(site_key)
             args.append(((idx, row), group_df))
 
-    # wrapper to only expose row as input
+    # wrapper to only expose row and group as input
     func = partial(process_single_site, seq_out_dir=seq_out_dir)
+    
     # use multiprocessing to get sequences for each row in lookup table
     with Pool(cpu_count()) as pool:
         results = list(
@@ -242,9 +249,9 @@ def process_and_save_sequences(
     # filter lookup table rows with no rows
     valid_results = [res for res in results if res is not None]
     valid_indices, fnames = zip(*valid_results) if valid_results else ([], [])
-
+    filtered_lookup = lookup_df.loc[list(valid_indices)].copy().reset_index(drop=True)
+    
     # normalize density column
-    filtered_lookup = lookup_df.iloc[list(valid_indices)].copy()
     filtered_lookup["Density"] = (
         filtered_lookup["Density"] - norm_stats["mean"]["Density"]
     ) / norm_stats["std"]["Density"]
@@ -254,7 +261,7 @@ def process_and_save_sequences(
     filtered_lookup = pd.concat([filtered_lookup.drop(columns="Type"), ohe_type], axis=1)
 
     # add filename column to lookup table
-    filtered_lookup["filename"] = pd.Series(fnames)
+    filtered_lookup["filename"] = pd.Series(fnames).reset_index(drop=True)
     filtered_lookup.to_parquet(lookup_out_path, index=False)
       
 @click.command()
