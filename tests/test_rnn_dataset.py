@@ -182,7 +182,7 @@ def test_dataset_getitem(mock_dataset):
     assert [idx[1].shape for idx in data] == EXP_SEQ_SHAPE 
     assert data[6][1].equal(torch.zeros((1, len(SEQ_COLS)), dtype=torch.float32)) # Fall back to zero if FileNotFound
     assert all(idx[2].ndim == 0 for idx in data)  # Target tensor is a scalar
-    assert [idx[2].item() for idx in data] == dataset.lookup['target'].to_list()
+    assert [idx[2].item() for idx in data] == data.lookup['target'].to_list()
     
 
 
