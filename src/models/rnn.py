@@ -56,7 +56,7 @@ class RNNSurvivalPredictor(nn.Module):
 
         packed_input = rnn_utils.pack_padded_sequence(
                         sequence,
-                        sequence_length.cpu().long(),
+                        sequence_length.long(),
                         batch_first=True,
                         enforce_sorted=False)
 
@@ -86,8 +86,14 @@ class RNNSurvivalPredictor(nn.Module):
 @click.option('--concat_features', type=bool, default=False, help='Concatenate site features with RNN output')
 @click.option('--output_dir', type=click.Path(file_okay=False), required=True, help='Directory to save the model')
 def main(input_size, hidden_size, site_features_size, rnn_type, num_layers, dropout_rate, concat_features, output_dir):
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
+
     model = RNNSurvivalPredictor(input_size, hidden_size, site_features_size, rnn_type, num_layers, dropout_rate, concat_features)
+    model = model.to(device)
     print(f"Model created with {model.rnn_layers} layers and {model.rnn_hidden_size} hidden size using {model.rnn_type}.")
+
     os.makedirs(output_dir, exist_ok=True)
     joblib_model_filename = "rnn_model.joblib"
     joblib_model_path = os.path.join(output_dir, joblib_model_filename)
