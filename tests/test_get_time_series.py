@@ -58,13 +58,13 @@ def sample_lookup_data():
     Create sample lookup table for testing
     '''
     lookup_df = pd.DataFrame({
-        'ID': [1,2,3],
-        'PixelID': ['1_101','2_102','3_103'],
-        'SrvvR_Date': pd.to_datetime(['2020-06-01']*3),
-        'Age': [5,6,7],
-        'Density': [1200,1500,1800],
-        'Type': ['Mixed','Conifer','Decidous'],
-        'target': [70.0,80.0,90.0]
+        'ID': [1,2,3,3],
+        'PixelID': ['1_101','2_102','3_103','3_103'],
+        'SrvvR_Date': pd.to_datetime(['2020-06-01']*3 + ['2021-07-01']),
+        'Age': [5,6,7,7],
+        'Density': [1200,1500,1800,1800],
+        'Type': ['Mixed','Conifer','Decidous','Conifer'],
+        'target': [70.0,80.0,90.0,80.0]
     })
     return lookup_df
     
@@ -272,44 +272,60 @@ def test_process_single_site_no_records(sample_lookup_data,sample_remote_sensing
     # get rid of tmp directory once finished 
     shutil.rmtree(tmp_output_dir)
 
-def test_process_and_save_sequences():
+def test_process_and_save_sequences(sample_lookup_data,sample_remote_sensing_data,sample_norm_stats):
     '''
     Test to ensure sequence files are saved properly and engineering is correct
     '''
     pass
 
-    # # Setup temporary output paths
-    # tmp_output_dir = Path('tmp')
-    # tmp_output_dir.mkdir(exist_ok=True)
+    # Setup temporary output paths
+    tmp_out_dir = Path('tmp')
+    tmp_seq_out_dir = tmp_out_dir/'tmp_seq'
+    tmp_seq_out_dir.mkdir(exist_ok=True,parents=True)
+    tmp_lookup_out_path = tmp_seq_out_dir/'tmp_lookup.parquet'
     
-    # tmp_output_lookup_path = tmp_output_dir/ 'tmp_lookup.parquet'
-    
-    # # Call function
-    # process_and_save_sequences(
-    #     lookup_df=lookup_df,
-    #     remote_sensing_df=remote_df,
-    #     seq_out_dir=tmp_output_dir,
-    #     lookup_out_path=tmp_output_lookup_path,
-    #     norm_stats=norm_stats
-    # )
+    # call function
+    process_and_save_sequences(
+        lookup_df=sample_lookup_data,
+        remote_sensing_df=sample_remote_sensing_data,
+        seq_out_dir=tmp_seq_out_dir,
+        lookup_out_path=tmp_lookup_out_path,
+        norm_stats=sample_norm_stats
+    )
 
-    # # Verify files exist, lookup and sequence.
-    # saved_files = list(tmp_output_dir.glob("*.parquet"))
-    # assert len(saved_files) == 2
-
-    # # check columns and feature engineering
-    # lookup_df_out = pd.read_parquet(tmp_output_lookup_path)
-    # assert 'filename' in lookup_df_out.columns
-    # assert np.isclose(lookup_df_out['Density'].iloc[0], 2.0)  # (1200 - 1000)/100
-
-    # # Read the sequence file and test engineering
-    # sequence_df_out = pd.read_parquet(saved_files[0])
-    # assert np.isclose(sequence_df_out['log_dt'].iloc[0], np.log1p(152))
-    # assert np.isclose(sequence_df_out['neg_cos_DOY'].iloc[0], -np.cos(2 * np.pi * 1 / 365), atol=1e-6)
-    # assert np.isclose(sequence_df_out['TCW'].iloc[0], 2.0)
-    # assert np.isclose(sequence_df_out['TCG'].iloc[0], -2.0)
-    # assert np.isclose(sequence_df_out['TCB'].iloc[0], 1.5)
+    # Verify 2 sequence files exist in sequence file, 1 lookup table in tmp directory
+    assert os.path.exists(tmp_seq_out_dir/'1_1_101_2020-06-01.parquet')
+    assert os.path.exists(tmp_seq_out_dir/'3_3_103_2020-06-01.parquet')
+    assert os.path.exists(tmp_seq_out_dir/'3_3_103_2021-07-01.parquet')
+    assert os.path.exists(tmp_lookup_out_path)
     
     
-    # # get rid of tmp directory once finished 
-    # shutil.rmtree(tmp_output_dir)
+    # Check columns and feature engineering of lookup table
+    lookup_df_out = pd.read_parquet(tmp_lookup_out_path)
+    assert 'filename' in lookup_df_out.columns
+    assert (lookup_df_out.query('ID == 1 and PixelID == "1_101"')['filename'] == '1_1_101_2020-06-01.parquet').all()
+    assert np.allclose(
+        lookup_df_out['Density'].to_list(),
+        [2.0,8.0,8.0]
+    )
+    assert set(lookup_df_out.columns) == {
+      'ID','PixelID','SrvvR_Date','Age','Density','Type_Conifer','Type_Decidous','filename','target'
+    }
+
+    # ensure normalization of TCW, TCB, TCG is correct
+    test_seq_df_out = pd.read_parquet(tmp_seq_out_dir/'1_1_101_2020-06-01.parquet')
+    assert np.allclose(
+        test_seq_df_out['TCW'].to_list(),
+        [3.0,4.0]
+    )
+    assert np.allclose(
+        test_seq_df_out['TCG'].to_list(),
+        [-1.0,0.]
+    )
+    assert np.allclose(
+        test_seq_df_out['TCB'].to_list(),
+        [3.0,5.0]
+    )
+    
+    # get rid of tmp directory once finished 
+    shutil.rmtree(tmp_out_dir)
