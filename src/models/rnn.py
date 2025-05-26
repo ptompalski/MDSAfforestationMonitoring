@@ -1,4 +1,7 @@
 import torch
+import click
+import os
+import joblib
 from torch import nn
 import torch.nn.utils.rnn as rnn_utils
 
@@ -72,3 +75,27 @@ class RNNSurvivalPredictor(nn.Module):
 
         clamped_output = torch.clamp(output, 0, 100)
         return clamped_output.squeeze()
+
+@click.command()
+@click.option('--input_size', type=int, required=True, help='Number of features in each time step of the input sequence')
+@click.option('--hidden_size', type=int, required=True, help='Size of the hidden state in the RNN')
+@click.option('--site_features_size', type=int, required=True, help='Number of static features per site')
+@click.option('--rnn_type', type=click.Choice(['GRU', 'LSTM']), default='GRU', help='Type of RNN to use')
+@click.option('--num_layers', type=int, default=1, help='Number of recurrent layers')
+@click.option('--dropout_rate', type=float, default=0.2, help='Dropout probability for regularization')
+@click.option('--concat_features', type=bool, default=False, help='Concatenate site features with RNN output')
+@click.option('--output_dir', type=click.Path(file_okay=False), required=True, help='Directory to save the model')
+def main(input_size, hidden_size, site_features_size, rnn_type, num_layers, dropout_rate, concat_features, output_dir):
+    model = RNNSurvivalPredictor(input_size, hidden_size, site_features_size, rnn_type, num_layers, dropout_rate, concat_features)
+    print(f"Model created with {model.rnn_layers} layers and {model.rnn_hidden_size} hidden size using {model.rnn_type}.")
+    os.makedirs(output_dir, exist_ok=True)
+    joblib_model_filename = "rnn_model.joblib"
+    joblib_model_path = os.path.join(output_dir, joblib_model_filename)
+    try:
+        joblib.dump(model, joblib_model_path)
+        print(f"Model saved to {joblib_model_path} using joblib.")
+    except Exception as e:
+        print(f"Error saving model with joblib: {e}")
+
+if __name__ == "__main__":
+    main()
