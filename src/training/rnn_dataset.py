@@ -159,7 +159,7 @@ def dataloader_wrapper(
     This function:
     1. Initializes a custom Dataset that loads site records and their corresponding satellite records.
     2. Initiates a DataLoader using a custom collate function to handle variable-length sequences.
- 
+
     Parameters
     ----------
     lookup_dir : str | os.PathLike
@@ -167,9 +167,9 @@ def dataloader_wrapper(
     seq_dir : str | os.PathLike
         Directory containing the satellite data files referenced in the lookup table.
     batch_size : int, default=32
-        Number of samples per batch.
+        Number of samples per batch. Expects a positive integer.
     num_worker : int, default=0
-        Number of subprocesses to use for data loading.
+        Number of subprocesses to use for data loading. Expects a non-negative integer.
     pin_memory : bool, default=True
         If True, data is copied into device/CUDA pinned memory before returning. 
     site_cols : List of str, default=['Density', 'Type_Conifer', 'Type_Decidous', 'Type_Mixed', 'Age']
@@ -184,7 +184,7 @@ def dataloader_wrapper(
             Instantiated custom Dataset for site and satellite data.
         - loader : DataLoader
             PyTorch DataLoader with batching and custom collation for variable-length sequences.
-    
+
     Raises
     ------
     ValueError
@@ -202,23 +202,31 @@ def dataloader_wrapper(
         ("seq_dir", seq_dir, (str, os.PathLike)),
         ("site_cols", site_cols, list),
         ("seq_cols", seq_cols, list),
-        ]:
+        ("batch_size", batch_size, int),
+        ("num_workers", num_workers, int),
+        ("pin_memory", pin_memory, bool)
+    ]:
         if not isinstance(var, exp_type):
             raise ValueError(
                 f'"{name}" expects {exp_type}, got {type(var).__name__}')
         if exp_type == list and not all(isinstance(col, str) for col in var):
             error_type = set(type(col).__name__ for col in var)
-            raise ValueError(f"'{name}' expects a list of str, got {error_type}")
+            raise ValueError(
+                f'"{name}" expects a list of str, got {error_type}')
     
-    dataset = AfforestationDataset(lookup_dir=lookup_dir, seq_dir=seq_dir, site_cols=site_cols, seq_cols=seq_cols)
+    # Fall back to default setting if invalid integer is supplied.
+    batch_size = max(32, batch_size)
+    num_workers = max(0, num_workers)
+    
+    dataset = AfforestationDataset(
+        lookup_dir=lookup_dir, seq_dir=seq_dir, site_cols=site_cols, seq_cols=seq_cols)
+    
     loader = DataLoader(
-        dataset=dataset, 
-        batch_size=batch_size, 
-        shuffle=False, 
-        num_workers=num_workers, 
-        pin_memory=pin_memory, 
+        dataset=dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
         collate_fn=collate_fn
     )
     return dataset, loader
-
-
