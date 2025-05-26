@@ -50,7 +50,7 @@ def _get_summary_statistics(density_col: pd.Series, tc_cols: pd.DataFrame) -> di
 
 def process_single_site(
     row: Tuple[int, pd.Series],
-    rs_grouped_dict: dict,
+    group_df: pd.DataFrame,
     seq_out_dir: Union[str, Path]
 ) -> Union[Tuple[int, str], None]:
     """
@@ -82,32 +82,24 @@ def process_single_site(
         otherwise returns None if no matching remote sensing records were found.
     """
     idx, row = row
-    
-    # get grouped data by ID and PixelID
-    group_key = (row["ID"], row["PixelID"])
-    record_date = row['SrvvR_Date']
-    if group_key not in rs_grouped_dict:
-        return None
-    
-    group_df = rs_grouped_dict[group_key]
-    SrvvR_Date = row['SrvvR_Date']
+    record_date = row['SrvvR_Date']    
               
     # Filter by time      
-    time_filter = group_df["ImgDate"] <= SrvvR_Date
-    sequence_df = rs_grouped_dict[group_key][time_filter].copy()
+    time_filter = group_df["ImgDate"] <= record_date
+    sequence_df = group_df[time_filter].copy()
     
     # if no matching rows, return None 
     if sequence_df.empty:
         return None
     
     # Process time-based features
-    time_delta = (SrvvR_Date - sequence_df["ImgDate"]).dt.days
+    time_delta = (record_date - sequence_df["ImgDate"]).dt.days
     sequence_df["log_dt"] = np.log1p(time_delta)
     sequence_df["neg_cos_DOY"] = -np.cos(2 * np.pi * sequence_df["DOY"] / 365)
     sequence_df = sequence_df.drop(columns=["DOY"])
 
     # get filename and store sequence data
-    fname = f"{row["ID"]}_{row["PixelID"]}_{SrvvR_Date.strftime('%Y-%m-%d')}.parquet"
+    fname = f"{row["ID"]}_{row["PixelID"]}_{record_date.strftime('%Y-%m-%d')}.parquet"
     out_path = seq_out_dir/ fname
     sequence_df.to_parquet(out_path, index=False)
 
@@ -224,26 +216,23 @@ def process_and_save_sequences(
         remote_sensing_df[col] = (remote_sensing_df[col] - mu) / sigma
     
     # group by site for faster access
-    rs_grouped_dict = {
-    (id_, pix_id): group.sort_values("ImgDate")
-    for (id_, pix_id), group in remote_sensing_df.groupby(["ID", "PixelID"])
-    }
+    rs_grouped = remote_sensing_df.groupby(["ID", "PixelID"])
     
-    # Setup multiprocessing
-    args = [(idx, row) for idx, row in lookup_df.iterrows()]
-    
-    # wrapper to only expose row as input
-    func = partial(
-        process_single_site,
-        rs_grouped_dict=rs_grouped_dict,
-        seq_out_dir=seq_out_dir
-    )
+    # set up multiprocessing: pass idx,row, and matching group
+    args = []
+    for idx, row in lookup_df.iterrows():
+        key = (row["ID"], row["PixelID"])
+        if key in rs_grouped.indices:
+            group_df = rs_grouped.get_group(key).sort_values("ImgDate")
+            args.append(((idx, row), group_df))
 
+    # wrapper to only expose row as input
+    func = partial(process_single_site, seq_out_dir=seq_out_dir)
     # use multiprocessing to get sequences for each row in lookup table
     with Pool(cpu_count()) as pool:
         results = list(
             tqdm(
-                pool.imap_unordered(func, args), 
+                pool.starmap(func, args), 
                 total=len(args), 
                 desc="Processing sequences",
                 file=sys.stdout
