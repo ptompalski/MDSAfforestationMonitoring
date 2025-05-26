@@ -4,6 +4,8 @@ from torch.nn.utils.rnn import pad_sequence
 import os
 import pandas as pd
 from typing import List, Tuple
+import numpy as np
+
 
 class AfforestationDataset(Dataset):
     """
@@ -33,7 +35,7 @@ class AfforestationDataset(Dataset):
     lookup : pd.DataFrame
         A shuffled copy of the lookup table, regenerated when `reshuffled()` is called.
         Samples are randomly shuffled within 'Age' groups to optimise batch efficiency.
-    
+
     Methods
     -------
     reshuffle() : 
@@ -53,6 +55,7 @@ class AfforestationDataset(Dataset):
     ------
     A zero-filled tensor of shape (1, 10) is returned if the sequence file fails to load.
     """
+
     def __init__(
         self,
         lookup_dir: str | os.PathLike,
@@ -66,13 +69,13 @@ class AfforestationDataset(Dataset):
         self.site_cols = site_cols
         self.seq_cols = seq_cols
         self.reshuffle()
-        
+
     def __len__(self):
         """
         Return the number of samples in the dataset, that is the number of survival records in the lookup table.
         """
         return len(self.lookup)
-    
+
     def reshuffle(self):
         """
         Regenerates a randomised lookup table by shuffling samples within 'Age' groups.
@@ -80,9 +83,9 @@ class AfforestationDataset(Dataset):
         self.lookup = self.original_lookup.groupby(
             'Age').sample(frac=1, replace=False).reset_index(drop=True)
 
-    def __getitem__(self, idx : int):
+    def __getitem__(self, idx: int):
         """
-        Load the satellite data and return a dictionary containing the site data, satellite data and target as Pytorch tensors.
+        Load the satellite data and return a tuple containing the site data, satellite data and target as Pytorch tensors.
         """
         row = self.lookup.iloc[idx]
         seq_path = os.path.join(self.seq_dir, row['filename'])
