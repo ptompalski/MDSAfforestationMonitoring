@@ -19,6 +19,7 @@ dependencies:
   - ipykernel=6.29.5
   - scikit-learn=1.6.1
   - shap=0.47.2
+  - pytorch=2.7.0
   - pip
   - pip:
       - altair-ally==0.1.1

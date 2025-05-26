@@ -16,6 +16,7 @@ dependencies:
   - click=8.1.8
   - scikit-learn=1.6.1
   - shap=0.47.2
+  - pytorch=2.7.0
   - pip
   - pip:
       - altair-ally==0.1.1
