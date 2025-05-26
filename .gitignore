@@ -34,3 +34,6 @@ reports/.quarto/*
 # Pytest
 .pytest_cache
 .coverage*
+
+# Python caching
+__pycache__/
