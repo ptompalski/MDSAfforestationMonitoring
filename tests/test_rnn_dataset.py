@@ -85,3 +85,28 @@ mock_seq_data_3 = pd.DataFrame({
     'log_dt': np.arange(57, 63),
     'neg_cos_DOY': np.arange(27, 33)
 })
+@pytest.fixture
+def setup_mock_data():
+    """
+    Create test parquet file
+    """
+    MOCK_SEQ_DIR = Path('tmp')
+    MOCK_SEQ_DIR.mkdir(exist_ok=True)
+    MOCK_LOOKUP_PATH = os.path.join(MOCK_SEQ_DIR, 'mock_lookup.parquet')
+    dfs = [(mock_lookup_df, 'mock_lookup.parquet'),
+           (mock_seq_data_1, 'mock_seq_1.parquet'), 
+           (mock_seq_data_2, 'mock_seq_2.parquet'), 
+           (mock_seq_data_3, 'mock_seq_3.parquet')]
+    for df, name in dfs:
+        df.to_parquet(os.path.join(MOCK_SEQ_DIR, name))
+    return MOCK_LOOKUP_PATH, MOCK_SEQ_DIR
+
+@pytest.fixture
+def mock_dataset(setup_mock_data):
+    """
+    Create mock dataset.
+    """
+    MOCK_LOOKUP_PATH, MOCK_SEQ_DIR = setup_mock_data
+    return AfforestationDataset(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR, SITE_COLS, SEQ_COLS)
+
+
