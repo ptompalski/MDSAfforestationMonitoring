@@ -59,22 +59,25 @@ def process_single_site(
     For the given survival record (by ID, PixelID, SrvvR_Date), this function:
     - Filters the remote sensing dataset up to the survey date
     - Computes time-based features (log time delta, cosine-transformed DOY)
-    - Saves the sequence as a Parquet file to the specified output directory
+    - Saves the sequential data as a Parquet file to the specified output directory
 
     Parameters
     ----------
     row : Tuple[int, pd.Series]
         A tuple where:
         - The first element is the index of the row in the original lookup DataFrame
-        - The second element is the row itself as a pandas Series
+        - The second element is the row itself as a pandas Series.
 
     group_df : pd.DataFrame
         partition of remote sensing dataset containing at least the following columns:
         'ID', 'PixelID', 'ImgDate', 'DOY', and vegetation indices including 'TCW', 'TCG', 'TCB', etc.
-        'ID' and 'PixelID' match that of the given lookup table row.
+        The dataframe must only contain remote sensing records with ID and PixelID matching that of
+        the given lookup row.
 
     seq_out_dir : Path
         Directory where the generated sequence Parquet file should be saved.
+        Files are stored with the naming convention <ID><PixelID><SrvvR_Date>.parquet,
+        where SrvvR_Date is the survey date of the target survival rate.
 
     Returns
     -------
@@ -99,11 +102,11 @@ def process_single_site(
     sequence_df["neg_cos_DOY"] = -np.cos(2 * np.pi * sequence_df["DOY"] / 365)
     sequence_df = sequence_df.drop(columns=["DOY"])
 
-    # get filename and store sequence data
+    # get filename and path to store sequence data
     fname = f"{row["ID"]}_{row["PixelID"]}_{record_date.strftime('%Y-%m-%d')}.parquet"
     out_path = seq_out_dir/fname
 
-    # drop uneeded columns: ID, PixelID, ImgDate before saving and arrange by log dt in descending order
+    # drop uneeded columns: ID, PixelID, ImgDate before saving and arrange by log dt in descending order (earliest to latest records)
     sequence_df = sequence_df.drop(columns=['ID', 'PixelID', 'ImgDate']).sort_values(by='log_dt',ascending=False)
     
     # save file
@@ -177,7 +180,7 @@ def process_and_save_sequences(
         'ID', 'PixelID', 'SrvvR_Date', 'Age', 'Density', 'Type', 'target'.
 
     remote_sensing_df : pd.DataFrame
-        Remote sensing DataFrame containing vegetation indices, with columns:
+        Remote sensing DataFrame with columns:
         'ID', 'PixelID', 'ImgDate', 'DOY', and vegetation features such as 
         'NDVI', 'NDWI', 'EVI', 'SAVI', 'MSAVI', 'TCW', 'TCG', 'TCB', 'NBR', etc.
 
@@ -198,10 +201,10 @@ def process_and_save_sequences(
     -------
     None
         Produces:
-        - Parquet file per record: '<ID>_<PixelID>_<SrvvR_Date>.parquet'
+        - Parquet file per record: '<seq_out_dir>/<ID>_<PixelID>_<SrvvR_Date>.parquet'
         - Lookup table: e.g., 'lookup_train.parquet' with columns:
             * ID, PixelID, SrvvR_Date, Age, Density, target
-            * One-hot columns: Type_Conifer, Type_Decidous, Type_Mixed
+            * One-hot columns: Type_Conifer, Type_Decidous ('Mixed type treated as reference category')
 
     Notes
     -----
