@@ -24,7 +24,6 @@ test_X = pd.DataFrame(
             'Season': [2008]*12,
             'Age': [2, 4, 6, 7]*3,
             'SrvvR_Date': [1]*12,
-            'DOY': [1]*12,
             'NDVI':  [0.1]*12,
             'SAVI':  [0.1]*12,
             'MSAVI': [0.1]*12,
@@ -222,7 +221,8 @@ def test_get_feature_name():
     """
     Test if get_feature_name() method extracts the feature names used in initial fitting correctly. 
     """
-    exp_feature_names = ['Type_Conifer', 'Type_Decidous', 'Type_Mixed', 'Density', 'Age', 'DOY',
+
+    exp_feature_names = ['Type_Conifer', 'Type_Decidous', 'Type_Mixed', 'Density', 'Age',
                          'NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR', 'TCB', 'TCG',
                          'TCW']
     pipeline = ImportanceFeatureSelector(

@@ -19,6 +19,7 @@ SCORING ?= f1
 RANDOM_STATE ?= 591
 RETURN_RESULTS ?= True
 
+
 # RNN Hyperparameters
 INPUT_SIZE ?=
 HIDDEN_SIZE ?=
@@ -27,6 +28,7 @@ RNN_TYPE ?= GRU
 NUM_LAYERS ?= 1
 DROPOUT_RATE ?= 0.2
 CONCAT_FEATURES ?= False
+
 
 load_data: 
 	python src/data/load_data.py \
@@ -49,6 +51,7 @@ data_split:
 	python src/data/data_split.py \
         --input_path=data/processed/$(THRESHOLD_PCT)/processed_data.parquet \
     	--output_dir=data/processed/$(THRESHOLD_PCT) \
+
 
 data_split_RNN:
 	python src/data/data_split.py \
@@ -105,6 +108,7 @@ gradient_boosting_pipeline:
 		--kwargs_json='{}' \
 		--output_dir=models/
 
+
 rnn_pipeline:
 	python src/models/rnn.py \
 		--input_size=$(INPUT_SIZE) \
@@ -115,7 +119,6 @@ rnn_pipeline:
 		--dropout_rate=$(DROPOUT_RATE) \
 		--concat_features=$(CONCAT_FEATURES) \
 		--output_dir=models/
-
 
 cv_tuning:
 	python src/training/cv_tuning.py \
