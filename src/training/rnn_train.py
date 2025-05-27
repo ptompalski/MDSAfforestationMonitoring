@@ -55,6 +55,33 @@ def train(model, train_dataloader, test_dataloader, train_set, test_set, optimiz
 
     return model, train_losses, test_losses
 
+
+@click.command()
+@click.option('--model_path', type=click.Path(exists=True), required=True, help='Path to model joblib file.')
+@click.option('--output_dir', type=click.Path(exists=True), required=True, help='Directory to save trained model.')
+@click.option('--lookup_dir', type=click.Path(exists=True), required=True, help='Directory to lookup file.')
+@click.option('--data_dir', type=click.Path(exists=True), required=True, help='Directory to sequence data files.')
+@click.option('--lr', type=float, default=0.01, help='Learning Rate of Adam optimizer.')
+@click.option('--batch_size', type=int, default=32, help='Batch size for model.')
+@click.option('--epoches', type=int, default=10, help='Number of epoches to train the model on.')
+@click.option('--patience', type=int, default=5, help='Early stopping patience.')
+@click.option('--num_workers', type=int, default=0, help='Number of workers for dataloader.')
+@click.option('--pin_memory', type=bool, default=False, help='Whether to pin_memory before returning.')
+@click.option('--site_cols', type=list, default=None, help='Site features to use in model.')
+@click.option('--seq_cols', type=list, default=None, help='Sequence features to use in model.')
+def main(model_path,
+         output_dir,
+         lookup_dir,
+         data_dir,
+         lr=0.01,
+         batch_size=32,
+         epoches=10,
+         patience=5,
+         num_workers=0,
+         pin_memory=False,
+         site_cols=[],
+         seq_cols=[]):
+    
     TRAIN_LOOKUP_PATH = os.path.join(lookup_dir, 'train_lookup.parquet')
     TEST_LOOKUP_PATH = os.path.join(lookup_dir, 'test_lookup.parquet')
     if site_cols == []:
