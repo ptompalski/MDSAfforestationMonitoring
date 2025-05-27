@@ -50,6 +50,26 @@ data_split:
         --input_path=data/processed/$(THRESHOLD_PCT)/processed_data.parquet \
     	--output_dir=data/processed/$(THRESHOLD_PCT) \
 
+
+data_split_RNN:
+	python src/data/data_split.py \
+        --input_path=data/interim/clean_feats_data.parquet \
+    	--output_dir=data/interim \
+
+time_series_train_data:
+	python -m src.data.get_time_series \
+		--input_path=data/interim/train_data.parquet \
+		--output_seq_dir=data/processed/sequences \
+		--output_lookup_path=data/processed/train_lookup.parquet \
+
+time_series_test_data:
+	python -m src.data.get_time_series \
+		--input_path=data/interim/test_data.parquet \
+		--output_seq_dir=data/processed/sequences \
+		--output_lookup_path=data/processed/test_lookup.parquet \
+		--no-compute-norm-stats
+
+
 logistic_regression_pipeline:
 	python src/models/logistic_regression_pipeline.py \
 		--feat_select='$(FEAT_SELECT)' \
@@ -96,7 +116,6 @@ rnn_pipeline:
 		--dropout_rate=$(DROPOUT_RATE) \
 		--concat_features=$(CONCAT_FEATURES) \
 		--output_dir=models/
-
 
 cv_tuning:
 	python src/training/cv_tuning.py \

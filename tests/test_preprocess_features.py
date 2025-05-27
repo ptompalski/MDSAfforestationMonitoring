@@ -11,7 +11,7 @@ expected_columns = [
     'ID', 'PixelID', 'Area_ha', 'Season', 'Planted', 'Type', 'SrvvR_1',
     'SrvvR_2', 'SrvvR_3', 'SrvvR_4', 'SrvvR_5', 'SrvvR_6', 'SrvvR_7',
     'AssD_1', 'AssD_2', 'AssD_3', 'AssD_4', 'AssD_5', 'AssD_6', 'AssD_7',
-    'ImgDate', 'NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2',
+    'ImgDate','DOY', 'NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2',
     'NDWI', 'NBR', 'TCB', 'TCG', 'TCW']
 
 feature_cols = [
