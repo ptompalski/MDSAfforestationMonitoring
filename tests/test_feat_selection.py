@@ -221,6 +221,7 @@ def test_get_feature_name():
     """
     Test if get_feature_name() method extracts the feature names used in initial fitting correctly. 
     """
+
     exp_feature_names = ['Type_Conifer', 'Type_Decidous', 'Type_Mixed', 'Density', 'Age',
                          'NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR', 'TCB', 'TCG',
                          'TCW']
