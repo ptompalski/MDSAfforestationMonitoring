@@ -55,3 +55,63 @@ def train(model, train_dataloader, test_dataloader, train_set, test_set, optimiz
 
     return model, train_losses, test_losses
 
+    TRAIN_LOOKUP_PATH = os.path.join(lookup_dir, 'train_lookup.parquet')
+    TEST_LOOKUP_PATH = os.path.join(lookup_dir, 'test_lookup.parquet')
+    if site_cols == []:
+        site_cols = ['Density', 'Type_Conifer', 'Type_Decidous', 'Age']
+    else:
+        site_cols = site_cols.split(',') 
+    if seq_cols == []:
+        seq_cols = ['NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR',
+                'TCB', 'TCG', 'TCW', 'log_dt', 'neg_cos_DOY'] 
+
+    
+
+    model = torch.load(model_path, weights_only=False)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    criterion = torch.nn.MSELoss()
+    train_set, train_dataloader = rnn_dataset.dataloader_wrapper(
+        lookup_dir=TRAIN_LOOKUP_PATH,
+        seq_dir=data_dir,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        site_cols=site_cols,
+        seq_cols=seq_cols
+    )
+    test_set, test_dataloader = rnn_dataset.dataloader_wrapper(
+        lookup_dir=TEST_LOOKUP_PATH,
+        seq_dir=data_dir,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        site_cols=site_cols,
+        seq_cols=seq_cols
+    )
+
+    print(f'Training Model on {epoches} epoches.')
+    model, train_losses, test_losses = train(
+        model=model,
+        train_dataloader=train_dataloader,
+        test_dataloader=test_dataloader,
+        optimizer=optimizer,
+        criterion=criterion,
+        epoches=epoches,
+        patience=patience,
+        train_set=train_set,
+        test_set=test_set
+    )
+
+    results = pd.DataFrame(
+        {'Train Losses': train_losses,
+         'Test Losses': test_losses}
+    )
+    # results.to_parquet(os.path.join('output_dir', 'rNN_result.parquet'))
+    
+    joblib.dump(model, os.path.join(output_dir, 'trained_rnn.joblib'))
+    print(f'Training Complete, model saved to {output_dir}.')
+
+
+
+if __name__ == "__main__":
+    main()
