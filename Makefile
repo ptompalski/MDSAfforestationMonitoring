@@ -19,6 +19,17 @@ SCORING ?= f1
 RANDOM_STATE ?= 591
 RETURN_RESULTS ?= True
 
+
+# RNN Hyperparameters
+INPUT_SIZE ?=
+HIDDEN_SIZE ?=
+SITE_FEATURES_SIZE ?=
+RNN_TYPE ?= GRU
+NUM_LAYERS ?= 1
+DROPOUT_RATE ?= 0.2
+CONCAT_FEATURES ?= False
+
+
 load_data: 
 	python src/data/load_data.py \
 		--input_path=$(RAW_DATA_PATH) \
@@ -40,6 +51,26 @@ data_split:
 	python src/data/data_split.py \
         --input_path=data/processed/$(THRESHOLD_PCT)/processed_data.parquet \
     	--output_dir=data/processed/$(THRESHOLD_PCT) \
+
+
+data_split_RNN:
+	python src/data/data_split.py \
+        --input_path=data/interim/clean_feats_data.parquet \
+    	--output_dir=data/interim \
+
+time_series_train_data:
+	python -m src.data.get_time_series \
+		--input_path=data/interim/train_data.parquet \
+		--output_seq_dir=data/processed/sequences \
+		--output_lookup_path=data/processed/train_lookup.parquet \
+
+time_series_test_data:
+	python -m src.data.get_time_series \
+		--input_path=data/interim/test_data.parquet \
+		--output_seq_dir=data/processed/sequences \
+		--output_lookup_path=data/processed/test_lookup.parquet \
+		--no-compute-norm-stats
+
 
 logistic_regression_pipeline:
 	python src/models/logistic_regression_pipeline.py \
@@ -75,6 +106,18 @@ gradient_boosting_pipeline:
 		--num_folds_rfecv=$(NUM_FOLDS_RFECV) \
 		--scoring_rfecv="$(SCORING)" \
 		--kwargs_json='{}' \
+		--output_dir=models/
+
+
+rnn_pipeline:
+	python src/models/rnn.py \
+		--input_size=$(INPUT_SIZE) \
+		--hidden_size=$(HIDDEN_SIZE) \
+		--site_features_size=$(SITE_FEATURES_SIZE) \
+		--rnn_type=$(RNN_TYPE) \
+		--num_layers=$(NUM_LAYERS) \
+		--dropout_rate=$(DROPOUT_RATE) \
+		--concat_features=$(CONCAT_FEATURES) \
 		--output_dir=models/
 
 cv_tuning:

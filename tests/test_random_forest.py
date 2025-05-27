@@ -31,7 +31,8 @@ def sample_data():
     'TCG':   [0.6, -0.2, 0.4, 0.5, -0.3, 0.2, -0.2, 0.1, 0.1,],   
     'TCW':   [0.3, -0.8, -0.2, 2.5, 0.6, -0.4, 0.9, 0.6, 0.1,], 
     'target': [0]*4 + [1]*5,
-    'SrvvR_Date': pd.date_range(start="2001-01-01", end="2009-01-01", freq="YS")
+    'SrvvR_Date': pd.date_range(start="2001-01-01", end="2009-01-01", freq="YS"),
+    'DOY': [1]*9
     })
     X = sample_data.drop(columns='target')
     y = sample_data['target']
@@ -131,7 +132,7 @@ def test_pipeline_all_parameters(
     # Check preprocessor drop column setup
     preprocessor = pipeline.named_steps['columntransformer']
     dropped = preprocessor.transformers[0][2]
-    expected_drops = ['ID', 'PixelID', 'Season', 'SrvvR_Date'] + (drop_features if drop_features else [])
+    expected_drops = ['DOY','ID', 'PixelID', 'Season', 'SrvvR_Date'] + (drop_features if drop_features else [])
     assert sorted(dropped) == sorted(expected_drops)
 
 def test_pipeline_fit_no_feat_select(sample_data):
