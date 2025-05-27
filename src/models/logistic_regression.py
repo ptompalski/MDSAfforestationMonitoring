@@ -5,6 +5,10 @@ from sklearn.pipeline import make_pipeline
 from sklearn.compose import make_column_transformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.model_selection import GroupKFold
+import os
+import click
+import joblib
+import json
 
 
 def build_logreg_pipeline(
@@ -110,3 +114,53 @@ def build_logreg_pipeline(
         )
 
     return make_pipeline(preprocessor, selector, base_clf)
+
+
+@click.command()
+@click.option('--feat_select', type=click.Choice(['None', 'RFE', 'RFECV']), default='None',
+                help='Feature selection method to apply')
+@click.option('--drop_features', type=list, default=None,
+                help='Comma-separated list of features to drop (e.g., "feat1,feat2")')
+@click.option('--step_rfe', type=int, default=1,
+                help='Number of features to remove at each iteration of RFE')
+@click.option('--num_feats_rfe', type=int, default=4,
+                help='Number of features to retain when using RFE')
+@click.option('--min_num_feats_rfecv', type=int, default=4,
+                help='Minimum number of features to retain when using RFECV')
+@click.option('--num_folds_rfecv', type=int, default=5,
+                help='Number of cross-validation folds to use during RFECV')
+@click.option('--scoring_rfecv', type=str, default='f1',
+                help='Scoring metric used during RFECV')
+@click.option('--random_state', type=int, default=591,
+                help='Random state seed for reproducibility')
+@click.option('--output_dir', type=click.Path(file_okay=False), required=True,
+              help='Directory to save pipeline model')
+@click.option('--kwargs_json', type=str, default='{}',
+                help='Additional hyperparameters for LogisticRegression as JSON string')
+def main(feat_select, drop_features, step_rfe, num_feats_rfe,
+         min_num_feats_rfecv, num_folds_rfecv, scoring_rfecv,
+         output_dir, random_state, kwargs_json):
+    kwargs = json.loads(kwargs_json)
+    feat_select = None if feat_select == 'None' else feat_select
+    pipeline = build_logreg_pipeline(
+        feat_select=feat_select,
+        drop_features=drop_features,
+        step_RFE=step_rfe,
+        num_feats_RFE=num_feats_rfe,
+        min_num_feats_RFECV=min_num_feats_rfecv,
+        num_folds_RFECV=num_folds_rfecv,
+        scoring_RFECV=scoring_rfecv,
+        random_state=random_state,
+        **kwargs
+    )
+
+    model_name = "logistic_regression.joblib"
+    model_path = os.path.join(output_dir, model_name)
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    joblib.dump(pipeline, model_path)
+    print(f"Model saved to {model_path}")
+
+if __name__ == '__main__':
+    main()

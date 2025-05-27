@@ -131,7 +131,7 @@ def build_rf_pipline(
 
 
 @click.command()
-@click.option('--feat_select', type=click.Choice([None, 'RFE', 'RFECV']), default=None,
+@click.option('--feat_select', type=click.Choice(['None', 'RFE', 'RFECV']), default='None',
                 help='Feature selection method to apply')
 @click.option('--drop_features', type=list, default=None,
                 help='Comma-separated list of features to drop (e.g., "feat1,feat2")')
@@ -159,7 +159,7 @@ def main(feat_select, drop_features, step_rfe, num_feats_rfe,
     """
 
     kwargs = json.loads(kwargs_json)
-
+    feat_select = None if feat_select == 'None' else feat_select
     pipeline = build_rf_pipline(
         feat_select=feat_select,
         drop_features=drop_features,
@@ -171,8 +171,8 @@ def main(feat_select, drop_features, step_rfe, num_feats_rfe,
         random_state=random_state,
         **kwargs
     )
-
-    model_name = f"rf_model.joblib"
+    
+    model_name = f"random_forest.joblib"
     model_path = os.path.join(output_dir, model_name)
 
     os.makedirs(output_dir, exist_ok=True)

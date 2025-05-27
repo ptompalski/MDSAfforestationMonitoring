@@ -138,7 +138,7 @@ def build_gbm_pipeline(
     return model_pipeline
 
 @click.command()
-@click.option('--feat_select', type=click.Choice([None, 'RFE', 'RFECV']), default=None,
+@click.option('--feat_select', type=click.Choice(['None', 'RFE', 'RFECV']), default='None',
                 help='Feature selection method to apply')
 @click.option('--drop_features', type=list, default=None,
                 help='Comma-separated list of features to drop (e.g., "feat1,feat2")')
@@ -162,7 +162,7 @@ def main(feat_select, drop_features, step_rfe, num_feats_rfe,
          min_num_feats_rfecv, num_folds_rfecv, scoring_rfecv,
          output_dir, random_state, kwargs_json):
     kwargs = json.loads(kwargs_json)
-
+    feat_select = None if feat_select == 'None' else feat_select
     pipeline = build_gbm_pipeline(
         feat_select=feat_select,
         drop_features=drop_features,
@@ -175,7 +175,7 @@ def main(feat_select, drop_features, step_rfe, num_feats_rfe,
         **kwargs
     )
 
-    model_name = "gbm_model.joblib"
+    model_name = "gradient_boosting.joblib"
     model_path = os.path.join(output_dir, model_name)
 
     os.makedirs(output_dir, exist_ok=True)
