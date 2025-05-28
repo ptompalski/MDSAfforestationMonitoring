@@ -97,7 +97,7 @@ def main(input_size, hidden_size, site_features_size, rnn_type, num_layers, drop
     model_filename = "rnn_survival_model.pth"
     model_path = os.path.join(output_dir, model_filename)
     try:
-        torch.save(model.state_dict(), model_path)
+        torch.save(model, model_path)
         print(f"Model saved to {model_path}.")
     except Exception as e:
         print(f"Error saving model {e}")
