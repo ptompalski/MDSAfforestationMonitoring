@@ -143,11 +143,9 @@ def main(model_path,
         device=device
     )
 
-    
-    joblib.dump(model, os.path.join(output_dir, 'trained_rnn.joblib'))
-    print(f'Training Complete, model saved to {output_dir}.')
 
-
+    torch.save(model, output_path)
+    print(f'Training Complete, model saved to {output_path}.')
 
 if __name__ == "__main__":
     main()
