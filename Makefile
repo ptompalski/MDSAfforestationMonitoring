@@ -1,4 +1,4 @@
-.PHONY: clean_all load_data preprocess_features pivot_data data_split_RNN time_series_train_data time_series_test_data \
+.PHONY: clean load_data preprocess_features pivot_data data_split_RNN time_series_train_data time_series_test_data \
 logistic_regression_pipeline random_forest_pipeline gru_pipeline_site_feats all_models tune_gbm tune_lr tune_rf \
 tune_classical_models clean_models clean_data
 
