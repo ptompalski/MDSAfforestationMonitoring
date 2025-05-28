@@ -8,6 +8,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import make_column_transformer
 from sklearn.model_selection import GroupKFold
 import os
+from sklearn.metrics import make_scorer,f1_score
 
 def build_gbm_pipeline(
     feat_select: str = None,
@@ -161,8 +162,11 @@ def build_gbm_pipeline(
 def main(feat_select, drop_features, step_rfe, num_feats_rfe,
          min_num_feats_rfecv, num_folds_rfecv, scoring_rfecv,
          output_dir, random_state, kwargs_json):
+    
     kwargs = json.loads(kwargs_json)
     feat_select = None if feat_select == 'None' else feat_select
+    scoring_rfecv = make_scorer(f1_score,pos_label=0) if scoring_rfecv == 'f1' else scoring_rfecv
+    
     pipeline = build_gbm_pipeline(
         feat_select=feat_select,
         drop_features=drop_features,
@@ -174,8 +178,11 @@ def main(feat_select, drop_features, step_rfe, num_feats_rfe,
         random_state=random_state,
         **kwargs
     )
-
-    model_name = "gradient_boosting.joblib"
+    
+    if feat_select == None: model_name = "gradient_boosting.joblib"
+    elif feat_select == 'RFE': model_name = "gradient_boosting_rfe.joblib"
+    else: model_name = "gradient_boosting_rfecv.joblib"
+            
     model_path = os.path.join(output_dir, model_name)
 
     os.makedirs(output_dir, exist_ok=True)

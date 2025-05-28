@@ -9,7 +9,7 @@ import os
 import click
 import joblib
 import json
-
+from sklearn.metrics import make_scorer,f1_score
 
 def build_logreg_pipeline(
     feat_select: Optional[str] = None,                 # {None,'RFE','RFECV'}
@@ -141,7 +141,11 @@ def main(feat_select, drop_features, step_rfe, num_feats_rfe,
          min_num_feats_rfecv, num_folds_rfecv, scoring_rfecv,
          output_dir, random_state, kwargs_json):
     kwargs = json.loads(kwargs_json)
+    
     feat_select = None if feat_select == 'None' else feat_select
+    scoring_rfecv = make_scorer(f1_score,pos_label=0) if scoring_rfecv == 'f1' else scoring_rfecv
+    
+    
     pipeline = build_logreg_pipeline(
         feat_select=feat_select,
         drop_features=drop_features,
@@ -154,7 +158,11 @@ def main(feat_select, drop_features, step_rfe, num_feats_rfe,
         **kwargs
     )
 
-    model_name = "logistic_regression.joblib"
+    if feat_select == None: model_name = "logistic_regression.joblib"
+    elif feat_select == 'RFE': model_name = "logistic_regression_rfe.joblib"
+    else: model_name = "logistic_regression_rfecv.joblib"
+ 
+ 
     model_path = os.path.join(output_dir, model_name)
 
     os.makedirs(output_dir, exist_ok=True)

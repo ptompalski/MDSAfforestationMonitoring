@@ -9,8 +9,6 @@ THRESHOLD_PCT = $(shell echo | awk '{printf "%.0f", $(THRESHOLD)*100}')
 
 FEAT_SELECT ?= None
 DROP_FEATURES ?= 
-STEP_RFE ?= 1
-NUM_FEATS_RFE ?= 5
 MIN_NUM_FEATS_RFECV ?= 2
 NUM_FOLDS_RFECV ?= 5
 
@@ -30,6 +28,16 @@ RNN_TYPE ?= GRU
 NUM_LAYERS ?= 1
 DROPOUT_RATE ?= 0.2
 CONCAT_FEATURES ?= False
+
+# RNN Training 
+LR ?= 0.01
+BATCH_SIZE ?= 64
+EPOCHES ?= 10
+PATIENCE ?= 5
+NUM_WORKERS ?= 0
+PIN_MEMORY ?= False
+SITE_COLS ?=
+SEQ_COLS ?=
 
 ### Targets and Dependencies ###
 
@@ -68,7 +76,8 @@ data/interim/test_data.parquet: data/interim/clean_feats_data.parquet
     	--output_dir=data/interim \
 
 # time_series_train_data
-data/processed/train_lookup.parquet data/interim/norm_stats.json: data/interim/train_data.parquet
+data/processed/train_lookup.parquet data/processed/valid_lookup.parquet \
+ data/interim/norm_stats.json: data/interim/train_data.parquet
 	python -m src.data.get_time_series \
 		--input_path=data/interim/train_data.parquet \
 		--output_seq_dir=data/processed/sequences \
@@ -84,15 +93,11 @@ data/processed/test_lookup.parquet: data/interim/test_data.parquet data/interim/
 		--output_lookup_path=data/processed/test_lookup.parquet \
 		--no-compute-norm-stats
 
+# construct model pipelines
 models/logistic_regression.joblib:
 	python src/models/logistic_regression.py \
 		--feat_select='$(FEAT_SELECT)' \
 		--drop_features=$(DROP_FEATURES) \
-		--step_rfe=$(STEP_RFE) \
-		--num_feats_rfe=$(NUM_FEATS_RFE) \
-		--min_num_feats_rfecv=$(MIN_NUM_FEATS_RFECV) \
-		--num_folds_rfecv=$(NUM_FOLDS_RFECV) \
-		--scoring_rfecv="$(SCORING)" \
 		--kwargs_json='{}' \
 		--output_dir=models/
 
@@ -100,11 +105,6 @@ models/random_forest.joblib:
 	python src/models/random_forest.py \
 		--feat_select='$(FEAT_SELECT)' \
 		--drop_features=$(DROP_FEATURES) \
-		--step_rfe=$(STEP_RFE) \
-		--num_feats_rfe=$(NUM_FEATS_RFE) \
-		--min_num_feats_rfecv=$(MIN_NUM_FEATS_RFECV) \
-		--num_folds_rfecv=$(NUM_FOLDS_RFECV) \
-		--scoring_rfecv="$(SCORING)" \
 		--kwargs_json='{}' \
 		--output_dir=models/
 
@@ -112,11 +112,6 @@ models/gradient_boosting.joblib:
 	python src/models/gradient_boosting.py \
 		--feat_select='$(FEAT_SELECT)' \
 		--drop_features=$(DROP_FEATURES) \
-		--step_rfe=$(STEP_RFE) \
-		--num_feats_rfe=$(NUM_FEATS_RFE) \
-		--min_num_feats_rfecv=$(MIN_NUM_FEATS_RFECV) \
-		--num_folds_rfecv=$(NUM_FOLDS_RFECV) \
-		--scoring_rfecv="$(SCORING)" \
 		--kwargs_json='{}' \
 		--output_dir=models/
 
@@ -127,7 +122,7 @@ models/gru_site_feats.pth:
 		--input_size=$(INPUT_SIZE) \
 		--hidden_size=$(HIDDEN_SIZE) \
 		--site_features_size=$(SITE_FEATURES_SIZE) \
-		--rnn_type=$(RNN_TYPE) \
+		--rnn_type=GRU \
 		--num_layers=$(NUM_LAYERS) \
 		--dropout_rate=$(DROPOUT_RATE) \
 		--concat_features=True \
@@ -139,11 +134,12 @@ models/gru_no_site_feats.pth:
 		--input_size=$(INPUT_SIZE) \
 		--hidden_size=$(HIDDEN_SIZE) \
 		--site_features_size=$(SITE_FEATURES_SIZE) \
-		--rnn_type=$(RNN_TYPE) \
+		--rnn_type=GRU \
 		--num_layers=$(NUM_LAYERS) \
 		--dropout_rate=$(DROPOUT_RATE) \
 		--concat_features=False \
 		--output_dir=models/
+
 # tune_gbm
 models/$(THRESHOLD_PCT)/tuned_gradient_boosting.joblib \
 models/$(THRESHOLD_PCT)/logs/tuned_gradient_boosting_log.csv: models/gradient_boosting.joblib \
@@ -190,6 +186,59 @@ data/processed/$(THRESHOLD_PCT)/train_data.parquet
 		--scoring=$(SCORING) \
 		--random_state=$(RANDOM_STATE) \
 		--return_results=$(RETURN_RESULTS) \
+		--output_dir=models/
+
+#rnn_training
+rnn_training: 
+	python src/training/rnn_train.py \
+		--model_path=models/rnn_survival_model.pth \
+		--output_dir=models/ \
+		--data_dir=data/processed/sequences/ \
+		--lookup_dir=data/processed/ \
+		--lr=$(LR) \
+		--batch_size=$(BATCH_SIZE) \
+		--epoches=$(EPOCHES) \
+		--patience=$(PATIENCE) \
+		--num_workers=$(NUM_WORKERS) \
+		--pin_memory=$(PIN_MEMORY) \
+		--site_cols=$(SITE_COLS) \
+		--seq_cols=$(SEQ_COLS)
+
+## Feature Selection ##
+
+# make model pipelines with RFECV feature selection methods
+
+# gbm_rfecv_pipeline
+models/gradient_boosting_rfecv.joblib:
+	python src/models/gradient_boosting.py \
+		--feat_select=RFECV \
+		--drop_features=$(DROP_FEATURES) \
+		--min_num_feats_rfecv=$(MIN_NUM_FEATS_RFECV) \
+		--num_folds_rfecv=$(NUM_FOLDS_RFECV) \
+		--scoring_rfecv="$(SCORING)" \
+		--kwargs_json='{}' \
+		--output_dir=models/
+
+# rf_rfecv_pipeline
+models/random_forest_rfecv.joblib:
+	python src/models/logistic_regression.py \
+		--feat_select=RFECV \
+		--drop_features=$(DROP_FEATURES) \
+		--min_num_feats_rfecv=$(MIN_NUM_FEATS_RFECV) \
+		--num_folds_rfecv=$(NUM_FOLDS_RFECV) \
+		--scoring_rfecv="$(SCORING)" \
+		--kwargs_json='{}' \
+		--output_dir=models/
+
+# lr_rfecv_pipeline
+models/logistic_regression_rfecv.joblib:
+	python src/models/logistic_regression.py \
+		--feat_select=RFECV \
+		--drop_features=$(DROP_FEATURES) \
+		--min_num_feats_rfecv=$(MIN_NUM_FEATS_RFECV) \
+		--num_folds_rfecv=$(NUM_FOLDS_RFECV) \
+		--scoring_rfecv="$(SCORING)" \
+		--kwargs_json='{}' \
 		--output_dir=models/
 
 ### Phony targets ###
