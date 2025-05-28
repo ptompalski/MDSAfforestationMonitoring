@@ -7,6 +7,7 @@ from typing import List, Tuple
 import numpy as np
 
 
+
 class AfforestationDataset(Dataset):
     """
     A custom PyTorch Dataset for loading site records and their corresponding satellite time series records.
@@ -152,7 +153,7 @@ def dataloader_wrapper(
     seq_dir: str | os.PathLike,
     batch_size: int = 32,
     num_workers: int = 0,
-    pin_memory: bool = True,
+    pin_memory: bool = False,
     site_cols: List[str] = ['Density', 'Type_Conifer',
                             'Type_Decidous', 'Age'],
     seq_cols: List[str] = ['NDVI', 'SAVI',
@@ -176,7 +177,7 @@ def dataloader_wrapper(
         Number of samples per batch. Expects a positive integer.
     num_worker : int, default=0
         Number of subprocesses to use for data loading. Expects a non-negative integer.
-    pin_memory : bool, default=True
+    pin_memory : bool, default=False
         If True, data is copied into device/CUDA pinned memory before returning. 
     site_cols : List of str, default=['Density', 'Type_Conifer', 'Type_Decidous', 'Age']
         List of columns in the lookup table to be used as site features.

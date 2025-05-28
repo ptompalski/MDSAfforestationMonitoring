@@ -28,6 +28,17 @@ NUM_LAYERS ?= 1
 DROPOUT_RATE ?= 0.2
 CONCAT_FEATURES ?= False
 
+# RNN Training 
+LR ?= 0.01
+BATCH_SIZE ?= 64
+EPOCHES ?= 10
+PATIENCE ?= 5
+NUM_WORKERS ?= 0
+PIN_MEMORY ?= False
+SITE_COLS ?=
+SEQ_COLS ?=
+
+
 load_data: 
 	python src/data/load_data.py \
 		--input_path=$(RAW_DATA_PATH) \
@@ -131,6 +142,21 @@ cv_tuning:
 		--random_state=$(RANDOM_STATE) \
 		--return_results=$(RETURN_RESULTS) \
 		--output_dir=models/
+
+rnn_training:
+	python src/training/rnn_train.py \
+		--model_path=models/rnn_survival_model.pth \
+		--output_dir=models/ \
+		--data_dir=data/processed/sequences/ \
+		--lookup_dir=data/processed/ \
+		--lr=$(LR) \
+		--batch_size=$(BATCH_SIZE) \
+		--epoches=$(EPOCHES) \
+		--patience=$(PATIENCE) \
+		--num_workers=$(NUM_WORKERS) \
+		--pin_memory=$(PIN_MEMORY) \
+		--site_cols=$(SITE_COLS) \
+		--seq_cols=$(SEQ_COLS)
 
 test:
 	pytest
