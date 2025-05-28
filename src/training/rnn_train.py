@@ -79,20 +79,20 @@ def train(model, train_dataloader, valid_dataloader, train_set, valid_set, devic
 @click.option('--patience', type=int, default=5, help='Early stopping patience.')
 @click.option('--num_workers', type=int, default=0, help='Number of workers for dataloader.')
 @click.option('--pin_memory', type=bool, default=False, help='Whether to pin_memory before returning.')
-@click.option('--site_cols', type=list, default=None, help='Site features to use in model.')
-@click.option('--seq_cols', type=list, default=None, help='Sequence features to use in model.')
+@click.option('--site_cols', type=str, default='', help='Site features to use in model.')
+@click.option('--seq_cols', type=str, default='', help='Sequence features to use in model.')
 def main(model_path,
-         output_dir,
+         output_path,
          lookup_dir,
          data_dir,
          lr=0.01,
-         batch_size=32,
-         epoches=10,
+         batch_size=64,
+         epochs=10,
          patience=5,
          num_workers=0,
          pin_memory=False,
-         site_cols=[],
-         seq_cols=[]):
+         site_cols='',
+         seq_cols=''):
     
     TRAIN_LOOKUP_PATH = os.path.join(lookup_dir, 'train_lookup.parquet')
     VALID_LOOKUP_PATH = os.path.join(lookup_dir, 'valid_lookup.parquet')
@@ -100,11 +100,13 @@ def main(model_path,
     if site_cols == '':
         site_cols = ['Density', 'Type_Conifer', 'Type_Decidous', 'Age']
     else:
-        site_cols = site_cols.split(',') 
-    if seq_cols == []:
+        site_cols = site_cols.split(',')
+    
+    if seq_cols == '':
         seq_cols = ['NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR',
-                'TCB', 'TCG', 'TCW', 'log_dt', 'neg_cos_DOY'] 
-
+                    'TCB', 'TCG', 'TCW', 'log_dt', 'neg_cos_DOY']
+    else:
+        seq_cols = seq_cols.split(',')
     
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
