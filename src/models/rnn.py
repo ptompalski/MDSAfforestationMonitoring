@@ -94,7 +94,8 @@ def main(input_size, hidden_size, site_features_size, rnn_type, num_layers, drop
     print(f"Model created with {model.rnn_layers} layers and {model.rnn_hidden_size} hidden size using {model.rnn_type}.")
 
     os.makedirs(output_dir, exist_ok=True)
-    model_filename = "rnn_survival_model.pth"
+    rnn_type = str.lower(rnn_type)
+    model_filename = f"{rnn_type}_site_feats.pth" if concat_features else f"{rnn_type}_no_site_feats.pth"
     model_path = os.path.join(output_dir, model_filename)
     try:
         torch.save(model, model_path)
