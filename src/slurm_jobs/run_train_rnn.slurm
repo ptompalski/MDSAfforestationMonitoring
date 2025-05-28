@@ -23,7 +23,7 @@ conda activate mds-afforest-dev
  
 # Define a timestamped scratch run directory
 TS=$(date +%s)
-SCRATCH_RUN_DIR=/scratch/st-alexrod6-1-gpu/$USER/afforest_run_$TS
+SCRATCH_RUN_DIR=/scratch/st-alexrod6-1/$USER/afforest_run_$TS
 
 # Copy your GitHub repo to scratch (excluding .git)
 rsync -a --exclude='.git' /arc/home/$USER/MDSAfforestationMonitoring "$SCRATCH_RUN_DIR"
