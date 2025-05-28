@@ -3,19 +3,21 @@ import torch
 import os
 import click
 import pandas as pd
-import joblib
 import sys
 import os
 import argparse
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from models.rnn import RNNSurvivalPredictor
 
-def train(model, train_dataloader, test_dataloader, train_set, test_set, optimizer, criterion, epoches=10, patience=5, device='cpu'):
-    train_losses = []
-    test_losses = []
-    for epoch in range(epoches):
+def train(model, train_dataloader, valid_dataloader, train_set, valid_set, device, optimizer, criterion, epochs=10, patience=5):
+
+    valid_losses = []
+
+    print(f'Training Model on {epochs} epochs on {device}.')
+    model.to(device, non_blocking=True)
+    for epoch in range(epochs):
         train_set.reshuffle()
-        test_set.reshuffle()
+        valid_set.reshuffle()
         model.train()
         total_train_loss = 0
         for batch in train_dataloader:
@@ -27,12 +29,11 @@ def train(model, train_dataloader, test_dataloader, train_set, test_set, optimiz
             optimizer.step()
             total_train_loss += train_loss.item()
         avg_train_loss = total_train_loss / len(train_dataloader)
-        train_losses.append(avg_train_loss)
 
         model.eval()
-        total_test_loss = 0
+        total_valid_loss = 0
         with torch.no_grad():
-            for batch in test_dataloader:
+            for batch in valid_dataloader:
                 predictions = model(
                     batch['sequence'], batch['sequence_length'], batch['site_features'])
                 test_loss = criterion(predictions, batch['target'])
@@ -41,14 +42,13 @@ def train(model, train_dataloader, test_dataloader, train_set, test_set, optimiz
             test_losses.append(avg_test_loss)
 
         print(
-            f"Epoch {epoch+1}: Train Loss = {avg_train_loss:.4f}, Test Loss = {avg_test_loss:.4f}")
+            f"Epoch {epoch+1}: Train Loss = {avg_train_loss:.4f}, Valid Loss = {avg_valid_loss:.4f}")
 
         # Early stopping check
-        if epoch > 0 and avg_test_loss > test_losses[-2] * (1 + 1e-5):
+        if epoch > 0 and avg_valid_loss > valid_losses[-2] * (1 + 1e-5):
             early_stopping_counter += 1
         else:
             early_stopping_counter = 0
-
         if early_stopping_counter >= patience:
             print(f"Early stopping triggered at epoch {epoch+1}")
             break
@@ -57,13 +57,13 @@ def train(model, train_dataloader, test_dataloader, train_set, test_set, optimiz
 
 
 @click.command()
-@click.option('--model_path', type=click.Path(exists=True), required=True, help='Path to model joblib file.')
-@click.option('--output_dir', type=click.Path(exists=True), required=True, help='Directory to save trained model.')
+@click.option('--model_path', type=click.Path(exists=True), required=True, help='Path to model .pth file.')
+@click.option('--output_path', type=click.Path(), required=True, help='Path to save the trained model.')
 @click.option('--lookup_dir', type=click.Path(exists=True), required=True, help='Directory to lookup file.')
 @click.option('--data_dir', type=click.Path(exists=True), required=True, help='Directory to sequence data files.')
 @click.option('--lr', type=float, default=0.01, help='Learning Rate of Adam optimizer.')
 @click.option('--batch_size', type=int, default=32, help='Batch size for model.')
-@click.option('--epoches', type=int, default=10, help='Number of epoches to train the model on.')
+@click.option('--epochs', type=int, default=10, help='Number of epochs to train the model on.')
 @click.option('--patience', type=int, default=5, help='Early stopping patience.')
 @click.option('--num_workers', type=int, default=0, help='Number of workers for dataloader.')
 @click.option('--pin_memory', type=bool, default=False, help='Whether to pin_memory before returning.')
@@ -83,8 +83,9 @@ def main(model_path,
          seq_cols=[]):
     
     TRAIN_LOOKUP_PATH = os.path.join(lookup_dir, 'train_lookup.parquet')
-    TEST_LOOKUP_PATH = os.path.join(lookup_dir, 'test_lookup.parquet')
-    if site_cols == []:
+    VALID_LOOKUP_PATH = os.path.join(lookup_dir, 'valid_lookup.parquet')
+
+    if site_cols == '':
         site_cols = ['Density', 'Type_Conifer', 'Type_Decidous', 'Age']
     else:
         site_cols = site_cols.split(',') 
@@ -106,8 +107,8 @@ def main(model_path,
         site_cols=site_cols,
         seq_cols=seq_cols
     )
-    test_set, test_dataloader = rnn_dataset.dataloader_wrapper(
-        lookup_dir=TEST_LOOKUP_PATH,
+    valid_set, valid_dataloader = rnn_dataset.dataloader_wrapper(
+        lookup_dir=VALID_LOOKUP_PATH,
         seq_dir=data_dir,
         batch_size=batch_size,
         num_workers=num_workers,
@@ -116,17 +117,17 @@ def main(model_path,
         seq_cols=seq_cols
     )
 
-    print(f'Training Model on {epoches} epoches.')
-    model, train_losses, test_losses = train(
+    model = train(
         model=model,
         train_dataloader=train_dataloader,
-        test_dataloader=test_dataloader,
+        valid_dataloader=valid_dataloader,
         optimizer=optimizer,
         criterion=criterion,
-        epoches=epoches,
+        epochs=epochs,
         patience=patience,
         train_set=train_set,
-        test_set=test_set
+        valid_set=valid_set,
+        device=device
     )
 
     results = pd.DataFrame(
