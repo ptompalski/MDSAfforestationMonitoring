@@ -65,7 +65,7 @@ def train(model, train_dataloader, valid_dataloader, train_set, valid_set, devic
             print(f"Early stopping triggered at epoch {epoch+1}")
             break
 
-    return model, train_losses, test_losses
+    return model
 
 
 @click.command()
@@ -143,11 +143,6 @@ def main(model_path,
         device=device
     )
 
-    results = pd.DataFrame(
-        {'Train Losses': train_losses,
-         'Test Losses': test_losses}
-    )
-    # results.to_parquet(os.path.join('output_dir', 'rNN_result.parquet'))
     
     joblib.dump(model, os.path.join(output_dir, 'trained_rnn.joblib'))
     print(f'Training Complete, model saved to {output_dir}.')
