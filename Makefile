@@ -1,6 +1,6 @@
 .PHONY: clean load_data preprocess_features pivot_data data_split_RNN time_series_train_data time_series_test_data \
 logistic_regression_pipeline random_forest_pipeline gru_pipeline_site_feats all_models tune_gbm tune_lr tune_rf \
-tune_classical_models clean_models clean_data
+tune_classical_models clean_models clean_data gradient_boosting_rfecv logistic_regression_rfecv random_forest_rfecv RFECV
 
 DAY_RANGE ?= 15
 RAW_DATA_PATH ?= data/raw/AfforestationAssessmentDataUBCCapstone.rds
@@ -206,7 +206,7 @@ rnn_training:
 
 ## Feature Selection ##
 
-# make model pipelines with RFECV feature selection methods
+# RFECV model pipeline constructors
 
 # gbm_rfecv_pipeline
 models/gradient_boosting_rfecv.joblib:
@@ -221,7 +221,7 @@ models/gradient_boosting_rfecv.joblib:
 
 # rf_rfecv_pipeline
 models/random_forest_rfecv.joblib:
-	python src/models/logistic_regression.py \
+	python src/models/random_forest.py \
 		--feat_select=RFECV \
 		--drop_features=$(DROP_FEATURES) \
 		--min_num_feats_rfecv=$(MIN_NUM_FEATS_RFECV) \
@@ -240,6 +240,33 @@ models/logistic_regression_rfecv.joblib:
 		--scoring_rfecv="$(SCORING)" \
 		--kwargs_json='{}' \
 		--output_dir=models/
+
+# Train RFECV models
+
+# GBM
+models/$(THRESHOLD_PCT)/fitted_gradient_boosting_rfecv.joblib: models/gradient_boosting_rfecv.joblib \
+data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/training/RFE_trainer.py \
+		--model_path=models/gradient_boosting_rfecv.joblib \
+		--training_data=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT)
+
+# RF
+models/$(THRESHOLD_PCT)/fitted_random_forest_rfecv.joblib: models/random_forest_rfecv.joblib \
+data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/training/RFE_trainer.py \
+		--model_path=models/random_forest_rfecv.joblib \
+		--training_data=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT)
+
+# LR
+models/$(THRESHOLD_PCT)/fitted_logistic_regression_rfecv.joblib: models/logistic_regression_rfecv.joblib \
+data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/training/RFE_trainer.py \
+		--model_path=models/logistic_regression_rfecv.joblib  \
+		--training_data=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT)
+
 
 ### Phony targets ###
 
@@ -263,16 +290,6 @@ gradient_boosting_pipeline: models/gradient_boosting.joblib
 gru_pipeline_site_feats: models/gru_site_feats.pth
 gru_pipeline_no_site_feats: models/gru_no_site_feats.pth
 
-# construct all models at once
-all_models: logistic_regression_pipeline random_forest_pipeline gradient_boosting_pipeline \
-gru_pipeline_site_feats gru_pipeline_no_site_feats
-
-# process data for classical model training (LR, GBM, RF)
-data_for_classical_models: data_split
-
-# process data for RNN models
-data_for_RNN_models: time_series_train_data time_series_test_data
-
 # tune/train classical models
 tune_gbm: models/$(THRESHOLD_PCT)/tuned_gradient_boosting.joblib \
 models/$(THRESHOLD_PCT)/logs/tuned_gradient_boosting_log.csv
@@ -283,6 +300,25 @@ models/$(THRESHOLD_PCT)/logs/tuned_random_forest_log.csv
 tune_lr: models/$(THRESHOLD_PCT)/tuned_logistic_regression.joblib \
 models/$(THRESHOLD_PCT)/logs/tuned_logistic_regression_log.csv
 
+## initialize RFECV pipelines
+gradient_boosting_rfecv: models/$(THRESHOLD_PCT)/fitted_gradient_boosting_rfecv.joblib
+logistic_regression_rfecv: models/$(THRESHOLD_PCT)/fitted_logistic_regression_rfecv.joblib
+random_forest_rfecv: models/$(THRESHOLD_PCT)/fitted_random_forest_rfecv.joblib
+
+# construct all models at once
+all_models: logistic_regression_pipeline random_forest_pipeline gradient_boosting_pipeline \
+gru_pipeline_site_feats gru_pipeline_no_site_feats
+
+# process data for classical model training (LR, GBM, RF)
+data_for_classical_models: data_split
+
+# process data for RNN models
+data_for_RNN_models: time_series_train_data time_series_test_data
+
+# Run Recursive Feature Elimination on all models 
+RFECV: gradient_boosting_rfecv logistic_regression_rfecv random_forest_rfecv
+
+# tune all models
 tune_classical_models: tune_gbm tune_lr tune_rf
 
 test:
