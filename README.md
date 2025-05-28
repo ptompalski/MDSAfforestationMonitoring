@@ -162,13 +162,17 @@ These targets run scripts to train different types of models. They share common 
   - **Description**: Trains a gradient boosting model. It uses feature selection parameters and saves the trained model to `models/`.
 - `rnn_pipeline:`
   - Executes `src/models/rnn.py`.
-  - **Description**: Trains an RNN model using the specified RNN hyperparameters (`INPUT_SIZE`, `HIDDEN_SIZE`, etc.) and saves the trained model to `models/`.
+  - **Description**: Creates an instance of RNN model using the specified RNN hyperparameters (`INPUT_SIZE`, `HIDDEN_SIZE`, etc.) and saves the model to `models/`.
+- `rnn_training`:
+  - Executes `src/training/rnn_training.py`.
+  - **Description**: Trains the RNN model on multiple epochs of train data and evaluates the model on test data. Saves the trained model to `models/`.
 
 ### Model Tuning
 
 - `cv_tuning:`
   - Executes `src/training/cv_tuning.py`.
   - **Description**: Performs cross-validated hyperparameter tuning for a specified model (defaulting to `models/gbm_model.joblib`). It uses training and test data from `data/processed/$(THRESHOLD_PCT)/`, applies the specified `TUNING_METHOD`, `PARAM_GRID`, and other tuning parameters, and saves the results to `models/`.
+    
 
 ### Utility
 
