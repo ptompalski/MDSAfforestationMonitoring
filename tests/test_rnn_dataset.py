@@ -228,7 +228,7 @@ def test_loader_fallback(setup_mock_data):
     Test if function overwrites invalid integer inputs for batch_size and num_workers.
     """
     MOCK_LOOKUP_PATH, MOCK_SEQ_DIR = setup_mock_data
-    dataset, loader = dataloader_wrapper(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR, batch_size=-1, num_workers=-1, SITE_COLS, SEQ_COLS)
+    dataset, loader = dataloader_wrapper(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR, SITE_COLS, SEQ_COLS, batch_size=-1, num_workers=-1)
     assert loader.batch_size == 32  # Default to 32 if batch_size is not a positive integer.
     assert loader.num_workers == 0  # Default to 0 if num_workers is a negative integer.
     
