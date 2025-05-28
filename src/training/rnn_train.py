@@ -23,8 +23,14 @@ def train(model, train_dataloader, valid_dataloader, train_set, valid_set, devic
         for batch in train_dataloader:
             optimizer.zero_grad()
             predictions = model(
-                batch['sequence'], batch['sequence_length'], batch['site_features'])
-            train_loss = criterion(predictions, batch['target'])
+                batch['sequence'].to(device, non_blocking=True),
+                batch['sequence_length'],
+                batch['site_features'].to(device, non_blocking=True)
+                )
+            train_loss = criterion(
+                predictions.to(device, non_blocking=True),
+                batch['target'].to(device, non_blocking=True)
+            )
             train_loss.backward()
             optimizer.step()
             total_train_loss += train_loss.item()
@@ -35,11 +41,17 @@ def train(model, train_dataloader, valid_dataloader, train_set, valid_set, devic
         with torch.no_grad():
             for batch in valid_dataloader:
                 predictions = model(
-                    batch['sequence'], batch['sequence_length'], batch['site_features'])
-                test_loss = criterion(predictions, batch['target'])
-                total_test_loss += test_loss.item()
-            avg_test_loss = total_test_loss/len(test_dataloader)
-            test_losses.append(avg_test_loss)
+                    batch['sequence'].to(device, non_blocking=True),
+                    batch['sequence_length'],
+                    batch['site_features'].to(device, non_blocking=True)
+                )
+                valid_loss = criterion(
+                    predictions,
+                    batch['target'].to(device, non_blocking=True)
+                )
+                total_valid_loss += valid_loss.item()
+            avg_valid_loss = total_valid_loss/len(valid_dataloader)
+            valid_losses.append(avg_valid_loss)
 
         print(
             f"Epoch {epoch+1}: Train Loss = {avg_train_loss:.4f}, Valid Loss = {avg_valid_loss:.4f}")
@@ -94,6 +106,7 @@ def main(model_path,
                 'TCB', 'TCG', 'TCW', 'log_dt', 'neg_cos_DOY'] 
 
     
+    device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
     model = torch.load(model_path, weights_only=False)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
