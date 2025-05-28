@@ -64,8 +64,8 @@ def build_logreg_pipeline(
     # one-hot 'Type'. The numeric list is the same as in the GBM tests.   #
     # ------------------------------------------------------------------ #
     drop_cols = (
-        ['ID', 'PixelID', 'Season','SrvvR_Date','DOY' ] if drop_features is None 
-        else ['ID', 'PixelID', 'Season', 'SrvvR_Date','DOY' ] + drop_features
+        ['ID', 'PixelID', 'Season','SrvvR_Date'] if drop_features is None 
+        else ['ID', 'PixelID', 'Season', 'SrvvR_Date'] + drop_features
     )
 
     numeric_cols = [

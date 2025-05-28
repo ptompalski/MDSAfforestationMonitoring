@@ -1,5 +1,6 @@
-.PHONY: clean load_data preprocess_features pivot_data data_split_RNN time_series_train_data time_series_test_data \
-logistic_regression_pipeline random_forest_pipeline gru_pipeline_site_feats all_models
+.PHONY: clean_all load_data preprocess_features pivot_data data_split_RNN time_series_train_data time_series_test_data \
+logistic_regression_pipeline random_forest_pipeline gru_pipeline_site_feats all_models tune_gbm tune_lr tune_rf \
+tune_classical_models clean_models clean_data
 
 DAY_RANGE ?= 15
 RAW_DATA_PATH ?= data/raw/AfforestationAssessmentDataUBCCapstone.rds
@@ -19,7 +20,7 @@ NUM_FOLDS ?= 2
 SCORING ?= f1
 RANDOM_STATE ?= 591
 RETURN_RESULTS ?= True
-
+PARAM_GRID ?=default
 
 # RNN Hyperparameters
 INPUT_SIZE ?= 12 
@@ -143,14 +144,47 @@ models/gru_no_site_feats.pth:
 		--dropout_rate=$(DROPOUT_RATE) \
 		--concat_features=False \
 		--output_dir=models/
-
-cv_tuning:
+# tune_gbm
+models/$(THRESHOLD_PCT)/tuned_gradient_boosting.joblib \
+models/$(THRESHOLD_PCT)/logs/tuned_gradient_boosting_log.csv: models/gradient_boosting.joblib \
+data/processed/$(THRESHOLD_PCT)/train_data.parquet
 	python src/training/cv_tuning.py \
-		--model_path=models/gbm_model.joblib \
+		--model_path=models/gradient_boosting.joblib \
 		--training_data=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
 		--tuning_method=$(TUNING_METHOD) \
+		--param_grid='$(PARAM_GRID)' \
+		--num_iter=$(NUM_ITER) \
+		--num_folds=$(NUM_FOLDS) \
+		--scoring=$(SCORING) \
+		--random_state=$(RANDOM_STATE) \
+		--return_results=$(RETURN_RESULTS) \
+		--output_dir=models/
 
-		--param_grid='{"xgbclassifier__n_estimators": [1,10], "xgbclassifier__learning_rate": [0.001,10], "xgbclassifier__max_depth":[1,2]}' \
+# tune_rf
+models/$(THRESHOLD_PCT)/tuned_random_forest.joblib \
+models/$(THRESHOLD_PCT)/logs/tuned_random_forest_log.csv: models/random_forest.joblib \
+data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/training/cv_tuning.py \
+		--model_path=models/random_forest.joblib \
+		--training_data=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--tuning_method=$(TUNING_METHOD) \
+		--param_grid='$(PARAM_GRID)' \
+		--num_iter=$(NUM_ITER) \
+		--num_folds=$(NUM_FOLDS) \
+		--scoring=$(SCORING) \
+		--random_state=$(RANDOM_STATE) \
+		--return_results=$(RETURN_RESULTS) \
+		--output_dir=models/
+
+# tune_lr
+models/$(THRESHOLD_PCT)/tuned_logistic_regression.joblib \
+models/$(THRESHOLD_PCT)/logs/tuned_logistic_regression_log.csv: models/logistic_regression.joblib \
+data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/training/cv_tuning.py \
+		--model_path=models/logistic_regression.joblib \
+		--training_data=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--tuning_method=$(TUNING_METHOD) \
+		--param_grid='$(PARAM_GRID)' \
 		--num_iter=$(NUM_ITER) \
 		--num_folds=$(NUM_FOLDS) \
 		--scoring=$(SCORING) \
@@ -190,15 +224,31 @@ data_for_classical_models: data_split
 # process data for RNN models
 data_for_RNN_models: time_series_train_data time_series_test_data
 
+# tune/train classical models
+tune_gbm: models/$(THRESHOLD_PCT)/tuned_gradient_boosting.joblib \
+models/$(THRESHOLD_PCT)/logs/tuned_gradient_boosting_log.csv
+
+tune_rf: models/$(THRESHOLD_PCT)/tuned_random_forest.joblib \
+models/$(THRESHOLD_PCT)/logs/tuned_random_forest_log.csv
+
+tune_lr: models/$(THRESHOLD_PCT)/tuned_logistic_regression.joblib \
+models/$(THRESHOLD_PCT)/logs/tuned_logistic_regression_log.csv
+
+tune_classical_models: tune_gbm tune_lr tune_rf
+
 test:
 	pytest
 
-clean:
+clean_data:
 	rm -rf data/raw/raw_data.parquet 
 	rm -rf data/interim
 	rm -rf data/processed
-	rm -rf models
 	mkdir data/interim
 	touch data/interim/.gitkeep
 	mkdir data/processed
 	touch data/processed/.gitkeep
+
+clean_models:
+	rm -rf models
+
+clean_all: clean_data clean_models
