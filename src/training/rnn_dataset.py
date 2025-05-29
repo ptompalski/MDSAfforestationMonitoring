@@ -7,6 +7,7 @@ from typing import List, Tuple
 import numpy as np
 
 
+
 class AfforestationDataset(Dataset):
     """
     A custom PyTorch Dataset for loading site records and their corresponding satellite time series records.
@@ -150,14 +151,11 @@ def collate_fn(batch: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]):
 def dataloader_wrapper(
     lookup_dir: str | os.PathLike,
     seq_dir: str | os.PathLike,
+    site_cols: List[str],
+    seq_cols: List[str],
     batch_size: int = 32,
     num_workers: int = 0,
-    pin_memory: bool = True,
-    site_cols: List[str] = ['Density', 'Type_Conifer',
-                            'Type_Decidous', 'Age'],
-    seq_cols: List[str] = ['NDVI', 'SAVI',
-                           'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR',
-                           'TCB', 'TCG', 'TCW', 'log_dt', 'neg_cos_DOY']
+    pin_memory: bool = False
 ):
     """
     Creates a PyTorch Dataset and DataLoader for batching satellite sequence data with site features.
@@ -172,16 +170,16 @@ def dataloader_wrapper(
         Path to the Parquet file containing the lookup table.
     seq_dir : str | os.PathLike
         Directory containing the satellite data files referenced in the lookup table.
+    site_cols : List of str
+        List of columns in the lookup table to be used as site features.
+    seq_cols : List of str
+        List of columns in the sequence to be used as satellite features. `len(seq_cols)` should match the `input_size` for the rNN model.
     batch_size : int, default=32
         Number of samples per batch. Expects a positive integer.
     num_worker : int, default=0
         Number of subprocesses to use for data loading. Expects a non-negative integer.
-    pin_memory : bool, default=True
+    pin_memory : bool, default=False
         If True, data is copied into device/CUDA pinned memory before returning. 
-    site_cols : List of str, default=['Density', 'Type_Conifer', 'Type_Decidous', 'Age']
-        List of columns in the lookup table to be used as site features.
-    seq_cols : List of str, default=['NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR', 'TCB', 'TCG', 'TCW', 'log_dt', 'neg_cos_DOY' ]
-        List of columns in the sequence to be used as satellite features. `len(seq_cols)` should match the `input_size` for the rNN model.
 
     Returns
     -------

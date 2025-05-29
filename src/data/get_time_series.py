@@ -10,6 +10,7 @@ from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
 from typing import Tuple, Union
 import sys
+from src.data.data_split import data_split
 
 def _get_summary_statistics(density_col: pd.Series, tc_cols: pd.DataFrame) -> dict:
     """
@@ -300,6 +301,7 @@ def main(input_path,output_seq_dir,norm_stats_path,output_lookup_path,compute_no
     '''
     # setup directories
     output_seq_dir = Path(output_seq_dir)
+    output_lookup_path = Path(output_lookup_path)
     output_seq_dir.mkdir(parents=True,exist_ok=True)
     norm_stats_path = Path(norm_stats_path)
     
@@ -341,6 +343,16 @@ def main(input_path,output_seq_dir,norm_stats_path,output_lookup_path,compute_no
     )
     click.echo(f'Saved lookup table to {output_lookup_path}')
     click.echo(f'Saved sequences to {output_seq_dir}')
+    
+     
+    # if given training data, split into training and validation set
+    if output_lookup_path.name == 'train_lookup.parquet':
+        click.echo('Splitting training lookup table into validation table...')
+        train_lookup = pd.read_parquet(output_lookup_path)
+        train_lookup,valid_lookup = data_split(train_lookup)
+        train_lookup.to_parquet(output_lookup_path)
+        valid_lookup.to_parquet(output_lookup_path.with_name('valid_lookup.parquet'))
+        click.echo(f"Saved validation lookup table to {output_lookup_path.with_name('valid_lookup.parquet')}")
     
 if __name__ == '__main__':
     main()

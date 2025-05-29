@@ -1,8 +1,10 @@
 .PHONY: clean load_data preprocess_features pivot_data data_split_RNN time_series_train_data time_series_test_data \
 logistic_regression_pipeline random_forest_pipeline gru_pipeline_site_feats all_models tune_gbm tune_lr tune_rf \
-tune_classical_models clean_models clean_data gradient_boosting_rfecv logistic_regression_rfecv random_forest_rfecv RFECV \
+gru_training_no_site_feats gru_training_site_feats tune_classical_models clean_models clean_data \
+gradient_boosting_rfecv logistic_regression_rfecv random_forest_rfecv RFECV \
 gradient_boosting_shap random_forest_shap logistic_regression_shap gradient_boosting_permute random_forest_permute \
 logistic_regression_permute SHAP permutation_importance
+
 
 DAY_RANGE ?= 15
 RAW_DATA_PATH ?= data/raw/AfforestationAssessmentDataUBCCapstone.rds
@@ -34,12 +36,15 @@ CONCAT_FEATURES ?= False
 # RNN Training 
 LR ?= 0.01
 BATCH_SIZE ?= 64
-EPOCHES ?= 10
+EPOCHS ?= 10
 PATIENCE ?= 5
 NUM_WORKERS ?= 0
 PIN_MEMORY ?= False
-SITE_COLS ?=
-SEQ_COLS ?=
+SITE_COLS ?= Density,Type_Conifer,Type_Decidous,Age
+SEQ_COLS ?=NDVI,SAVI,MSAVI,EVI,EVI2,NDWI,NBR,TCB,TCG,TCW,log_dt,neg_cos_DOY
+GRU_SITE_FEATS_OUTPUT_PATH ?= models/trained_gru_site_feats.pth
+GRU_NO_SITE_FEATS_OUTPUT_PATH ?= models/trained_gru_no_site_feats.pth
+
 
 ### Targets and Dependencies ###
 
@@ -94,6 +99,7 @@ data/processed/test_lookup.parquet: data/interim/test_data.parquet data/interim/
 		--output_seq_dir=data/processed/sequences \
 		--output_lookup_path=data/processed/test_lookup.parquet \
 		--no-compute-norm-stats
+
 
 # construct model pipelines
 models/logistic_regression.joblib:
@@ -190,22 +196,39 @@ data/processed/$(THRESHOLD_PCT)/train_data.parquet
 		--return_results=$(RETURN_RESULTS) \
 		--output_dir=models/
 
-#rnn_training
-rnn_training: 
+# gru training with site features
+gru_training_site_feats: models/gru_site_feats.pth
 	python src/training/rnn_train.py \
-		--model_path=models/rnn_survival_model.pth \
-		--output_dir=models/ \
+		--model_path=models/gru_site_feats.pth \
+		--output_path=$(GRU_SITE_FEATS_OUTPUT_PATH) \
 		--data_dir=data/processed/sequences/ \
 		--lookup_dir=data/processed/ \
 		--lr=$(LR) \
 		--batch_size=$(BATCH_SIZE) \
-		--epoches=$(EPOCHES) \
+		--epochs=$(EPOCHS) \
 		--patience=$(PATIENCE) \
 		--num_workers=$(NUM_WORKERS) \
 		--pin_memory=$(PIN_MEMORY) \
 		--site_cols=$(SITE_COLS) \
 		--seq_cols=$(SEQ_COLS)
 
+
+# gru training with no site features
+gru_training_no_site_feats: models/gru_no_site_feats.pth
+	python src/training/rnn_train.py \
+		--model_path=models/gru_no_site_feats.pth \
+		--output_path=$(GRU_NO_SITE_FEATS_OUTPUT_PATH) \
+		--data_dir=data/processed/sequences/ \
+		--lookup_dir=data/processed/ \
+		--lr=$(LR) \
+		--batch_size=$(BATCH_SIZE) \
+		--epochs=$(EPOCHS) \
+		--patience=$(PATIENCE) \
+		--num_workers=$(NUM_WORKERS) \
+		--pin_memory=$(PIN_MEMORY) \
+		--site_cols=$(SITE_COLS) \
+		--seq_cols=$(SEQ_COLS)
+    
 ## Feature Selection ##
 
 # RFECV model pipeline constructors
@@ -327,7 +350,7 @@ models/$(THRESHOLD_PCT)/fitted_logistic_regression_permute.joblib: data/processe
 		--drop_features=$(DROP_FEATURES) \
 		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
 		--output_dir=models/$(THRESHOLD_PCT) \
-
+    
 
 ### Phony targets ###
 
@@ -350,6 +373,7 @@ random_forest_pipeline: models/random_forest.joblib
 gradient_boosting_pipeline: models/gradient_boosting.joblib
 gru_pipeline_site_feats: models/gru_site_feats.pth
 gru_pipeline_no_site_feats: models/gru_no_site_feats.pth
+
 
 # tune/train classical models
 tune_gbm: models/$(THRESHOLD_PCT)/tuned_gradient_boosting.joblib \
