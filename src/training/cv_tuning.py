@@ -10,6 +10,61 @@ import joblib
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import RandomizedSearchCV,GridSearchCV, GroupKFold
 from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import make_scorer,f1_score
+from scipy.stats import randint,loguniform,uniform
+import numpy as np
+
+def _get_rand_hparam_grid(model_pipeline: Pipeline):
+    '''
+    A simple helper function to return a suitable hyperparameter grid based on the given model pipeline,
+    for a random search cross validation.
+    
+    Parameters
+    ---------
+    model_pipeline: sklearn.pipeline.Pipeline
+        A model pipeline to be cross-validated. 
+        Should be one of the Random Forest, Gradient Boosting, or Logistic Regression Models
+        constructed via the `gradient_boosting.py`, `logistic_regression.py` or `random_forest.py` scripts.
+        
+    Returns
+    -------
+    dict:
+        A dictionary containing a suitable hyperparameter gridf. For example, for an XGBoost model, returns:
+            {
+            'xgbclassifier__max_depth': randint(2,10),
+            'xgbclassifier__learning_rate': uniform(0.01,0.3),
+            'xgbclassifier__n_estimators': randint(500,2000),
+            'xgbclassifier__reg_alpha': loguniform(1e-4,1e2),
+            'xgbclassifier__reg_lambda': loguniform(1e-4,1e2)
+            }
+    '''
+    if 'xgbclassifier' in model_pipeline.named_steps:
+        return {
+            'xgbclassifier__max_depth': randint(2,10),
+            'xgbclassifier__learning_rate': uniform(0.01,0.3),
+            'xgbclassifier__n_estimators': randint(500,2000),
+            'xgbclassifier__reg_alpha': loguniform(1e-4,1e2),
+            'xgbclassifier__reg_lambda': loguniform(1e-4,1e2)
+        }
+    elif 'randomforestclassifier' in model_pipeline.named_steps:
+        return {
+            "randomforestclassifier__criterion": ['gini', 'entropy', 'log_loss'],
+            "randomforestclassifier__max_depth": np.arange(1, 20, 5),
+            "randomforestclassifier__bootstrap": [True, False],
+            "randomforestclassifier__class_weight": ['balanced', None],
+            "randomforestclassifier__n_jobs": [-1],
+            "randomforestclassifier__max_features": ['sqrt', 'log2', None]
+        }
+    elif 'logisticregression' in model_pipeline.named_steps:
+        return {
+            "logisticregression__C":       loguniform(1e-3, 1e+2),
+            "logisticregression__penalty": ["l2", "l1",'elasticnet',None],
+            "logisticregression__solver":  ["lbfgs", "saga"],
+        }
+    else:
+        raise ValueError(
+            'Incorrect model specification: Expecting xgbclassifier, randomforestclassifier, or logisticregression.'
+        )
 
 def cross_validation_wrapper(
     model_pipeline: Pipeline, 
@@ -85,6 +140,7 @@ def cross_validation_wrapper(
             )
 
     # get features and target
+    df = df.dropna()
     X = df.drop(columns='target'); y = df['target']
     site_ids = df['ID']
 
@@ -94,6 +150,9 @@ def cross_validation_wrapper(
         shuffle=True,
         random_state=random_state
         )
+    
+    # make sure default scorer takes 0 as positive label
+    scoring = make_scorer(f1_score,pos_label=0) if scoring == 'f1' else scoring
     
     if method == 'random':
         cross_validator = RandomizedSearchCV(
@@ -145,24 +204,38 @@ def cross_validation_wrapper(
 @click.option('--model_path', required=True,
               help='Directory to load pipeline model')
 @click.option('--training_data', required=True, help='Directory to training parquet file')
-@click.option('--test_data', required=True, help='Directory to test parquet file')
 @click.option('--tuning_method', type=click.Choice(['grid', 'random'], case_sensitive=False), required=True, help='Method for tuning the model. Options: grid, random')
-@click.option('--param_grid', help='Parameter grid for tuning the model. Should be a dictionary with parameter names as keys and lists of values as values.')
+@click.option('--param_grid', 
+              help='''Parameter grid for tuning the model. 
+              Should be a dictionary with parameter names as keys and lists of values as values.
+              Default: use pre-defined parameter distributions.''',
+              default='default'
+              )
 @click.option('--num_iter', type=int, default=10, help='Number of parameter configurations to test if using randomized search')
 @click.option('--num_folds', type=int, default=5, help='Number of folds used in cross-validation')
 @click.option('--scoring', type=str, default='f1', help='Scoring metric used to rank hyperparameters during CV')
 @click.option('--random_state', type=int, default=591, help='Random seed for reproducibility')
 @click.option('--return_results', type=bool, default=False, help='Whether to return cross-validation results')
 @click.option('--output_dir', type=click.Path(file_okay=False), help='Directory to save the tuning results')
-def main(model_path, training_data, test_data, tuning_method, param_grid,
+def main(model_path, training_data, tuning_method, param_grid,
          num_iter, num_folds, scoring, random_state, output_dir, 
          return_results):
+    '''
+    CLI for cross-validation of models.
+    '''
     pipeline = joblib.load(model_path)
     df_train = pd.read_parquet(training_data)
+    
+    if tuning_method == 'random' and param_grid == 'default':
+        param_grid = _get_rand_hparam_grid(pipeline)
+    else:
+        param_grid=json.loads(param_grid)
+    
+    print('Cross-validating...') 
     result = cross_validation_wrapper(
         model_pipeline=pipeline,
         df=df_train,
-        param_grid=json.loads(param_grid),
+        param_grid=param_grid,
         method=tuning_method,
         num_iter=num_iter,
         num_folds=num_folds,
@@ -170,14 +243,21 @@ def main(model_path, training_data, test_data, tuning_method, param_grid,
         random_state=random_state,
         return_results=return_results
     )
-
-    model_name = f"best_{model_path.split('/')[-1]}"
+    model_name = f"tuned_{model_path.split('/')[-1]}"
     output_dir = os.path.join(output_dir, training_data.split('/')[-2])
     model_path = os.path.join(output_dir, model_name)
     os.makedirs(output_dir, exist_ok=True)
 
     joblib.dump(result['best_model'], model_path)
     print(f"Model saved to {model_path}")
-
+    
+    if return_results:
+        os.makedirs(os.path.join(output_dir,'logs'),exist_ok=True)
+        result_path = os.path.join(
+            output_dir,'logs',
+            f'{model_name.split('.')[-2]}_log.csv')
+        result['results'].to_csv(result_path,index=False)
+        print(f"tuning log saved to {result_path}")
+        
 if __name__ == '__main__':
     main()
