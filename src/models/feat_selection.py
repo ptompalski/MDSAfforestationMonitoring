@@ -406,12 +406,12 @@ class ImportanceFeatureSelector(MetaEstimatorMixin, TransformerMixin):
     '--method',
     help='Feature selection method to implement',
     type=click.Choice(['SHAP', 'permute']),
-    default='permute'
+    required=True
 )
 @click.option(
     '--drop_features', 
     type=list, 
-    default=[],
+    default='',
     help='Comma-separated list of features to drop (e.g., "feat1,feat2")'
 )
 @click.option(
@@ -444,7 +444,7 @@ def main(estimator,method,drop_features,input_path,output_dir,random_state):
     scale_num_feats = True if estimator == 'lr' else False
     
     # format drop_features
-    drop_features = drop_features.split(',') if drop_features != [] else []
+    drop_features = drop_features.split(',') if drop_features != '' else []
     
     # set up directories:
     output_dir = Path(output_dir)
