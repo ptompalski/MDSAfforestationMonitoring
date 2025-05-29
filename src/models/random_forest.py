@@ -8,6 +8,7 @@ import click
 import json
 import joblib
 import os
+from sklearn.metrics import make_scorer,f1_score
 
 
 def build_rf_pipline(
@@ -79,8 +80,8 @@ def build_rf_pipline(
         raise ValueError('drop_features must be a list or None')
 
     drop_cols = (
-        ['ID', 'PixelID', 'Season', 'SrvvR_Date','DOY'] if drop_features == None 
-        else ['ID', 'PixelID', 'Season','SrvvR_Date','DOY'] + drop_features
+        ['ID', 'PixelID', 'Season', 'SrvvR_Date'] if drop_features == None 
+        else ['ID', 'PixelID', 'Season','SrvvR_Date'] + drop_features
         )
     categorical_cols = ['Type']
 
@@ -131,7 +132,7 @@ def build_rf_pipline(
 
 
 @click.command()
-@click.option('--feat_select', type=click.Choice([None, 'RFE', 'RFECV']), default=None,
+@click.option('--feat_select', type=click.Choice(['None', 'RFE', 'RFECV']), default='None',
                 help='Feature selection method to apply')
 @click.option('--drop_features', type=list, default=None,
                 help='Comma-separated list of features to drop (e.g., "feat1,feat2")')
@@ -159,7 +160,9 @@ def main(feat_select, drop_features, step_rfe, num_feats_rfe,
     """
 
     kwargs = json.loads(kwargs_json)
-
+    feat_select = None if feat_select == 'None' else feat_select
+    scoring_rfecv = make_scorer(f1_score,pos_label=0) if scoring_rfecv == 'f1' else scoring_rfecv
+    
     pipeline = build_rf_pipline(
         feat_select=feat_select,
         drop_features=drop_features,
@@ -171,8 +174,11 @@ def main(feat_select, drop_features, step_rfe, num_feats_rfe,
         random_state=random_state,
         **kwargs
     )
-
-    model_name = f"rf_model.joblib"
+    
+    if feat_select == None: model_name = "random_forest.joblib"
+    elif feat_select == 'RFE': model_name = "random_forest_rfe.joblib"
+    else: model_name = "random_forest_rfecv.joblib"
+ 
     model_path = os.path.join(output_dir, model_name)
 
     os.makedirs(output_dir, exist_ok=True)
