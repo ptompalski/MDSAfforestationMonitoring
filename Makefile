@@ -1,6 +1,10 @@
 .PHONY: clean load_data preprocess_features pivot_data data_split_RNN time_series_train_data time_series_test_data \
 logistic_regression_pipeline random_forest_pipeline gru_pipeline_site_feats all_models tune_gbm tune_lr tune_rf \
-tune_classical_models gru_training_no_site_feats gru_training_site_feats clean_models clean_data
+gru_training_no_site_feats gru_training_site_feats tune_classical_models clean_models clean_data \
+gradient_boosting_rfecv logistic_regression_rfecv random_forest_rfecv RFECV \
+gradient_boosting_shap random_forest_shap logistic_regression_shap gradient_boosting_permute random_forest_permute \
+logistic_regression_permute SHAP permutation_importance
+
 
 DAY_RANGE ?= 15
 RAW_DATA_PATH ?= data/raw/AfforestationAssessmentDataUBCCapstone.rds
@@ -9,8 +13,6 @@ THRESHOLD_PCT = $(shell echo | awk '{printf "%.0f", $(THRESHOLD)*100}')
 
 FEAT_SELECT ?= None
 DROP_FEATURES ?= 
-STEP_RFE ?= 1
-NUM_FEATS_RFE ?= 5
 MIN_NUM_FEATS_RFECV ?= 2
 NUM_FOLDS_RFECV ?= 5
 
@@ -42,6 +44,7 @@ SITE_COLS ?= Density,Type_Conifer,Type_Decidous,Age
 SEQ_COLS ?=NDVI,SAVI,MSAVI,EVI,EVI2,NDWI,NBR,TCB,TCG,TCW,log_dt,neg_cos_DOY
 GRU_SITE_FEATS_OUTPUT_PATH ?= models/trained_gru_site_feats.pth
 GRU_NO_SITE_FEATS_OUTPUT_PATH ?= models/trained_gru_no_site_feats.pth
+
 
 ### Targets and Dependencies ###
 
@@ -97,15 +100,12 @@ data/processed/test_lookup.parquet: data/interim/test_data.parquet data/interim/
 		--output_lookup_path=data/processed/test_lookup.parquet \
 		--no-compute-norm-stats
 
+
+# construct model pipelines
 models/logistic_regression.joblib:
 	python src/models/logistic_regression.py \
 		--feat_select='$(FEAT_SELECT)' \
 		--drop_features=$(DROP_FEATURES) \
-		--step_rfe=$(STEP_RFE) \
-		--num_feats_rfe=$(NUM_FEATS_RFE) \
-		--min_num_feats_rfecv=$(MIN_NUM_FEATS_RFECV) \
-		--num_folds_rfecv=$(NUM_FOLDS_RFECV) \
-		--scoring_rfecv="$(SCORING)" \
 		--kwargs_json='{}' \
 		--output_dir=models/
 
@@ -113,11 +113,6 @@ models/random_forest.joblib:
 	python src/models/random_forest.py \
 		--feat_select='$(FEAT_SELECT)' \
 		--drop_features=$(DROP_FEATURES) \
-		--step_rfe=$(STEP_RFE) \
-		--num_feats_rfe=$(NUM_FEATS_RFE) \
-		--min_num_feats_rfecv=$(MIN_NUM_FEATS_RFECV) \
-		--num_folds_rfecv=$(NUM_FOLDS_RFECV) \
-		--scoring_rfecv="$(SCORING)" \
 		--kwargs_json='{}' \
 		--output_dir=models/
 
@@ -125,11 +120,6 @@ models/gradient_boosting.joblib:
 	python src/models/gradient_boosting.py \
 		--feat_select='$(FEAT_SELECT)' \
 		--drop_features=$(DROP_FEATURES) \
-		--step_rfe=$(STEP_RFE) \
-		--num_feats_rfe=$(NUM_FEATS_RFE) \
-		--min_num_feats_rfecv=$(MIN_NUM_FEATS_RFECV) \
-		--num_folds_rfecv=$(NUM_FOLDS_RFECV) \
-		--scoring_rfecv="$(SCORING)" \
 		--kwargs_json='{}' \
 		--output_dir=models/
 
@@ -222,6 +212,7 @@ gru_training_site_feats: models/gru_site_feats.pth
 		--site_cols=$(SITE_COLS) \
 		--seq_cols=$(SEQ_COLS)
 
+
 # gru training with no site features
 gru_training_no_site_feats: models/gru_no_site_feats.pth
 	python src/training/rnn_train.py \
@@ -237,6 +228,129 @@ gru_training_no_site_feats: models/gru_no_site_feats.pth
 		--pin_memory=$(PIN_MEMORY) \
 		--site_cols=$(SITE_COLS) \
 		--seq_cols=$(SEQ_COLS)
+    
+## Feature Selection ##
+
+# RFECV model pipeline constructors
+
+# gbm_rfecv_pipeline
+models/gradient_boosting_rfecv.joblib:
+	python src/models/gradient_boosting.py \
+		--feat_select=RFECV \
+		--drop_features=$(DROP_FEATURES) \
+		--min_num_feats_rfecv=$(MIN_NUM_FEATS_RFECV) \
+		--num_folds_rfecv=$(NUM_FOLDS_RFECV) \
+		--scoring_rfecv="$(SCORING)" \
+		--kwargs_json='{}' \
+		--output_dir=models/
+
+# rf_rfecv_pipeline
+models/random_forest_rfecv.joblib:
+	python src/models/random_forest.py \
+		--feat_select=RFECV \
+		--drop_features=$(DROP_FEATURES) \
+		--min_num_feats_rfecv=$(MIN_NUM_FEATS_RFECV) \
+		--num_folds_rfecv=$(NUM_FOLDS_RFECV) \
+		--scoring_rfecv="$(SCORING)" \
+		--kwargs_json='{}' \
+		--output_dir=models/
+
+# lr_rfecv_pipeline
+models/logistic_regression_rfecv.joblib:
+	python src/models/logistic_regression.py \
+		--feat_select=RFECV \
+		--drop_features=$(DROP_FEATURES) \
+		--min_num_feats_rfecv=$(MIN_NUM_FEATS_RFECV) \
+		--num_folds_rfecv=$(NUM_FOLDS_RFECV) \
+		--scoring_rfecv="$(SCORING)" \
+		--kwargs_json='{}' \
+		--output_dir=models/
+
+# Train RFECV models
+
+# GBM
+models/$(THRESHOLD_PCT)/fitted_gradient_boosting_rfecv.joblib: models/gradient_boosting_rfecv.joblib \
+data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/training/RFE_trainer.py \
+		--model_path=models/gradient_boosting_rfecv.joblib \
+		--training_data=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT)
+
+# RF
+models/$(THRESHOLD_PCT)/fitted_random_forest_rfecv.joblib: models/random_forest_rfecv.joblib \
+data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/training/RFE_trainer.py \
+		--model_path=models/random_forest_rfecv.joblib \
+		--training_data=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT)
+
+# LR
+models/$(THRESHOLD_PCT)/fitted_logistic_regression_rfecv.joblib: models/logistic_regression_rfecv.joblib \
+data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/training/RFE_trainer.py \
+		--model_path=models/logistic_regression_rfecv.joblib  \
+		--training_data=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT)
+
+# SHAP importance
+
+# gradient_boosting_shap
+models/$(THRESHOLD_PCT)/fitted_gradient_boosting_shap.joblib: data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/models/feat_selection.py \
+		--estimator=gbm \
+		--method=SHAP \
+		--drop_features=$(DROP_FEATURES) \
+		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT) \
+
+# random_forest_shap
+models/$(THRESHOLD_PCT)/fitted_random_forest_shap.joblib: data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/models/feat_selection.py \
+		--estimator=rf \
+		--method=SHAP \
+		--drop_features=$(DROP_FEATURES) \
+		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT) \
+
+# logistic_regression_shap
+models/$(THRESHOLD_PCT)/fitted_logistic_regression_shap.joblib: data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/models/feat_selection.py \
+		--estimator=lr \
+		--method=SHAP \
+		--drop_features=$(DROP_FEATURES) \
+		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT) \
+
+# Permutation Importance
+
+# gradient_boosting_permute
+models/$(THRESHOLD_PCT)/fitted_gradient_boosting_permute.joblib: data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/models/feat_selection.py \
+		--estimator=gbm \
+		--method=permute \
+		--drop_features=$(DROP_FEATURES) \
+		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT) \
+
+# random_forest_permute
+models/$(THRESHOLD_PCT)/fitted_random_forest_permute.joblib: data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/models/feat_selection.py \
+		--estimator=rf \
+		--method=permute \
+		--drop_features=$(DROP_FEATURES) \
+		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT) \
+
+
+# logistic_regression_permute
+models/$(THRESHOLD_PCT)/fitted_logistic_regression_permute.joblib: data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/models/feat_selection.py \
+		--estimator=lr \
+		--method=permute \
+		--drop_features=$(DROP_FEATURES) \
+		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT) \
+    
 
 ### Phony targets ###
 
@@ -260,15 +374,6 @@ gradient_boosting_pipeline: models/gradient_boosting.joblib
 gru_pipeline_site_feats: models/gru_site_feats.pth
 gru_pipeline_no_site_feats: models/gru_no_site_feats.pth
 
-# construct all models at once
-all_models: logistic_regression_pipeline random_forest_pipeline gradient_boosting_pipeline \
-gru_pipeline_site_feats gru_pipeline_no_site_feats
-
-# process data for classical model training (LR, GBM, RF)
-data_for_classical_models: data_split
-
-# process data for RNN models
-data_for_RNN_models: time_series_train_data time_series_test_data
 
 # tune/train classical models
 tune_gbm: models/$(THRESHOLD_PCT)/tuned_gradient_boosting.joblib \
@@ -280,6 +385,41 @@ models/$(THRESHOLD_PCT)/logs/tuned_random_forest_log.csv
 tune_lr: models/$(THRESHOLD_PCT)/tuned_logistic_regression.joblib \
 models/$(THRESHOLD_PCT)/logs/tuned_logistic_regression_log.csv
 
+# run RFECV feature selection
+gradient_boosting_rfecv: models/$(THRESHOLD_PCT)/fitted_gradient_boosting_rfecv.joblib
+logistic_regression_rfecv: models/$(THRESHOLD_PCT)/fitted_logistic_regression_rfecv.joblib
+random_forest_rfecv: models/$(THRESHOLD_PCT)/fitted_random_forest_rfecv.joblib
+
+# run SHAP feature selection
+gradient_boosting_shap: models/$(THRESHOLD_PCT)/fitted_gradient_boosting_shap.joblib
+random_forest_shap: models/$(THRESHOLD_PCT)/fitted_random_forest_shap.joblib
+logistic_regression_shap: models/$(THRESHOLD_PCT)/fitted_logistic_regression_shap.joblib
+
+# run permutation importance feature selection
+gradient_boosting_permute: models/$(THRESHOLD_PCT)/fitted_gradient_boosting_permute.joblib
+random_forest_permute: models/$(THRESHOLD_PCT)/fitted_random_forest_permute.joblib
+logistic_regression_permute: models/$(THRESHOLD_PCT)/fitted_logistic_regression_permute.joblib
+
+# construct all models at once
+all_models: logistic_regression_pipeline random_forest_pipeline gradient_boosting_pipeline \
+gru_pipeline_site_feats gru_pipeline_no_site_feats
+
+# process data for classical model training (LR, GBM, RF)
+data_for_classical_models: data_split
+
+# process data for RNN models
+data_for_RNN_models: time_series_train_data time_series_test_data
+
+# Run RFE on all models
+RFE: gradient_boosting_rfecv logistic_regression_rfecv random_forest_rfecv
+
+# run SHAP for all models:
+SHAP: gradient_boosting_shap random_forest_shap logistic_regression_shap
+
+# run permutation importance on all models
+permutation_importance: gradient_boosting_permute random_forest_permute logistic_regression_permute
+
+# tune all models
 tune_classical_models: tune_gbm tune_lr tune_rf
 
 test:

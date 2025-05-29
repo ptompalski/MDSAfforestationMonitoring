@@ -85,7 +85,9 @@ class RNNSurvivalPredictor(nn.Module):
 @click.option('--concat_features', type=bool, default=False, help='Concatenate site features with RNN output')
 @click.option('--output_dir', type=click.Path(file_okay=False), required=True, help='Directory to save the model')
 def main(input_size, hidden_size, site_features_size, rnn_type, num_layers, dropout_rate, concat_features, output_dir):
-
+    '''
+    CLI for constructing a RNN based model pipelines.
+    '''
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
 
@@ -94,8 +96,13 @@ def main(input_size, hidden_size, site_features_size, rnn_type, num_layers, drop
     print(f"Model created with {model.rnn_layers} layers and {model.rnn_hidden_size} hidden size using {model.rnn_type}.")
 
     os.makedirs(output_dir, exist_ok=True)
-    rnn_type = str.lower(rnn_type)
-    model_filename = f"{rnn_type}_site_feats.pth" if concat_features else f"{rnn_type}_no_site_feats.pth"
+
+    
+    model_name = 'gru' if rnn_type == 'GRU' else 'lstm'
+    site_specs = 'site_feats' if concat_features else 'no_site_feats'
+    model_filename = f"{model_name}_{site_specs}.pth"
+    
+
     model_path = os.path.join(output_dir, model_filename)
     try:
         torch.save(model, model_path)
