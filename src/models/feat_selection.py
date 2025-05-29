@@ -441,7 +441,7 @@ def main(estimator,method,drop_features,input_path,output_dir,random_state):
     X = train_df.drop(columns='target'); y = train_df['target']
     
     # standard scale features if given logistic regression model
-    scale_num_feats = True if estimator == 'rf' else False
+    scale_num_feats = True if estimator == 'lr' else False
     
     # format drop_features
     drop_features = drop_features.split(',') if drop_features != [] else []
