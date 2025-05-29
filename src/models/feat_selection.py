@@ -410,7 +410,7 @@ class ImportanceFeatureSelector(MetaEstimatorMixin, TransformerMixin):
 )
 @click.option(
     '--drop_features', 
-    type=list, 
+    type=str, 
     default='',
     help='Comma-separated list of features to drop (e.g., "feat1,feat2")'
 )
