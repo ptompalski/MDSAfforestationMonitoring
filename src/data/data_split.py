@@ -29,7 +29,7 @@ def data_split(df: pd.DataFrame, seed: int = 591, prop_train: float = 0.7):
     if not (0 < prop_train < 1):
         raise ValueError("prop_train must be strictly between 0 and 1.")
     
-    id_list = np.arange(df['ID'].min(), df['ID'].max()+1)
+    id_list = sorted(df['ID'].unique().tolist())
     # initialize split parameters
     n_training_sites = int(prop_train*len(id_list))
     np.random.seed(seed)
