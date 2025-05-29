@@ -203,22 +203,32 @@ def test_loader_exceptions(setup_mock_data):
     invalid_lookup = ['invalid.parquet']
     invalid_seq = ['tests']
     with pytest.raises(ValueError):
-        dataloader_wrapper(invalid_lookup, MOCK_SEQ_DIR)  # string or pathlike
-        dataloader_wrapper(MOCK_LOOKUP_PATH, invalid_seq) # string or pathlike
+        dataloader_wrapper(invalid_lookup, MOCK_SEQ_DIR, SITE_COLS, SEQ_COLS)  # string or pathlike
+        
+        dataloader_wrapper(MOCK_LOOKUP_PATH, invalid_seq,
+                           SITE_COLS, SEQ_COLS)  # string or pathlike
+        
         dataloader_wrapper(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR, site_cols='Age') # list
         dataloader_wrapper(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR, site_cols=['Age', 1])  # list of strings
+        
         dataloader_wrapper(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR, seq_cols='NDVI')  # list
         dataloader_wrapper(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR, seq_cols=['NDVI', 1])  # list of strings
-        dataloader_wrapper(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR, batch_size='1') # integer
-        dataloader_wrapper(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR, num_workers='1') # integer
-        dataloader_wrapper(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR, pin_memory='True') # boolean
+        
+        dataloader_wrapper(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR,
+                           SITE_COLS, SEQ_COLS, batch_size='1')  # integer
+        
+        dataloader_wrapper(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR,
+                           SITE_COLS, SEQ_COLS, num_workers='1')  # integer
+        
+        dataloader_wrapper(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR,
+                           SITE_COLS, SEQ_COLS, pin_memory='True')  # boolean
 
 def test_loader_fallback(setup_mock_data):
     """
     Test if function overwrites invalid integer inputs for batch_size and num_workers.
     """
     MOCK_LOOKUP_PATH, MOCK_SEQ_DIR = setup_mock_data
-    dataset, loader = dataloader_wrapper(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR, batch_size=-1, num_workers=-1)
+    dataset, loader = dataloader_wrapper(MOCK_LOOKUP_PATH, MOCK_SEQ_DIR, SITE_COLS, SEQ_COLS, batch_size=-1, num_workers=-1)
     assert loader.batch_size == 32  # Default to 32 if batch_size is not a positive integer.
     assert loader.num_workers == 0  # Default to 0 if num_workers is a negative integer.
     
