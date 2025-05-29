@@ -10,7 +10,12 @@ from sklearn.utils import Bunch
 from sklearn.linear_model import LogisticRegression
 import shap 
 import numpy as np
-
+from xgboost import XGBClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+import click
+from pathlib import Path
+import joblib
 
 class ImportanceFeatureSelector(MetaEstimatorMixin, TransformerMixin):
     """Feature Selection with SHAP Global Feature Importance.
@@ -388,3 +393,90 @@ class ImportanceFeatureSelector(MetaEstimatorMixin, TransformerMixin):
         """
         check_is_fitted(self)
         return self.estimator.get_params()
+
+
+@click.command()
+@click.option(
+    '--estimator',
+    help='The estimator used to gauge feature importance (Logistic Regression (lr), Random Forest (rf), Gradient Boosting (gbm))',
+    type=click.Choice(['lr','gbm','rf']),
+    default='lr'
+)
+@click.option(
+    '--method',
+    help='Feature selection method to implement',
+    type=click.Choice(['SHAP', 'permute']),
+    default='permute'
+)
+@click.option(
+    '--drop_features', 
+    type=list, 
+    default=[],
+    help='Comma-separated list of features to drop (e.g., "feat1,feat2")'
+)
+@click.option(
+    '--input_path',
+    help='Path to input training data',
+    type=click.Path(dir_okay=False),
+    required=True
+)
+@click.option(
+    '--output_dir',
+    help='Directory to store the fitted `ImportanceFeatureSelector` instance.',
+    type=click.Path(file_okay=False),
+    required=True
+)
+@click.option(
+    '--random_state',
+    help='Random state for reproducibility: May effect random elements of estimators.',
+    type=int,
+    default=591
+)
+def main(estimator,method,drop_features,input_path,output_dir,random_state):
+    '''
+    CLI for SHAP and permutation importance feature selections
+    '''
+    # prepare data
+    train_df = pd.read_parquet(input_path).dropna()
+    X = train_df.drop(columns='target'); y = train_df['target']
+    
+    # standard scale features if given logistic regression model
+    scale_num_feats = True if estimator == 'rf' else False
+    
+    # format drop_features
+    drop_features = drop_features.split(',') if drop_features != [] else []
+    
+    # set up directories:
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True,exist_ok=True)
+    
+    # set up esimator and output
+    if estimator == 'lr':
+        output_path = output_dir/f'fitted_logistic_regression_{method.lower()}.joblib'
+        estimator = LogisticRegression(random_state=random_state,n_jobs=-1)
+    elif estimator == 'gbm':
+        output_path = output_dir/f'fitted_gradient_boosting_{method.lower()}.joblib'
+        estimator = XGBClassifier(random_state=random_state,n_jobs=-1)
+    else:
+        output_path = output_dir/f'fitted_random_forest_{method.lower()}.joblib'
+        estimator = RandomForestClassifier(random_state=random_state,n_jobs=-1)
+    
+    click.echo('Fitting feature importance selector...')
+    
+    # create feature importance selector
+    imp_feat_selector = ImportanceFeatureSelector(
+        estimator=estimator,
+        drop_features=drop_features,
+        scaler=scale_num_feats,
+        method=method        
+    )
+    imp_feat_selector.fit(X,y)
+    click.echo('Done')
+    
+    # save model
+    joblib.dump(imp_feat_selector,output_path)
+    click.echo(f'saved to {output_path}')
+    
+    
+if __name__ == '__main__':
+    main()

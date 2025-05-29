@@ -1,6 +1,8 @@
 .PHONY: clean load_data preprocess_features pivot_data data_split_RNN time_series_train_data time_series_test_data \
 logistic_regression_pipeline random_forest_pipeline gru_pipeline_site_feats all_models tune_gbm tune_lr tune_rf \
-tune_classical_models clean_models clean_data gradient_boosting_rfecv logistic_regression_rfecv random_forest_rfecv RFECV
+tune_classical_models clean_models clean_data gradient_boosting_rfecv logistic_regression_rfecv random_forest_rfecv RFECV \
+gradient_boosting_shap random_forest_shap logistic_regression_shap gradient_boosting_permute random_forest_permute \
+logistic_regression_permute SHAP permutation_importance
 
 DAY_RANGE ?= 15
 RAW_DATA_PATH ?= data/raw/AfforestationAssessmentDataUBCCapstone.rds
@@ -267,6 +269,65 @@ data/processed/$(THRESHOLD_PCT)/train_data.parquet
 		--training_data=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
 		--output_dir=models/$(THRESHOLD_PCT)
 
+# SHAP importance
+
+# gradient_boosting_shap
+models/$(THRESHOLD_PCT)/fitted_gradient_boosting_shap.joblib: data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/models/feat_selection.py \
+		--estimator=gbm \
+		--method=SHAP \
+		--drop_features=$(DROP_FEATURES) \
+		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT) \
+
+# random_forest_shap
+models/$(THRESHOLD_PCT)/fitted_random_forest_shap.joblib: data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/models/feat_selection.py \
+		--estimator=rf \
+		--method=SHAP \
+		--drop_features=$(DROP_FEATURES) \
+		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT) \
+
+# logistic_regression_shap
+models/$(THRESHOLD_PCT)/fitted_logistic_regression_shap.joblib: data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/models/feat_selection.py \
+		--estimator=lr \
+		--method=SHAP \
+		--drop_features=$(DROP_FEATURES) \
+		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT) \
+
+# Permutation Importance
+
+# gradient_boosting_permute
+models/$(THRESHOLD_PCT)/fitted_gradient_boosting_permute.joblib: data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/models/feat_selection.py \
+		--estimator=gbm \
+		--method=permute \
+		--drop_features=$(DROP_FEATURES) \
+		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT) \
+
+# random_forest_permute
+models/$(THRESHOLD_PCT)/fitted_random_forest_permute.joblib: data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/models/feat_selection.py \
+		--estimator=rf \
+		--method=permute \
+		--drop_features=$(DROP_FEATURES) \
+		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT) \
+
+
+# logistic_regression_permute
+models/$(THRESHOLD_PCT)/fitted_logistic_regression_permute.joblib: data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/models/feat_selection.py \
+		--estimator=lr \
+		--method=permute \
+		--drop_features=$(DROP_FEATURES) \
+		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=models/$(THRESHOLD_PCT) \
+
 
 ### Phony targets ###
 
@@ -300,10 +361,20 @@ models/$(THRESHOLD_PCT)/logs/tuned_random_forest_log.csv
 tune_lr: models/$(THRESHOLD_PCT)/tuned_logistic_regression.joblib \
 models/$(THRESHOLD_PCT)/logs/tuned_logistic_regression_log.csv
 
-## initialize RFECV pipelines
+# run RFECV feature selection
 gradient_boosting_rfecv: models/$(THRESHOLD_PCT)/fitted_gradient_boosting_rfecv.joblib
 logistic_regression_rfecv: models/$(THRESHOLD_PCT)/fitted_logistic_regression_rfecv.joblib
 random_forest_rfecv: models/$(THRESHOLD_PCT)/fitted_random_forest_rfecv.joblib
+
+# run SHAP feature selection
+gradient_boosting_shap: models/$(THRESHOLD_PCT)/fitted_gradient_boosting_shap.joblib
+random_forest_shap: models/$(THRESHOLD_PCT)/fitted_random_forest_shap.joblib
+logistic_regression_shap: models/$(THRESHOLD_PCT)/fitted_logistic_regression_shap.joblib
+
+# run permutation importance feature selection
+gradient_boosting_permute: models/$(THRESHOLD_PCT)/fitted_gradient_boosting_permute.joblib
+random_forest_permute: models/$(THRESHOLD_PCT)/fitted_random_forest_permute.joblib
+logistic_regression_permute: models/$(THRESHOLD_PCT)/fitted_logistic_regression_permute.joblib
 
 # construct all models at once
 all_models: logistic_regression_pipeline random_forest_pipeline gradient_boosting_pipeline \
@@ -315,8 +386,14 @@ data_for_classical_models: data_split
 # process data for RNN models
 data_for_RNN_models: time_series_train_data time_series_test_data
 
-# Run Recursive Feature Elimination on all models 
-RFECV: gradient_boosting_rfecv logistic_regression_rfecv random_forest_rfecv
+# Run RFE on all models
+RFE: gradient_boosting_rfecv logistic_regression_rfecv random_forest_rfecv
+
+# run SHAP for all models:
+SHAP: gradient_boosting_shap random_forest_shap logistic_regression_shap
+
+# run permutation importance on all models
+permutation_importance: gradient_boosting_permute random_forest_permute logistic_regression_permute
 
 # tune all models
 tune_classical_models: tune_gbm tune_lr tune_rf
