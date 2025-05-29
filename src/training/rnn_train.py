@@ -5,19 +5,66 @@ import click
 import pandas as pd
 import sys
 import os
-import argparse
+from torch import Tensor
+from torch.nn import Module
+from torch.optim import Optimizer
+from torch.utils.data import DataLoader, Dataset
+from torch.optim import Optimizer
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from models.rnn import RNNSurvivalPredictor
 
-def train(model, train_dataloader, valid_dataloader, train_set, valid_set, device, optimizer, criterion, epochs=10, patience=5):
+def train(model : Module, 
+          train_dataloader : DataLoader, 
+          valid_dataloader : DataLoader,
+          train_set : Dataset, 
+          valid_set : Dataset, 
+          device : torch.device, 
+          optimizer: Optimizer,
+          criterion : Module, 
+          epochs: int = 10, 
+          patience: int = 5):
+    """
+    Training loop for rnn model. 
+    
+    Parameters 
+    ----------
+    model : torch.nn.Module
+        The RNN model to train.
+    train_dataloader : torch.utils.data.DataLoader
+        DataLoader for training data.
+    valid_dataloader : torch.utils.data.DataLoader
+        DataLoader for validation data.
+    train_set : torch.utils.data.Dataset
+        Full training dataset.
+    valid_set : torch.utils.data.Dataset
+        Full validation dataset.
+    device : torch.device
+        Device on which to run the model (CPU or CUDA).
+    optimizer : torch.optim.Optimizer
+        Optimizer to use for updating model parameters.
+    criterion : torch.nn.Module
+        Loss function to use for backpropagation and evaluating model performance.
+    epochs : int, optional, default=10
+        Maximum number of training epochs.
+    patience : int, optional, default=5
+        Number of epochs to wait for improvement in validation loss before early stopping.
+    
+    Returns
+    -------
+    model : torch.nn.Module
+        The trained RNN model
+
+    """
 
     valid_losses = []
 
     print(f'Training Model on {epochs} epochs on {device}.')
     model.to(device, non_blocking=True)
     for epoch in range(epochs):
-        train_set.reshuffle()
-        valid_set.reshuffle()
+        train_set.reshuffle() # Reshuffle dataset to improve generalisation
+        valid_set.reshuffle()  # Reshuffle dataset to improve generalisation
+        
+        # Training Loop
         model.train()
         total_train_loss = 0
         for batch in train_dataloader:
@@ -28,14 +75,15 @@ def train(model, train_dataloader, valid_dataloader, train_set, valid_set, devic
                 batch['site_features'].to(device, non_blocking=True)
                 )
             train_loss = criterion(
-                predictions.to(device, non_blocking=True),
+                predictions,
                 batch['target'].to(device, non_blocking=True)
             )
             train_loss.backward()
             optimizer.step()
             total_train_loss += train_loss.item()
         avg_train_loss = total_train_loss / len(train_dataloader)
-
+        
+        # Validation Loop
         model.eval()
         total_valid_loss = 0
         with torch.no_grad():
@@ -94,23 +142,32 @@ def main(model_path,
          site_cols='',
          seq_cols=''):
     
+    """
+    Command Line Interface for training rnn model.
+    """
     TRAIN_LOOKUP_PATH = os.path.join(lookup_dir, 'train_lookup.parquet')
     VALID_LOOKUP_PATH = os.path.join(lookup_dir, 'valid_lookup.parquet')
 
+    # Process CLI input for site_cols to list of site features
     if site_cols == '':
         site_cols = ['Density', 'Type_Conifer', 'Type_Decidous', 'Age']
     else:
         site_cols = site_cols.split(',')
     
+    # Process CLI input for seq_cols to list of sequence features
     if seq_cols == '':
         seq_cols = ['NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR',
                     'TCB', 'TCG', 'TCW', 'log_dt', 'neg_cos_DOY']
     else:
         seq_cols = seq_cols.split(',')
     
+    # Transfer model and data to CUDA if available 
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
+    # Load model
     model = torch.load(model_path, weights_only=False)
+    
+    # Instantiate  optimizer, criterion, dataset and dataloader
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = torch.nn.MSELoss()
     train_set, train_dataloader = rnn_dataset.dataloader_wrapper(
@@ -132,6 +189,7 @@ def main(model_path,
         seq_cols=seq_cols
     )
 
+    # Train model
     model = train(
         model=model,
         train_dataloader=train_dataloader,
@@ -145,7 +203,7 @@ def main(model_path,
         device=device
     )
 
-
+    # Save model
     torch.save(model, output_path)
     print(f'Training Complete, model saved to {output_path}.')
 
