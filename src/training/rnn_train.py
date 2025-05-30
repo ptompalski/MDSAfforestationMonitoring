@@ -4,12 +4,9 @@ import os
 import click
 import pandas as pd
 import sys
-import os
-from torch import Tensor
 from torch.nn import Module
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader, Dataset
-from torch.optim import Optimizer
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from models.rnn import RNNSurvivalPredictor
 
@@ -118,7 +115,7 @@ def train(model : Module,
 
 @click.command()
 @click.option('--model_path', type=click.Path(exists=True), required=True, help='Path to model .pth file.')
-@click.option('--output_path', type=click.Path(), required=True, help='Path to save the trained model.')
+@click.option('--output_path', type=click.Path(exists=False), required=True, help='Path to save the trained model.')
 @click.option('--lookup_dir', type=click.Path(exists=True), required=True, help='Directory to lookup files.')
 @click.option('--data_dir', type=click.Path(exists=True), required=True, help='Directory to sequence data files.')
 @click.option('--lr', type=float, default=0.01, help='Learning Rate of Adam optimizer.')
@@ -194,15 +191,16 @@ def main(model_path,
         model=model,
         train_dataloader=train_dataloader,
         valid_dataloader=valid_dataloader,
+        train_set=train_set,
+        valid_set=valid_set,
+        device=device,
         optimizer=optimizer,
         criterion=criterion,
         epochs=epochs,
-        patience=patience,
-        train_set=train_set,
-        valid_set=valid_set,
-        device=device
+        patience=patience
     )
-
+    
+    
     # Save model
     torch.save(model.state_dict(), output_path)
     print(f'Training Complete, model saved to {output_path}.')
