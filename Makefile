@@ -3,7 +3,8 @@ logistic_regression_pipeline random_forest_pipeline gru_pipeline_site_feats all_
 gru_training_no_site_feats gru_training_site_feats tune_classical_models clean_models clean_data \
 gradient_boosting_rfecv logistic_regression_rfecv random_forest_rfecv RFECV \
 gradient_boosting_shap random_forest_shap logistic_regression_shap gradient_boosting_permute random_forest_permute \
-logistic_regression_permute SHAP permutation_importance
+logistic_regression_permute SHAP permutation_importance rnn_evaluation lstm_pipeline_no_site_feats lstm_pipeline_site_feats\
+lstm_training_no_site_feats lstm_training_site_feats
 
 
 DAY_RANGE ?= 15
@@ -44,7 +45,11 @@ SITE_COLS ?= Density,Type_Conifer,Type_Decidous,Age
 SEQ_COLS ?=NDVI,SAVI,MSAVI,EVI,EVI2,NDWI,NBR,TCB,TCG,TCW,log_dt,neg_cos_DOY
 GRU_SITE_FEATS_OUTPUT_PATH ?= models/trained_gru_site_feats.pth
 GRU_NO_SITE_FEATS_OUTPUT_PATH ?= models/trained_gru_no_site_feats.pth
+LSTM_SITE_FEATS_OUTPUT_PATH ?= models/trained_lstm_site_feats.pth
+LSTM_NO_SITE_FEATS_OUTPUT_PATH ?= models/trained_lstm_no_site_feats.pth
 
+# RNN Evaluation
+TRAINED_MODEL_PATH ?= 
 
 ### Targets and Dependencies ###
 
@@ -123,8 +128,7 @@ models/gradient_boosting.joblib:
 		--kwargs_json='{}' \
 		--output_dir=models/
 
-
-#gru_pipeline_site_feats
+# gru_pipeline_site_feats
 models/gru_site_feats.pth:
 	python src/models/rnn.py \
 		--input_size=$(INPUT_SIZE) \
@@ -136,7 +140,7 @@ models/gru_site_feats.pth:
 		--concat_features=True \
 		--output_dir=models/
 
-#gru_pipeline_site_feats
+# gru_pipeline_no_site_feats
 models/gru_no_site_feats.pth:
 	python src/models/rnn.py \
 		--input_size=$(INPUT_SIZE) \
@@ -148,6 +152,30 @@ models/gru_no_site_feats.pth:
 		--concat_features=False \
 		--output_dir=models/
 
+# lstm_pipeline_site_feats
+models/lstm_site_feats.pth:
+	python src/models/rnn.py \
+		--input_size=$(INPUT_SIZE) \
+		--hidden_size=$(HIDDEN_SIZE) \
+		--site_features_size=$(SITE_FEATURES_SIZE) \
+		--rnn_type=LSTM \
+		--num_layers=$(NUM_LAYERS) \
+		--dropout_rate=$(DROPOUT_RATE) \
+		--concat_features=True \
+		--output_dir=models/
+		
+# lstm_pipeline_no_site_feats
+models/lstm_no_site_feats.pth:
+	python src/models/rnn.py \
+		--input_size=$(INPUT_SIZE) \
+		--hidden_size=$(HIDDEN_SIZE) \
+		--site_features_size=$(SITE_FEATURES_SIZE) \
+		--rnn_type=LSTM \
+		--num_layers=$(NUM_LAYERS) \
+		--dropout_rate=$(DROPOUT_RATE) \
+		--concat_features=False \
+		--output_dir=models/
+		
 # tune_gbm
 models/$(THRESHOLD_PCT)/tuned_gradient_boosting.joblib \
 models/$(THRESHOLD_PCT)/logs/tuned_gradient_boosting_log.csv: models/gradient_boosting.joblib \
@@ -208,11 +236,9 @@ gru_training_site_feats: models/gru_site_feats.pth
 		--epochs=$(EPOCHS) \
 		--patience=$(PATIENCE) \
 		--num_workers=$(NUM_WORKERS) \
-		--pin_memory=$(PIN_MEMORY) \
 		--site_cols=$(SITE_COLS) \
 		--seq_cols=$(SEQ_COLS)
-
-
+		
 # gru training with no site features
 gru_training_no_site_feats: models/gru_no_site_feats.pth
 	python src/training/rnn_train.py \
@@ -225,10 +251,51 @@ gru_training_no_site_feats: models/gru_no_site_feats.pth
 		--epochs=$(EPOCHS) \
 		--patience=$(PATIENCE) \
 		--num_workers=$(NUM_WORKERS) \
-		--pin_memory=$(PIN_MEMORY) \
+		--site_cols=$(SITE_COLS) \
+		--seq_cols=$(SEQ_COLS)
+
+# lstm training with site features
+lstm_training_site_feats: models/lstm_site_feats.pth
+	python src/training/rnn_train.py \
+		--model_path=models/lstm_site_feats.pth \
+		--output_path=$(LSTM_SITE_FEATS_OUTPUT_PATH) \
+		--data_dir=data/processed/sequences/ \
+		--lookup_dir=data/processed/ \
+		--lr=$(LR) \
+		--batch_size=$(BATCH_SIZE) \
+		--epochs=$(EPOCHS) \
+		--patience=$(PATIENCE) \
+		--num_workers=$(NUM_WORKERS) \
 		--site_cols=$(SITE_COLS) \
 		--seq_cols=$(SEQ_COLS)
     
+# lstm training with no site features
+lstm_training_no_site_feats: models/lstm_no_site_feats.pth
+	python src/training/rnn_train.py \
+		--model_path=models/lstm_no_site_feats.pth \
+		--output_path=$(LSTM_NO_SITE_FEATS_OUTPUT_PATH) \
+		--data_dir=data/processed/sequences/ \
+		--lookup_dir=data/processed/ \
+		--lr=$(LR) \
+		--batch_size=$(BATCH_SIZE) \
+		--epochs=$(EPOCHS) \
+		--patience=$(PATIENCE) \
+		--num_workers=$(NUM_WORKERS) \
+		--site_cols=$(SITE_COLS) \
+		--seq_cols=$(SEQ_COLS)
+
+# rnn_evaluation
+rnn_evaluation: $(TRAINED_MODEL_PATH)
+	python src/evaluation/rnn_evaluation.py \
+		--trained_model_path=$(TRAINED_MODEL_PATH) \
+		--lookup_dir=data/processed/ \
+		--seq_dir=data/processed/sequences/ \
+		--threshold=$(THRESHOLD) \
+		--batch_size=$(BATCH_SIZE) \
+		--num_workers=$(NUM_WORKERS) \
+		--site_cols=$(SITE_COLS) \
+		--seq_cols=$(SEQ_COLS)
+		
 ## Feature Selection ##
 
 # RFECV model pipeline constructors
@@ -350,7 +417,6 @@ models/$(THRESHOLD_PCT)/fitted_logistic_regression_permute.joblib: data/processe
 		--drop_features=$(DROP_FEATURES) \
 		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
 		--output_dir=models/$(THRESHOLD_PCT) \
-    
 
 ### Phony targets ###
 
@@ -373,7 +439,8 @@ random_forest_pipeline: models/random_forest.joblib
 gradient_boosting_pipeline: models/gradient_boosting.joblib
 gru_pipeline_site_feats: models/gru_site_feats.pth
 gru_pipeline_no_site_feats: models/gru_no_site_feats.pth
-
+lstm_pipeline_site_feats: models/lstm_site_feats.pth
+lstm_pipeline_no_site_feats: models/lstm_no_site_feats.pth
 
 # tune/train classical models
 tune_gbm: models/$(THRESHOLD_PCT)/tuned_gradient_boosting.joblib \
@@ -402,7 +469,7 @@ logistic_regression_permute: models/$(THRESHOLD_PCT)/fitted_logistic_regression_
 
 # construct all models at once
 all_models: logistic_regression_pipeline random_forest_pipeline gradient_boosting_pipeline \
-gru_pipeline_site_feats gru_pipeline_no_site_feats
+gru_pipeline_site_feats gru_pipeline_no_site_feats lstm_pipeline_site_feats lstm_pipeline_no_site_feats
 
 # process data for classical model training (LR, GBM, RF)
 data_for_classical_models: data_split
