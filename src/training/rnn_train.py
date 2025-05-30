@@ -202,7 +202,10 @@ def main(model_path,
     
     
     # Save model
-    torch.save(model.state_dict(), output_path)
+    torch.save({
+        "model_state_dict": model,
+        "config": checkpoint["config"]
+    }, output_path)
     print(f'Training Complete, model saved to {output_path}.')
 
 if __name__ == "__main__":
