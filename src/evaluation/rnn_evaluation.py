@@ -166,6 +166,16 @@ def rnn_get_metrics_by_age(pred_df):
     metrics_age['Number of Records'] = num_rec
     return metrics_age.dropna().reset_index(names=['Age']), conf_matrix_age
 
+
+@click.command()
+@click.option('--trained_model_path', type=click.Path(exists=True), required=True, help='Path to model .pth file.')
+@click.option('--lookup_dir', type=click.Path(exists=True), required=True, help='Directory to test lookup file.')
+@click.option('--seq_dir', type=click.Path(exists=True), required=True, help='Directory to sequence data files.')
+@click.option('--threshold', type=float, default=0.7, help='Survival rate threshold for target classification.')
+@click.option('--batch_size', type=int, default=64, help='Batch size for test dataloader.')
+@click.option('--num_workers', type=int, default=0, help='Number of workers for test dataloader.')
+@click.option('--site_cols', type=str, default='', help='Site features to use in model.')
+@click.option('--seq_cols', type=str, default='', help='Sequence features to use in model.')
 def main(trained_model_path,
          lookup_dir,
          seq_dir,
@@ -174,6 +184,9 @@ def main(trained_model_path,
          num_workers=0,
          site_cols='',
          seq_cols=''):
+    """
+    Command Line Interface for evaluating trained rnn model on test data.
+    """
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     # Process CLI input for site_cols and seq_cols
