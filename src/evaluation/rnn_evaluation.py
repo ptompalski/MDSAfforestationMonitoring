@@ -14,6 +14,32 @@ from training.rnn_dataset import dataloader_wrapper
 from models.rnn import RNNSurvivalPredictor
 
 
+def rnn_get_prediction(model, test_dataloader, test_set, threshold, device):
+    """
+    Use the trained model to get survival rate predictions on test data. 
+    Map the actual survival rates and predicted survival rates into 
+    binary class Low/High (0/1) survival rate based on the given threshold.
+    
+    Parameters
+    ----------
+        model : torch.nn.Module
+            The trained rnn model.
+        test_dataloader : torch.utils.data.DataLoader
+            DataLoader for test data.
+        test_set : torch.utils.data.Dataset
+            Full test dataset.
+        threshold : float
+            Survival rate classification threshold. Must be a value between 0 to 1.
+        device : torch.device
+            Device on which to run the model (CPU or CUDA).
+
+    Returns
+    ----------
+    pd.DataFrame
+        Dataframe containing:
+        * Site Feature Columns: `ID`, `PixelID`, `SrvvR_Date`, Age, `Density`, `Type_Conifer`, `Type_Decidous`
+        * Target Columns: `y_true` (True class labels), `y_pred` (Predicted class labels)
+    """
     predictions = torch.empty(0)
     for batch in test_dataloader:
         pred = model(
@@ -32,6 +58,33 @@ from models.rnn import RNNSurvivalPredictor
     return pred_df
     
 def rnn_get_metrics(pred_df):
+    """
+    This function computes various evaluation metrics for binary classification
+    including F1 Score, F2 Score, Precision, Recall, Accuracy, Confusion Matrix and Class Proportions to assess imbalance.
+    Note that class 0 (Low survival rate) is treated as the positive class.
+
+    Parameters
+    ----------
+    pred_df : pd.DataFrame
+        A DataFrame that must contain the following columns:
+        - 'y_true' : True class labels (0 or 1)
+        - 'y_pred' : Predicted class labels (0 or 1).
+    
+    Returns
+    -------
+    Tuple[dict, pd.DataFrame]
+        metrics_dict : dict
+            A dictionary containing:
+            - 'F1 Score': F1 score
+            - 'F2 Score': F2 score (β=2)
+            - 'Precision': Precision score
+            - 'Recall': Recall score
+            - 'Accuracy': Accuracy score
+            - '% Low Risk': Percentage of samples predicted as class 0 (Low survival rate)
+            - '% High Risk': Percentage of samples predicted as class 1 (High survival rate)
+        conf_matrix : pd.DataFrame
+            A 2x2 labeled confusion matrix showing predicted vs. actual class counts.
+    """
     y_true = pred_df['y_true']
     y_pred = pred_df['y_pred']
     
@@ -65,6 +118,39 @@ def rnn_get_metrics(pred_df):
     return metrics_dict, conf_matrix
 
 def rnn_get_metrics_by_age(pred_df):
+    """
+    Groups the test data by 'Age' (years since planting) and computes evaluation metrics
+    for each age group.
+
+    Parameters
+    ----------
+    pred_df : pd.DataFrame
+        A DataFrame that must contain the following columns:
+        - 'y_true' : True class labels (0 or 1)
+        - 'y_pred' : Predicted class labels (0 or 1).
+        - 'Age' : Number of years since planting (int).
+    
+    Returns
+    -------
+    Tuple[pd.DataFrame, dict[int, pd.DataFrame]]
+        metrics_age : 
+            DataFrame containing evaluation metrics for each age group (1–7), with columns:
+            - 'Age': Number of years since planting
+            - 'F1 Score': F1 score
+            - 'F2 Score': F2 score (β=2)
+            - 'Precision': Precision score
+            - 'Recall': Recall score
+            - 'Accuracy': Accuracy score
+            - '% Low Survival Rate': Percentage of samples predicted as class 0 (Low survival rate)
+            - '% High Survival Rate': Percentage of samples predicted as class 1 (High survival rate)
+            - 'Number of Records': Total number of samples for the age group.
+        conf_matrix : dict[int, pd.DataFrame]
+            Dictionary mapping each age group (1-7) to its corresponding 2x2 labeled confusion matrix (Predicted vs. True class counts).
+    
+   Notes
+    -----
+    - Only results for age groups with available data are included in the output.
+    """
     cols = ['F1 Score', 'F2 Score', 'Precision', 'Recall', 'Accuracy', '% Low Risk', '% High Risk']
     metrics_age = pd.DataFrame(index=range(1, 8), columns=cols)
     num_rec = []
