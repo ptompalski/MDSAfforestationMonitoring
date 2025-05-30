@@ -100,7 +100,12 @@ def train(model : Module,
 
         print(
             f"Epoch {epoch+1}: Train Loss = {avg_train_loss:.4f}, Valid Loss = {avg_valid_loss:.4f}")
-
+        
+        # Save the best model
+        if epoch == 0 or avg_valid_loss < best_valid_loss:
+            best_valid_loss = avg_valid_loss
+            best_model = model.state_dict()
+        
         # Early stopping check
         if epoch > 0 and avg_valid_loss > valid_losses[-2] * (1 + 1e-5):
             early_stopping_counter += 1
@@ -110,7 +115,7 @@ def train(model : Module,
             print(f"Early stopping triggered at epoch {epoch+1}")
             break
 
-    return model
+    return best_model
 
 
 @click.command()
@@ -123,7 +128,6 @@ def train(model : Module,
 @click.option('--epochs', type=int, default=10, help='Number of epochs to train the model on.')
 @click.option('--patience', type=int, default=5, help='Early stopping patience.')
 @click.option('--num_workers', type=int, default=0, help='Number of workers for dataloader.')
-@click.option('--pin_memory', type=bool, default=False, help='Whether to pin_memory before returning.')
 @click.option('--site_cols', type=str, default='', help='Site features to use in model.')
 @click.option('--seq_cols', type=str, default='', help='Sequence features to use in model.')
 def main(model_path,
@@ -135,7 +139,6 @@ def main(model_path,
          epochs=10,
          patience=5,
          num_workers=0,
-         pin_memory=False,
          site_cols='',
          seq_cols=''):
     
