@@ -204,7 +204,7 @@ def main(model_path,
     )
 
     # Save model
-    torch.save(model, output_path)
+    torch.save(model.state_dict(), output_path)
     print(f'Training Complete, model saved to {output_path}.')
 
 if __name__ == "__main__":
