@@ -174,7 +174,7 @@ def main(model_path,
         seq_dir=data_dir,
         batch_size=batch_size,
         num_workers=num_workers,
-        pin_memory=pin_memory,
+        pin_memory=torch.cuda.is_available(),
         site_cols=site_cols,
         seq_cols=seq_cols
     )
@@ -183,7 +183,7 @@ def main(model_path,
         seq_dir=data_dir,
         batch_size=batch_size,
         num_workers=num_workers,
-        pin_memory=pin_memory,
+        pin_memory=torch.cuda.is_available(),
         site_cols=site_cols,
         seq_cols=seq_cols
     )
