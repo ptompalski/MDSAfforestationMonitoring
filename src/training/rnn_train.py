@@ -162,7 +162,9 @@ def main(model_path,
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
     # Load model
-    model = torch.load(model_path, weights_only=False)
+    checkpoint = torch.load(model_path)
+    model = RNNSurvivalPredictor(**checkpoint["config"])
+    model.load_state_dict(checkpoint["model_state_dict"])
     
     # Instantiate  optimizer, criterion, dataset and dataloader
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
