@@ -104,7 +104,7 @@ def process_single_site(
     sequence_df = sequence_df.drop(columns=["DOY"])
 
     # get filename and path to store sequence data
-    fname = f"{row["ID"]}_{row["PixelID"]}_{record_date.strftime('%Y-%m-%d')}.parquet"
+    fname = f"{row['ID']}_{row['PixelID']}_{record_date.strftime('%Y-%m-%d')}.parquet"
     out_path = seq_out_dir/fname
 
     # drop uneeded columns: ID, PixelID, ImgDate before saving and arrange by log dt in descending order (earliest to latest records)
