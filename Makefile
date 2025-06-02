@@ -28,7 +28,6 @@ RETURN_RESULTS ?= True
 PARAM_GRID ?=default
 
 
-
 ### Targets and Dependencies for Data Preprocessing ###
 
 # load_data
@@ -309,6 +308,7 @@ permutation_importance: gradient_boosting_permute random_forest_permute logistic
 tune_classical_models: tune_gbm tune_lr tune_rf
 
 
+# RNN Models
 
 # Data Processing for RNN Models
 # data_split_RNN
@@ -335,14 +335,15 @@ data/processed/test_lookup.parquet: data/interim/test_data.parquet data/interim/
 		--output_seq_dir=data/processed/sequences \
 		--output_lookup_path=data/processed/test_lookup.parquet \
 		--no-compute-norm-stats
-		
-# Processing and splitting for RNN models
+
+# Run data processing and splitting for RNN models
 data_split_RNN: data/interim/train_data.parquet data/interim/test_data.parquet
 time_series_train_data: data/processed/train_lookup.parquet
 time_series_test_data: data/processed/test_lookup.parquet
 data_for_RNN_models: time_series_train_data time_series_test_data
 
-# RNN Pipeline
+# Variables for RNN Model Pipeline
+# rnn_odel
 INPUT_SIZE ?= 12 
 HIDDEN_SIZE ?= 16
 SITE_FEATURES_SIZE ?= 4
@@ -352,7 +353,7 @@ DROPOUT_RATE ?= 0.2
 CONCAT_FEATURES ?= False
 RNN_PIPELINE_PATH ?= 
 
-# RNN Training 
+# rnn_training 
 RNN_PIPELINE_PATH ?=
 TRAINED_RNN_OUTPUT_PATH ?=
 LR ?= 0.01
@@ -363,11 +364,11 @@ NUM_WORKERS ?= 0
 SITE_COLS ?= Density,Type_Conifer,Type_Decidous,Age
 SEQ_COLS ?=NDVI,SAVI,MSAVI,EVI,EVI2,NDWI,NBR,TCB,TCG,TCW,log_dt,neg_cos_DOY
 
-# RNN Evaluation
+# rnn_evaluation
 TRAINED_RNN_PATH ?= 
 
-
-# RNN Model Pipelines
+# RNN Model Pipeline
+# Initialise RNN Model
 rnn_model:
 	python src/models/rnn.py \
 		--input_size=$(INPUT_SIZE) \
@@ -379,6 +380,7 @@ rnn_model:
 		--concat_features=$(CONCAT_FEATURES) \
 		--output_path=$(RNN_PIPELINE_PATH)
 
+# Train RNN Model
 rnn_training: $(RNN_PIPELINE_PATH)
 	python src/training/rnn_train.py \
 		--model_path=$(RNN_PIPELINE_PATH)\
@@ -393,6 +395,10 @@ rnn_training: $(RNN_PIPELINE_PATH)
 		--site_cols=$(SITE_COLS) \
 		--seq_cols=$(SEQ_COLS)
 
+# Run RNN model pipeline
+rnn_pipeline: rnn_model rnn_training
+
+# Run evaluation on trained RNN model
 rnn_evaluation: $(TRAINED_RNN_PATH)
 	python src/evaluation/rnn_evaluation.py \
 		--trained_model_path=$(TRAINED_RNN_PATH) \
@@ -403,7 +409,7 @@ rnn_evaluation: $(TRAINED_RNN_PATH)
 		--batch_size=$(BATCH_SIZE) \
 		--num_workers=$(NUM_WORKERS)
 
-rnn_pipeline: rnn_model rnn_training
+
 
 test:
 	pytest
