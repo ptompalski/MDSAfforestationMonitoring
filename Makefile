@@ -290,7 +290,8 @@ random_forest_permute: models/$(THRESHOLD_PCT)/fitted_random_forest_permute.jobl
 logistic_regression_permute: models/$(THRESHOLD_PCT)/fitted_logistic_regression_permute.joblib
 
 # construct all classical models at once
-all_models: logistic_regression_pipeline random_forest_pipeline gradient_boosting_pipeline 
+all_classical_models: logistic_regression_pipeline random_forest_pipeline gradient_boosting_pipeline 
+
 
 # process data for classical model training (LR, GBM, RF)
 data_for_classical_models: data_split
