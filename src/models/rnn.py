@@ -83,8 +83,8 @@ class RNNSurvivalPredictor(nn.Module):
 @click.option('--num_layers', type=int, default=1, help='Number of recurrent layers')
 @click.option('--dropout_rate', type=float, default=0.2, help='Dropout probability for regularization')
 @click.option('--concat_features', type=bool, default=False, help='Concatenate site features with RNN output')
-@click.option('--output_dir', type=click.Path(file_okay=False), required=True, help='Directory to save the model')
-def main(input_size, hidden_size, site_features_size, rnn_type, num_layers, dropout_rate, concat_features, output_dir):
+@click.option('--output_path', type=click.Path(exists=False), required=True, help='Path to save the model')
+def main(input_size, hidden_size, site_features_size, rnn_type, num_layers, dropout_rate, concat_features, output_path):
     '''
     CLI for constructing a RNN based model pipelines.
     '''
@@ -95,15 +95,8 @@ def main(input_size, hidden_size, site_features_size, rnn_type, num_layers, drop
     model = model.to(device)
     print(f"Model created with {model.rnn_layers} layers and {model.rnn_hidden_size} hidden size using {model.rnn_type}.")
 
-    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    
-    model_name = 'gru' if rnn_type == 'GRU' else 'lstm'
-    site_specs = 'site_feats' if concat_features else 'no_site_feats'
-    model_filename = f"{model_name}_{site_specs}.pth"
-    
-
-    model_path = os.path.join(output_dir, model_filename)
     config = {
         'input_size': input_size, 
         'hidden_size': hidden_size, 
@@ -118,8 +111,8 @@ def main(input_size, hidden_size, site_features_size, rnn_type, num_layers, drop
         torch.save({
             "model_state_dict": model.state_dict(),
             "config": config
-        }, model_path)
-        print(f"Model saved to {model_path}.")
+        }, output_path)
+        print(f"Model saved to {output_path}.")
     except Exception as e:
         print(f"Error saving model {e}")
 
