@@ -25,6 +25,8 @@ data/interim/*
 data/processed/*
 !data/processed/.gitkeep
 
+results/*
+
 # hide test data
 tests/*.rds
 
