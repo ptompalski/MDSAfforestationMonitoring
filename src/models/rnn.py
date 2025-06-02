@@ -104,8 +104,21 @@ def main(input_size, hidden_size, site_features_size, rnn_type, num_layers, drop
     
 
     model_path = os.path.join(output_dir, model_filename)
+    config = {
+        'input_size': input_size, 
+        'hidden_size': hidden_size, 
+        'site_features_size': site_features_size, 
+        'rnn_type': rnn_type, 
+        'num_layers': num_layers, 
+        'dropout_rate': dropout_rate, 
+        'concat_features': concat_features
+    }
+    
     try:
-        torch.save(model, model_path)
+        torch.save({
+            "model_state_dict": model.state_dict(),
+            "config": config
+        }, model_path)
         print(f"Model saved to {model_path}.")
     except Exception as e:
         print(f"Error saving model {e}")
