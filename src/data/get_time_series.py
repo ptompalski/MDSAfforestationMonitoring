@@ -346,11 +346,11 @@ def main(input_path,output_seq_dir,norm_stats_path,output_lookup_path,compute_no
     
      
     # if given training data, split into training and validation set
-    if output_lookup_path.name == 'train_lookup.parquet':
-        click.echo('Splitting training lookup table into validation table...')
-        train_lookup = pd.read_parquet(output_lookup_path)
-        train_lookup,valid_lookup = data_split(train_lookup)
-        train_lookup.to_parquet(output_lookup_path)
+    if output_lookup_path.name == 'test_lookup.parquet':
+        click.echo('Splitting test lookup table into test and validation table...')
+        test_lookup = pd.read_parquet(output_lookup_path)
+        test_lookup,valid_lookup = data_split(test_lookup,prop_train=0.5)
+        test_lookup.to_parquet(output_lookup_path)
         valid_lookup.to_parquet(output_lookup_path.with_name('valid_lookup.parquet'))
         click.echo(f"Saved validation lookup table to {output_lookup_path.with_name('valid_lookup.parquet')}")
     
