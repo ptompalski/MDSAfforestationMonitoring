@@ -1,10 +1,9 @@
 #!/bin/bash
 #SBATCH --time=24:00:00
-#SBATCH --account=st-alexrod6-1-gpu            
+#SBATCH --account=st-alexrod6-1          
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=3    
-#SBATCH --gpus=1
+#SBATCH --cpus-per-task=10    
 #SBATCH --mem=32G                   
 #SBATCH -e logs/cv_tune_%j.err       # STDERR log
 #SBATCH -o logs/cv_tune_%j.out       # STDOUT log
