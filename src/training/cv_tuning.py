@@ -59,7 +59,7 @@ def _get_rand_hparam_grid(model_pipeline: Pipeline):
     elif 'logisticregression' in model_pipeline.named_steps:
         return {
             "logisticregression__C": loguniform(1e-4, 1e2),
-            "logisticregression__penalty": ["l2", "l1",'elasticnet',None],
+            "logisticregression__penalty": ["l2",'l1','elasticnet',None],
             "logisticregression__class_weight": ['balanced', None],
             'logisticregression__max_iter': randint(5000,10000)
         }
