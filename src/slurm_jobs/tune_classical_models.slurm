@@ -67,35 +67,26 @@ conda activate mds-afforest-dev
 
 
 echo '[5/9] Prepare data'
-make data_for_classical_models THRESHOLD=0.5
-make data_for_classical_models THRESHOLD=0.55
-make data_for_classical_models THRESHOLD=0.6
-make data_for_classical_models THRESHOLD=0.65
-make data_for_classical_models THRESHOLD=0.7
-make data_for_classical_models THRESHOLD=0.75
-make data_for_classical_models THRESHOLD=0.8
+
+for thresh in 0.5 0.6 0.7; do
+    make data_for_classical_models THRESHOLD=${thresh}
+done
 
 echo '[6/9] build models'
 make all_classical_models
 
 
 echo '[7/9] Run hyperparameter tuning'
-make tune_classical_models THRESHOLD=0.5 NUM_ITER=${NUM_ITER} NUM_FOLDS=${NUM_FOLDS}
-make tune_classical_models THRESHOLD=0.55 NUM_ITER=${NUM_ITER} NUM_FOLDS=${NUM_FOLDS}
-make tune_classical_models THRESHOLD=0.6 NUM_ITER=${NUM_ITER} NUM_FOLDS=${NUM_FOLDS}
-make tune_classical_models THRESHOLD=0.65 NUM_ITER=${NUM_ITER} NUM_FOLDS=${NUM_FOLDS}
-make tune_classical_models THRESHOLD=0.7 NUM_ITER=${NUM_ITER} NUM_FOLDS=${NUM_FOLDS}
-make tune_classical_models THRESHOLD=0.75 NUM_ITER=${NUM_ITER} NUM_FOLDS=${NUM_FOLDS}
-make tune_classical_models THRESHOLD=0.8 NUM_ITER=${NUM_ITER} NUM_FOLDS=${NUM_FOLDS}
+for thresh in 0.5 0.6 0.7; do
+    make tune_gbm THRESHOLD=${thresh} NUM_ITER=1000 NUM_FOLDS=${NUM_FOLDS}
+    make tune_lr THRESHOLD=${thresh} NUM_ITER=1000 NUM_FOLDS=${NUM_FOLDS}
+    make tune_rf THRESHOLD=${thresh} NUM_ITER=30 NUM_FOLDS=${NUM_FOLDS}
+done
 
 echo '[8/9] Retrieve evaluation metrics'
-make classical_model_evaluation THRESHOLD=0.5
-make classical_model_evaluation THRESHOLD=0.55
-make classical_model_evaluation THRESHOLD=0.6
-make classical_model_evaluation THRESHOLD=0.65
-make classical_model_evaluation THRESHOLD=0.7
-make classical_model_evaluation THRESHOLD=0.75
-make classical_model_evaluation THRESHOLD=0.8
+for thresh in 0.5 0.6 0.7; do
+    make classical_model_evaluation THRESHOLD=${thresh}
+done
 
 echo '[9/9] Packaging results'
 tar -czf "$RESULT_TGZ" ./models ./results || { echo "Failed to package results"; exit 8; }
