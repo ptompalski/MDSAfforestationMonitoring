@@ -50,6 +50,7 @@ def get_validation_preds(
         - y_true: True binary labels (0 for 'Low Survival Rate' or 1 for 'High Survival Rate').
     '''
     # get features and target
+    df_train = df_train.dropna()
     X = df_train.drop(columns='target'); y_true = df_train['target']
     site_ids = df_train['ID']
     
@@ -309,7 +310,7 @@ def main(tuned_model_path,training_data_path,output_dir):
     output_dir.mkdir(exist_ok=True,parents=True)
     
     # get predictions
-    click.echo(f"Gettig validation predictions for {model_name}...")
+    click.echo(f"Getting validation predictions for {model_name}...")
     valid_pred_dict = get_validation_preds(model,df_train)
     y_pred = valid_pred_dict['y_pred']
     y_prob = valid_pred_dict['y_prob']
@@ -319,7 +320,7 @@ def main(tuned_model_path,training_data_path,output_dir):
     click.echo("Getting scores...")
     scores = get_error_metrics(y_pred,y_prob,y_true)
     scores_fname = f"{model_name}_scores.joblib"
-    joblib.dump(output_dir/scores_fname)
+    joblib.dump(scores,output_dir/scores_fname)
     click.echo(f"Scores saved to {output_dir/scores_fname}")
     
     # get PR curve
@@ -340,8 +341,8 @@ def main(tuned_model_path,training_data_path,output_dir):
     click.echo("Getting Confusion Matrix...")
     conf_matrix = get_conf_matrix(y_pred,y_true)
     conf_matrix_fname = f"{model_name}_confusion_matrix.csv"
-    conf_matrix.to_csv(output_dir/roc_curve_fname)
-    click.echo(f" Confusion matrix saved to {output_dir/conf_matrix_fname}")
+    conf_matrix.to_csv(output_dir/conf_matrix_fname)
+    click.echo(f"Confusion matrix saved to {output_dir/conf_matrix_fname}")
     
 if __name__ == '__main__':
     main()
