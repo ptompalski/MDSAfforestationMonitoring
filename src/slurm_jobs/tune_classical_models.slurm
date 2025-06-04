@@ -4,7 +4,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=10    
-#SBATCH --mem=32G                   
+#SBATCH --mem=64G                   
 #SBATCH -e logs/cv_tune_%j.err       # STDERR log
 #SBATCH -o logs/cv_tune_%j.out       # STDOUT log
 #SBATCH --mail-user=EMAIL        # <-- Specify email
