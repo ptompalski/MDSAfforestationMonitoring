@@ -68,7 +68,7 @@ conda activate mds-afforest-dev
 
 echo '[5/9] Prepare data'
 
-for thresh in 0.5 0.6 0.7; do
+for thresh in 0.5 0.6 0.7 0.8; do
     make data_for_classical_models THRESHOLD=${thresh}
 done
 
@@ -77,14 +77,14 @@ make all_classical_models
 
 
 echo '[7/9] Run hyperparameter tuning'
-for thresh in 0.5 0.6 0.7; do
+for thresh in 0.5 0.6 0.7 0.8; do
     make tune_gbm THRESHOLD=${thresh} NUM_ITER=1000 NUM_FOLDS=${NUM_FOLDS}
     make tune_lr THRESHOLD=${thresh} NUM_ITER=1000 NUM_FOLDS=${NUM_FOLDS}
     make tune_rf THRESHOLD=${thresh} NUM_ITER=30 NUM_FOLDS=${NUM_FOLDS}
 done
 
 echo '[8/9] Retrieve evaluation metrics'
-for thresh in 0.5 0.6 0.7; do
+for thresh in 0.5 0.6 0.7 0.8; do
     make classical_model_evaluation THRESHOLD=${thresh}
 done
 
