@@ -320,7 +320,7 @@ data/interim/test_data.parquet: data/interim/clean_feats_data.parquet
     	--output_dir=data/interim \
 
 # time_series_train_data
-data/processed/train_lookup.parquet data/processed/valid_lookup.parquet \
+data/processed/train_lookup.parquet \
  data/interim/norm_stats.json: data/interim/train_data.parquet
 	python -m src.data.get_time_series \
 		--input_path=data/interim/train_data.parquet \
@@ -330,7 +330,7 @@ data/processed/train_lookup.parquet data/processed/valid_lookup.parquet \
 		--compute-norm-stats
 
 # time_series_test_data
-data/processed/test_lookup.parquet: data/interim/test_data.parquet data/interim/norm_stats.json
+data/processed/test_lookup.parquet data/processed/valid_lookup.parquet: data/interim/test_data.parquet data/interim/norm_stats.json
 	python -m src.data.get_time_series \
 		--input_path=data/interim/test_data.parquet \
 		--output_seq_dir=data/processed/sequences \
@@ -340,7 +340,7 @@ data/processed/test_lookup.parquet: data/interim/test_data.parquet data/interim/
 # Run data processing and splitting for RNN models
 data_split_RNN: data/interim/train_data.parquet data/interim/test_data.parquet
 time_series_train_data: data/processed/train_lookup.parquet
-time_series_test_data: data/processed/test_lookup.parquet
+time_series_test_data: data/processed/test_lookup.parquet data/processed/valid_lookup.parquet
 data_for_RNN_models: time_series_train_data time_series_test_data
 
 # Variables for RNN Model Pipeline
