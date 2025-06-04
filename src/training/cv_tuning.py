@@ -53,7 +53,8 @@ def _get_rand_hparam_grid(model_pipeline: Pipeline):
             "randomforestclassifier__bootstrap": [True, False],
             "randomforestclassifier__class_weight": ['balanced', None],
             'randomforestclassifier__n_estimators': randint(500,2000),
-            "randomforestclassifier__max_features": ['sqrt', 'log2', None]
+            "randomforestclassifier__max_features": ['sqrt', 'log2', None],
+            "randomforestclassifier__n_jobs": [-1],
         }
     elif 'logisticregression' in model_pipeline.named_steps:
         return {
