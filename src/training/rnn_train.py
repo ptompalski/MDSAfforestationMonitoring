@@ -1,5 +1,6 @@
 import rnn_dataset
 import torch
+import copy
 import os
 import click
 import pandas as pd
@@ -54,7 +55,6 @@ def train(model : Module,
     """
 
     valid_losses = []
-
     print(f'Training Model on {epochs} epochs on {device}.')
     model.to(device, non_blocking=True)
     for epoch in range(epochs):
@@ -104,7 +104,7 @@ def train(model : Module,
         # Save the best model
         if epoch == 0 or avg_valid_loss < best_valid_loss:
             best_valid_loss = avg_valid_loss
-            best_model = model.state_dict()
+            best_model = copy.deepcopy(model.state_dict())
         
         # Early stopping check
         if epoch > 0 and avg_valid_loss > valid_losses[-2] * (1 + 1e-5):

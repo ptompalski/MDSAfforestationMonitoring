@@ -1,3 +1,4 @@
+from unicodedata import bidirectional
 import torch
 import click
 import os
@@ -37,21 +38,22 @@ class RNNSurvivalPredictor(nn.Module):
         self.rnn_type = rnn_type
         self.concat_features = concat_features
         self.input_linear_size = site_features_size + hidden_size if self.concat_features else hidden_size
-        self.activation = nn.ReLU()
+        self.activation = nn.LeakyReLU()
         self.dropout = nn.Dropout(dropout_rate)
         
         if rnn_type not in ['GRU', 'LSTM']:
             raise ValueError("rnn_type must be either 'GRU' or 'LSTM'")
 
         if rnn_type == 'GRU':
-            self.rnn = nn.GRU(input_size, hidden_size, num_layers=num_layers,
+            self.rnn = nn.GRU(input_size, hidden_size, num_layers=num_layers, bidirectional=True,
                               batch_first=True, dropout=dropout_rate if num_layers > 1 else 0)
         if self.rnn_type == 'LSTM':
-            self.rnn = nn.LSTM(input_size, hidden_size, num_layers=num_layers,
+            self.rnn = nn.LSTM(input_size, hidden_size, num_layers=num_layers, bidirectional=True,
                                batch_first=True, dropout=dropout_rate if num_layers > 1 else 0)
         
         self.linear_sequence =  nn.Sequential(
             nn.Linear(self.input_linear_size, self.linear_size),
+            nn.LayerNorm(self.linear_size),
             self.activation,
             nn.Linear(self.linear_size, 1),
             self.activation
@@ -59,7 +61,7 @@ class RNNSurvivalPredictor(nn.Module):
 
     def forward(self, sequence, sequence_length, site_features):
         batch_size = sequence.size(0)
-        h0 = torch.zeros(self.rnn_layers, batch_size, self.rnn_hidden_size).to(sequence.device)
+        h0 = torch.zeros(self.rnn_layers*2, batch_size, self.rnn_hidden_size).to(sequence.device)
 
         packed_input = rnn_utils.pack_padded_sequence(
                         sequence,
@@ -68,14 +70,13 @@ class RNNSurvivalPredictor(nn.Module):
                         enforce_sorted=False)
 
         if self.rnn_type == 'LSTM':
-            c0 = torch.zeros(self.rnn_layers, batch_size, self.rnn_hidden_size).to(sequence.device)
+            c0 = torch.zeros(self.rnn_layers*2, batch_size, self.rnn_hidden_size).to(sequence.device)
             packed_output, (hn, cn) = self.rnn(packed_input, (h0, c0))
         else:
             packed_output, hn = self.rnn(packed_input, h0)
 
         last_hidden_state = hn[-1]
         concatenated_features = torch.cat((last_hidden_state, site_features), dim=1) if self.concat_features else last_hidden_state
-        # layer norm
         output = self.linear_sequence(concatenated_features)
         output = self.dropout(output)
         output = torch.mul(torch.sigmoid(output),100)
@@ -98,7 +99,7 @@ def main(input_size, hidden_size, linear_size, site_features_size, rnn_type, num
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
 
-    model = RNNSurvivalPredictor(input_size, hidden_size, site_features_size, rnn_type, num_layers, dropout_rate, concat_features)
+    model = RNNSurvivalPredictor(input_size, hidden_size, linear_size, site_features_size, rnn_type, num_layers, dropout_rate, concat_features)
     model = model.to(device)
     print(f"Model created with {model.rnn_layers} layers and {model.rnn_hidden_size} hidden size using {model.rnn_type}.")
 

@@ -375,7 +375,7 @@ rnn_model:
 	python src/models/rnn.py \
 		--input_size=$(INPUT_SIZE) \
 		--hidden_size=$(HIDDEN_SIZE) \
-		--linear_size=$(LINEAR_SIZE)
+		--linear_size=$(LINEAR_SIZE) \
 		--site_features_size=$(SITE_FEATURES_SIZE) \
 		--rnn_type=$(RNN_TYPE) \
 		--num_layers=$(NUM_LAYERS) \
