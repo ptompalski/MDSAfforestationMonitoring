@@ -209,7 +209,9 @@ def main(model_path,
     # Save model
     torch.save({
         "model_state_dict": model,
-        "config": checkpoint["config"]
+        "config": checkpoint["config"],
+        "site_cols" : site_cols,
+        "seq_cols" : seq_cols
     }, output_path)
     print(f'Training Complete, model saved to {output_path}.')
 

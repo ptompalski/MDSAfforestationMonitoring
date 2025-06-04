@@ -168,38 +168,30 @@ def rnn_get_metrics_by_age(pred_df):
 
 
 @click.command()
-@click.option('--trained_model_path', type=click.Path(exists=True), required=True, help='Path to model .pth file.')
+@click.option('--trained_model_path', type=click.Path(exists=True), required=True, help='Path to trained model.')
+@click.option('--eval_ouput_path', type=click.Path(exists=False), required=True, help='Path to save the evaluation results.')
 @click.option('--lookup_dir', type=click.Path(exists=True), required=True, help='Directory to test lookup file.')
 @click.option('--seq_dir', type=click.Path(exists=True), required=True, help='Directory to sequence data files.')
 @click.option('--threshold', type=float, default=0.7, help='Survival rate threshold for target classification.')
 @click.option('--batch_size', type=int, default=64, help='Batch size for test dataloader.')
 @click.option('--num_workers', type=int, default=0, help='Number of workers for test dataloader.')
-@click.option('--site_cols', type=str, default='', help='Site features to use in model.')
-@click.option('--seq_cols', type=str, default='', help='Sequence features to use in model.')
 def main(trained_model_path,
+         eval_output_path,
          lookup_dir,
          seq_dir,
          threshold=0.7,
          batch_size=64,
-         num_workers=0,
-         site_cols='',
-         seq_cols=''):
+         num_workers=0):
     """
     Command Line Interface for evaluating trained rnn model on test data.
     """
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    # Process CLI input for site_cols and seq_cols
-    site_feats = ['Density', 'Type_Conifer', 'Type_Decidous', 'Age']
-    seq_feats = ['NDVI', 'SAVI', 'MSAVI', 'EVI', 'EVI2', 'NDWI', 'NBR',
-                 'TCB', 'TCG', 'TCW', 'log_dt', 'neg_cos_DOY']
-    site_cols = site_feats if site_cols == '' else site_cols.split(',')
-    seq_cols =  seq_feats if seq_cols == '' else seq_cols.split(',')
-    
-    
     # Load trained model
     checkpoint = torch.load(trained_model_path)
     config = checkpoint["config"]
+    site_cols = checkpoint['site_cols']
+    seq_cols = checkpoint['seq_cols']
     model = RNNSurvivalPredictor(**config)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.to(device, non_blocking=True)
@@ -239,12 +231,10 @@ def main(trained_model_path,
         'conf_matrix_age' : conf_matrix_age
     }
     
-    os.makedirs('results', exist_ok=True)
-    output_name = f'eval_{config['rnn_type']}_{threshold*100}_{'' if config['concat_features'] else 'no_'}site_feats.pkl'
-    output_path = os.path.join('results', output_name)
-    with open(output_path, 'wb') as f:
+    os.makedirs(os.path.dirname(eval_output_path), exist_ok=True)
+    with open(eval_output_path, 'wb') as f:
         pickle.dump(rnn_test_result, f)
-    print(f'Evaluation Completed. Results saved to {output_path}')
+    print(f'Evaluation Completed. Results saved to {eval_output_path}')
 
 if __name__ == "__main__":
     main()
