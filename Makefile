@@ -347,6 +347,7 @@ data_for_RNN_models: time_series_train_data time_series_test_data
 # rnn_odel
 INPUT_SIZE ?= 12 
 HIDDEN_SIZE ?= 16
+LINEAR_SIZE ?= 16
 SITE_FEATURES_SIZE ?= 4
 RNN_TYPE ?= 
 NUM_LAYERS ?= 1
@@ -374,6 +375,7 @@ rnn_model:
 	python src/models/rnn.py \
 		--input_size=$(INPUT_SIZE) \
 		--hidden_size=$(HIDDEN_SIZE) \
+		--linear_size=$(LINEAR_SIZE)
 		--site_features_size=$(SITE_FEATURES_SIZE) \
 		--rnn_type=$(RNN_TYPE) \
 		--num_layers=$(NUM_LAYERS) \
