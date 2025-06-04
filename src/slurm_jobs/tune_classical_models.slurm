@@ -16,6 +16,11 @@
 NUM_ITER=2000 # number of random search iterations 
 NUM_FOLDS=5 # number of CV folds
 
+OUTPUT_MODEL_NAME=cv_tuning
+SCRATCH_RUN_DIR=/scratch/st-alexrod6-1/$USER
+REPO_TGZ="${SCRATCH_RUN_DIR}/repo.tgz"
+RESULT_TGZ="$SCRATCH_RUN_DIR/results/${OUTPUT_MODEL_NAME}.tgz"
+mkdir -p "$SCRATCH_RUN_DIR/results"
 ########################################################
 
 # unbuffer print output
