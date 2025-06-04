@@ -73,7 +73,9 @@ mock_pred_df = pd.DataFrame({
     'Type_Decidous': [0]*22,
     'y_true': [0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1],
     'filename': ['name']*22,
-    'y_pred' : [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1]
+    'y_pred' : [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1],
+    'raw_y_true' : [60, 60, 90, 90, 90, 90, 60, 60, 90, 90, 90, 60, 60, 60, 90, 60, 60, 60, 90, 90, 90, 90],
+    'raw_y_pred': [60, 60, 60, 60, 90, 90, 90, 90, 60, 60, 60, 60, 90, 90, 90, 60, 60, 60, 90, 90, 90, 90]
 })
 
 
@@ -133,7 +135,7 @@ def test_rnn_get_prediction(setup_model):
     exp_y_true = target_to_bin(test_dataset.lookup, 0.7)
     exp_cols = test_dataset.lookup.columns.to_list()
     exp_cols.remove('target')
-    exp_cols += ['y_true', 'y_pred']
+    exp_cols += ['y_true', 'y_pred', 'raw_y_true', 'raw_y_pred']
     
     assert isinstance(df, pd.DataFrame)
     assert all(i in exp_cols for i in df.columns.to_list()), f'{df.columns}'
