@@ -53,7 +53,6 @@ class RNNSurvivalPredictor(nn.Module):
         
         self.linear_sequence =  nn.Sequential(
             nn.Linear(self.input_linear_size, self.linear_size),
-            nn.LayerNorm(self.linear_size),
             self.activation,
             nn.Linear(self.linear_size, 1),
             self.activation
