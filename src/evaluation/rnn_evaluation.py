@@ -169,7 +169,7 @@ def rnn_get_metrics_by_age(pred_df):
 
 @click.command()
 @click.option('--trained_model_path', type=click.Path(exists=True), required=True, help='Path to trained model.')
-@click.option('--eval_ouput_path', type=click.Path(exists=False), required=True, help='Path to save the evaluation results.')
+@click.option('--eval_output_path', type=click.Path(exists=False), required=True, help='Path to save the evaluation results.')
 @click.option('--lookup_dir', type=click.Path(exists=True), required=True, help='Directory to test lookup file.')
 @click.option('--seq_dir', type=click.Path(exists=True), required=True, help='Directory to sequence data files.')
 @click.option('--threshold', type=float, default=0.7, help='Survival rate threshold for target classification.')
