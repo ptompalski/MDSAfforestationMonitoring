@@ -332,7 +332,7 @@ def main(tuned_model_path,training_data_path,output_dir):
     
     # get ROC curve
     click.echo("Getting ROC curve...")
-    roc_curve = get_valid_pr_curve(y_prob,y_true)
+    roc_curve = get_valid_roc_curve(y_prob,y_true)
     roc_curve_fname = f"{model_name}_roc_curve.csv"
     roc_curve.to_csv(output_dir/roc_curve_fname,index=False)
     click.echo(f"ROC Curve saved to {output_dir/roc_curve_fname}")
