@@ -14,6 +14,7 @@ class RNNSurvivalPredictor(nn.Module):
     Attributes:
         rnn_layers (int): Number of recurrent layers.
         rnn_hidden_size (int): Size of the hidden state in the RNN.
+        linear_size (int): Size of the first linear layer output. 
         rnn_type (str): Type of RNN to use ('GRU' or 'LSTM').
         rnn (nn.Module): The recurrent neural network layer (GRU or LSTM).
         activation (nn.ReLU): Activation function for the output.
@@ -22,6 +23,7 @@ class RNNSurvivalPredictor(nn.Module):
     Args:
         input_size (int): The number of features in each time step of the input sequence.
         hidden_size (int): The size of the hidden state in the RNN.
+        linear_size (int): Size of the first linear layer output. 
         site_features_size (int): The number of static features per site.
         rnn_type (str, optional): The type of RNN to use ('GRU' or 'LSTM'). Defaults to "GRU".
         num_layers (int, optional): Number of recurrent layers. Defaults to 1.
@@ -37,8 +39,8 @@ class RNNSurvivalPredictor(nn.Module):
         self.linear_size = linear_size
         self.rnn_type = rnn_type
         self.concat_features = concat_features
-        self.input_linear_size = site_features_size + hidden_size if self.concat_features else hidden_size
-        self.activation = nn.LeakyReLU()
+        self.input_linear_size = site_features_size + hidden_size*2 if self.concat_features else hidden_size*2
+        self.activation = nn.ReLU()
         self.dropout = nn.Dropout(dropout_rate)
         
         if rnn_type not in ['GRU', 'LSTM']:
@@ -53,7 +55,6 @@ class RNNSurvivalPredictor(nn.Module):
         
         self.linear_sequence =  nn.Sequential(
             nn.Linear(self.input_linear_size, self.linear_size),
-            nn.LayerNorm(self.linear_size),
             self.activation,
             nn.Linear(self.linear_size, 1),
             self.activation
@@ -74,8 +75,9 @@ class RNNSurvivalPredictor(nn.Module):
             packed_output, (hn, cn) = self.rnn(packed_input, (h0, c0))
         else:
             packed_output, hn = self.rnn(packed_input, h0)
+        
 
-        last_hidden_state = hn[-1]
+        last_hidden_state = torch.cat((hn[-2], hn[-1]), dim=1)
         concatenated_features = torch.cat((last_hidden_state, site_features), dim=1) if self.concat_features else last_hidden_state
         output = self.linear_sequence(concatenated_features)
         output = self.dropout(output)
