@@ -52,7 +52,6 @@ This document assembles six modular sections (`_introduction.qmd` through `_conc
 
 {{< include _conclusions.qmd >}}
 
-## References
 
 ---
 

@@ -1,4 +1,3 @@
-## Overview of Preprocessing Workflows
 
 We implement two preprocessing workflows:
 - **Static pipeline** for classical models (Logistic Regression, Random Forest, XGBoost), producing a fixed-length feature table for each site.
