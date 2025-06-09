@@ -1,0 +1,38 @@
+We structure our workflow into two phases—static feature modelling and sequence modelling—each with its own preprocessing steps, followed by evaluation using grouped cross-validation.
+
+### Phase 1: Static Preprocessing & Modelling
+
+**Preprocessing Steps**
+- **load_data.py:** Import RDS (~630 MB) and export Parquet (`afforestation_rasters.parquet`) plus CSVs (`planting_records.csv`, `survival_survey.csv`).
+- **preprocess_features.py:** Drop invalid sites, one-hot encode `Type`, scale `Density` & `Age`; output `clean_feats_data.parquet`.
+- **data_split.py:** Binarize Year-7 retention (≥70 %), stratify by `Type`, and split into `train_data70.0.parquet` and `test_data70.0.parquet`.
+
+**Static Models**
+
+| Model               | Implementation                                         | Tuned Hyperparameters                               |
+|---------------------|--------------------------------------------------------|-----------------------------------------------------|
+| Logistic Regression | `LogisticRegression(class_weight="balanced")`          | `C` (inverse regularization strength)               |
+| Random Forest       | `RandomForestClassifier(class_weight="balanced")`      | `n_estimators`, `max_depth`                        |
+| XGBoost             | `XGBClassifier(monotone_constraints={"Age":1})`        | `max_depth`, `learning_rate`, `n_estimators`, `reg_alpha`, `reg_lambda` |
+
+### Phase 2: Sequence Preprocessing & Modelling
+
+**Preprocessing Steps**
+- **load_data.py:** Same raw ingest as Phase 1.
+- **pivot_data.py:** Mask annual rasters by polygon, compute mean of 12 indices per year, save ~15 000 `site_<ID>.parquet` sequence files.
+- **data_split.py:** Build lookup table (static features + filename + target) and split identically to Phase 1.
+
+**Sequence Models**
+
+| Model | Implementation                                                           | Tuned Hyperparameters                      |
+|-------|---------------------------------------------------------------------------|--------------------------------------------|
+| GRU   | 1-layer GRU (hidden_size=32, dropout=0.2) + static features → dense → logit | `hidden_size`, `dropout`, `learning_rate`  |
+| LSTM  | 1-layer LSTM (hidden_size=32, dropout=0.2) + static features → dense → logit| `hidden_size`, `dropout`, `learning_rate`  |
+
+### Evaluation Metrics
+
+We use grouped 5‑fold CV by site ID (random_state=591) on `train_data70.0.parquet`, optimizing **F1 Score**. Final evaluation on `test_data70.0.parquet` reports:
+
+- **Precision & Recall:** trade-off between false positives and negatives.
+- **F1 Score:** harmonic mean of Precision and Recall.
+- **AUC:** area under the ROC curve for ranking quality.
