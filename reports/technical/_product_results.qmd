@@ -15,11 +15,6 @@ Our primary data product is a self-contained, reproducible Python/Quarto reposit
    - Each artifact is accompanied by its hyperparameter configuration and training logs, enabling reproducibility and auditability.  
    - Partners can load any artifact in a separate environment for inference or further fine-tuning.
 
-3. **Quarto Report (`reports/technical/`)**  
-   - Documents the end-to-end methodology, from raw data ingestion to final evaluation.  
-   - Presents model performance metrics (Precision, Recall, F1, AUC) for all five pipelines on held-out test data.  
-   - Includes visualizations of feature importance (XGBoost), confusion matrices, and RNN training curves.  
-   - Articulates why each modelling choice was made and outlines limitations and potential enhancements.
 
 ### Intended Usage
 
@@ -57,13 +52,18 @@ However, a cloud‐hosted API might be preferable if partners require real-time 
 
 On held-out (20%) test data for the 70% canopy‐retention threshold:
 
-| Model                  | Precision | Recall | F1    | AUC   |
-|------------------------|-----------|--------|-------|-------|
-| Logistic Regression    | 0.58      | 0.69   | 0.63  | 0.60  |
-| Random Forest          | 0.62      | 0.67   | 0.65  | 0.63  |
-| XGBoost (GBM)          | 0.75      | 0.60   | 0.72  | 0.65  |
-| GRU (RNN)              | 0.72      | 0.65   | 0.70  | 0.65  |
-| LSTM (RNN)             | 0.73      | 0.64   | 0.68  | 0.66  |
+**Phase 1: Classical Models**
+
+- **Logistic Regression**: performance metrics (Precision, Recall, F1, AUC) will be inserted here.
+- **Random Forest**: performance metrics (Precision, Recall, F1, AUC) will be inserted here.
+- **XGBoost (GBM)**: performance metrics (Precision, Recall, F1, AUC) will be inserted here.
+
+### Phase 2: Sequence Model Evaluation
+
+- **GRU (spectral+static):** performance metrics (Precision, Recall, F1, AUC) will be inserted here.
+- **LSTM (spectral+static):** performance metrics (Precision, Recall, F1, AUC) will be inserted here.
+
+> **Insight:** Placeholder comment on sequence model performance.
 
 - The **XGBoost model** strikes the best balance (highest F1) for identifying low-
   survival sites, making it the recommended default for partner deployment.  
@@ -72,17 +72,10 @@ On held-out (20%) test data for the 70% canopy‐retention threshold:
 
 The complete confusion matrix for XGBoost (70% threshold) is:
 
-```
-                     Predicted Low  Predicted High
-True Low (retain)         4833            3266
-True High (fail)         15037           23552
-```
+- **LSTM (spectral+static):** performance metrics (Precision, Recall, F1) will be inserted here.
 
 ### Potential Enhancements
 
-- **Web‐based Dashboard**: A Streamlit or Dash app could allow partners to upload new per-site Parquet files and immediately view survival‐risk plots, reducing reliance on command‐line.  
-- **Continuous Integration**: Automate retraining whenever new Year‐7 ground data arrive (e.g., via GitHub Actions or scheduled jobs).  
-- **Expanded Feature Set**: Incorporate additional covariates (soil moisture, LiDAR‐derived canopy height) to improve AUC beyond 0.65.  
-- **Model Explainability**: Integrate SHAP or LIME to provide per‐site feature attributions, aiding partner trust and decision‐making.
+- **CNN-LSTM Hybrid:** Add convolutional layers that learn spatial correlations among spectral indices (e.g., local band interactions) before passing the extracted feature maps into an LSTM layer for temporal modeling. This approach can improve predictive accuracy by jointly capturing spatial and temporal patterns in the data.
 
 By focusing on a reproducible, modular product now, we enable partners to adopt and extend the workflow flexibly, while future iterations can add web interfaces and advanced features as computational resources permit.
