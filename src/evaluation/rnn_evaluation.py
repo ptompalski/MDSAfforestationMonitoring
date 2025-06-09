@@ -48,13 +48,15 @@ def rnn_get_prediction(model, test_dataloader, test_set, threshold, device):
             batch['site_features'].to(device, non_blocking=True)
         )
         predictions = torch.cat((predictions, pred))
-        
+    raw_y_true = test_set.lookup['target']
+    raw_y_pred = predictions.detach().numpy()
     pred_df = target_to_bin(test_set.lookup, threshold).rename(
         columns={'target': 'y_true'})
-    pred_df['target'] = predictions.detach().numpy()
+    pred_df['target'] = raw_y_pred
     pred_df = target_to_bin(pred_df, threshold).rename(
         columns={'target': 'y_pred'})
-    
+    pred_df['raw_y_true'] = raw_y_true
+    pred_df['raw_y_pred'] = raw_y_pred
     return pred_df
     
 def rnn_get_metrics(pred_df):
