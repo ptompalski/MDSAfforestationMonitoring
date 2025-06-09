@@ -1,0 +1,89 @@
+## Methods
+
+This section describes the preprocessing pipelines for static vs. sequence data, the traditional classification models, the time-series RNN models, and the evaluation metrics used.
+
+### 1. Data Preprocessing
+
+#### 1.1 Static Feature Pipeline
+- Drops identifier and date columns: `ID`, `PixelID`, `Season`, `SrvvR_Date`.
+- Scales 11 numeric features (`NDVI`, `SAVI`, `MSAVI`, `EVI`, `EVI2`, `NDWI`, `NBR`, `TCB`, `TCG`, `TCW`, `Density`) to zero mean and unit variance.
+- One-hot encodes species type (`Type` → Conifer, Deciduous, Mixed).
+- Outputs a fixed-length feature table in `data/processed/70/train_data70.0.parquet`.
+
+#### 1.2 Sequence Feature Pipeline
+- For each site, loads its Parquet time-series (`site_<ID>.parquet`) containing annual values of 10 indices plus engineered features:
+  - `log_dt` (log days since planting)
+  - `neg_cos_DOY` (negative cosine of day-of-year)
+- Pads sequences to batch maximum and tracks original lengths for masking.
+- Outputs per-site sequence files under `data/time_series/` and a lookup table in `data/processed/70/`.
+
+---
+
+### 2. Traditional Classification Models
+
+We benchmark three classical models using the static feature table, each within a scikit-learn pipeline and tuned via grouped five-fold cross-validation (GroupKFold by site ID), optimizing F1 score:
+
+#### 2.1 Logistic Regression
+- **What it does:** Learns a linear decision boundary on scaled static features.
+- **Implementation:** `LogisticRegression(class_weight="balanced", solver="lbfgs", max_iter=500)`
+- **Pros:** Fast training; interpretable coefficients; calibrated probabilities.
+- **Cons:** Cannot capture non-linear feature interactions; sensitive to multicollinearity.
+- **Justification:** Provides an interpretable baseline; useful for understanding feature impacts.
+- **Potential improvements:** Polynomial or interaction terms; ElasticNet regularization.
+
+#### 2.2 Random Forest
+- **What it does:** Aggregates decisions from an ensemble of bootstrapped decision trees to capture non-linearities.
+- **Implementation:** `RandomForestClassifier(class_weight="balanced")` within the same preprocessing pipeline.
+- **Pros:** Handles non-linear interactions; robust to outliers; minimal feature preprocessing.
+- **Cons:** Larger memory footprint; slower inference; less interpretable than linear models.
+- **Justification:** Offers a balance between interpretability and performance for tree-based methods.
+- **Potential improvements:** Increase number of trees; tune max depth and feature subset size.
+
+#### 2.3 Gradient Boosting (XGBoost)
+- **What it does:** Builds sequential trees that correct errors of prior iterations, optimizing log-loss with regularization.
+- **Implementation:** `XGBClassifier(monotone_constraints={"Age":1}, use_label_encoder=False)` in a pipeline.
+- **Hyperparameters tuned:** `max_depth`, `learning_rate`, `n_estimators`, `reg_alpha`, `reg_lambda`.
+- **Pros:** High predictive accuracy; supports domain-driven monotonicity constraints; handles missing values.
+- **Cons:** Longer training time; complex hyperparameter tuning; less transparent.
+- **Justification:** Yields the best F1 (≈0.72) and AUC (≈0.65) on test data.
+- **Potential improvements:** Bayesian hyperparameter optimization; ensemble with other boosting frameworks.
+
+---
+
+### 3. Time-Series Recurrent Neural Networks
+
+To leverage temporal trends in spectral indices, we implement RNN models that consume per-site sequences:
+
+#### 3.1 Gated Recurrent Unit (GRU)
+- **What it does:** Processes variable-length sequences via gated units that control information flow, capturing temporal dependencies.
+- **Architecture:**
+  1. GRU layer (hidden_size=32, dropout=0.2)
+  2. Concatenate final hidden state with static features (Density, Age, one-hot Type)
+  3. Two fully-connected layers (36→16→1) with ReLU and sigmoid for binary classification.
+- **Training:** `BCEWithLogitsLoss(pos_weight=...)` with `Adam(lr=1e-3)`, 20 epochs, batch size 64.
+- **Pros:** Learns temporal patterns directly; no manual feature engineering of trends.
+- **Cons:** Requires GPU for efficient training; less explainable.
+- **Justification:** Captures per-year dynamics missed by static models.
+- **Potential improvements:** Bidirectional GRU; attention mechanisms; additional recurrent layers.
+
+#### 3.2 Long Short-Term Memory (LSTM)
+- **What it does:** Similar to GRU but with separate input, forget, and output gates to manage long-term dependencies.
+- **Architecture:** Single-layer LSTM (hidden_size=32, dropout=0.2) with the same downstream dense layers.
+- **Pros:** Better at retaining long-range dependencies; reduces vanishing gradient issues.
+- **Cons:** More parameters; slower to train; greater risk of overfitting.
+- **Justification:** May improve performance for sites with irregular spectral changes.
+- **Potential improvements:** Increase number of LSTM layers; tune dropout and sequence length.
+
+---
+
+### 4. Evaluation Metrics
+
+We evaluate all models on held-out test data (`test_data70.0.parquet`) using:
+- **Precision** and **Recall** to balance false positives vs. false negatives.
+- **F1 Score** (primary CV and model-selection metric).
+- **Area Under ROC Curve (AUC)** for ranking quality.
+- **Average Precision (AP)** for class-imbalanced performance.
+
+Grouped five-fold CV ensures no spatial leakage by splitting on site ID.
+
+---

@@ -1,5 +1,5 @@
 ---
-title: "Remote Sensing for Forest Recovery: Final Report"
+title: "Remote Sensing for Forest Recovery: Technical Report"
 author: 
   - name: Benjamin Frizzell
   - name: Zanan Pech
@@ -8,6 +8,7 @@ author:
   - name: Piotr Tompalski
   - name: Alexi Rodríguez-Arelis
 date: today
+bibliography: references.bib
 format: 
   pdf:
     toc: true
@@ -25,28 +26,43 @@ format:
         \AtBeginEnvironment{longtable}{\rowcolors{2}{gray!15}{white}}
 ---
 
-## Executive Summary {#sec-exec_summary}
+::: {.callout-note}
+This document assembles six modular sections (`_introduction.qmd` through `_conclusions.qmd`), each included below.
+:::
 
-{{< include _exec_summary.qmd >}}
+---
 
-## Introduction {#sec-introduction}
+## 1 Introduction {#sec-introduction}
 
 {{< include _introduction.qmd >}}
 
-## Data & Pre-processing {#sec-data_prep}
+## 2 Data & Pre-processing {#sec-data_prep}
 
 {{< include _data_prep.qmd >}}
 
-## Methods {#sec-methods}
+## 3 Methods {#sec-methods}
 
 {{< include _methods.qmd >}}
 
-## Data Product & Results {#sec-product_results}
+## 4 Data Product & Results {#sec-product_results}
 
 {{< include _product_results.qmd >}}
 
-## Conclusions & Recommendations {#sec-conclusions}
+## 5 Conclusions & Recommendations {#sec-conclusions}
 
 {{< include _conclusions.qmd >}}
 
 ## References
+
+---
+
+::: {.callout-tip}
+**Rendering Instructions**
+
+```bash
+cd reports/technical
+conda activate mds-afforest-dev
+quarto render report.qmd
+open report.pdf
+```
+:::
