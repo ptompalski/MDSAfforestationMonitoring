@@ -1,139 +1,38 @@
+We structure our workflow into two phases—static feature modelling and sequence modelling—each with its own preprocessing steps, followed by evaluation using grouped cross-validation.
 
-We implement two preprocessing workflows:
-- **Static pipeline** for classical models (Logistic Regression, Random Forest, XGBoost), producing a fixed-length feature table for each site.
-- **Sequence pipeline** for RNNs (GRU, LSTM), producing per-site variable-length time-series files.
+### Phase 1: Static Preprocessing & Modelling
 
-```{mermaid}
-flowchart TD
-  A[raw_data.rds<br/>+ planting & survey CSVs] --> B(load_data.py)
-  B --> C(preprocess_features.py)
-  C --> D(pivot_data.py)
-  D --> E(data_split.py)
-  classDef io fill:#f7f7f7,stroke:#999
-  class A,E io
-```
+**Preprocessing Steps**
+- **load_data.py:** Import RDS (~630 MB) and export Parquet (`afforestation_rasters.parquet`) plus CSVs (`planting_records.csv`, `survival_survey.csv`).
+- **preprocess_features.py:** Drop invalid sites, one-hot encode `Type`, scale `Density` & `Age`; output `clean_feats_data.parquet`.
+- **data_split.py:** Binarize Year-7 retention (≥70 %), stratify by `Type`, and split into `train_data70.0.parquet` and `test_data70.0.parquet`.
 
-### Key Makefile variables
+**Static Models**
 
-| Variable         | Default                     | Purpose                                                      |
-|------------------|-----------------------------|--------------------------------------------------------------|
-| `RAW_DATA_PATH`  | `data/raw/raw_data.rds`     | R Data Series (annual Landsat composites)                    |
-| `THRESHOLD`      | `0.7`                       | Year‑7 canopy retention cut‑off for survival                 |
-| `THRESHOLD_PCT`  | `70`                        | Folder suffix based on `THRESHOLD`                           |
+| Model               | Implementation                                         | Tuned Hyperparameters                               |
+|---------------------|--------------------------------------------------------|-----------------------------------------------------|
+| Logistic Regression | `LogisticRegression(class_weight="balanced")`          | `C` (inverse regularization strength)               |
+| Random Forest       | `RandomForestClassifier(class_weight="balanced")`      | `n_estimators`, `max_depth`                        |
+| XGBoost             | `XGBClassifier(monotone_constraints={"Age":1})`        | `max_depth`, `learning_rate`, `n_estimators`, `reg_alpha`, `reg_lambda` |
 
----
+### Phase 2: Sequence Preprocessing & Modelling
 
-### 1. make load_data  →  src/data/load_data.py
+**Preprocessing Steps**
+- **load_data.py:** Same raw ingest as Phase 1.
+- **pivot_data.py:** Mask annual rasters by polygon, compute mean of 12 indices per year, save ~15 000 `site_<ID>.parquet` sequence files.
+- **data_split.py:** Build lookup table (static features + filename + target) and split identically to Phase 1.
 
-**Goal:** Convert the RDS archive into Parquet/CSV that Python can ingest.
+**Sequence Models**
 
-1. Read **~630 MB** RDS of Landsat composites (2010–2023) from `$(RAW_DATA_PATH)` using **`rpy2`** (converts to ~700 MB Parquet).  
-2. Write each raster stack to `data/raw/afforestation_rasters.parquet`.  
-3. Export stand‑level metadata to:
-   - `planting_records.csv`  
-   - `survival_survey.csv`
+| Model | Implementation                                                           | Tuned Hyperparameters                      |
+|-------|---------------------------------------------------------------------------|--------------------------------------------|
+| GRU   | 1-layer GRU (hidden_size=32, dropout=0.2) + static features → dense → logit | `hidden_size`, `dropout`, `learning_rate`  |
+| LSTM  | 1-layer LSTM (hidden_size=32, dropout=0.2) + static features → dense → logit| `hidden_size`, `dropout`, `learning_rate`  |
 
-**Outputs:**
-```
-data/raw/
-├─ afforestation_rasters.parquet
-├─ planting_records.csv
-└─ survival_survey.csv
-```
+### Evaluation Metrics
 
----
+We use grouped 5‑fold CV by site ID (random_state=591) on `train_data70.0.parquet`, optimizing **F1 Score**. Final evaluation on `test_data70.0.parquet` reports:
 
-### 2. make preprocess_features  →  src/data/preprocess_features.py
-
-**Goal:** Clean and encode static site attributes.
-
-1. Load `planting_records.csv` and `survival_survey.csv`.  
-2. Drop sites missing geometry or planting year.  
-3. One‑hot encode `Type` (Conifer/Deciduous/Mixed).  
-4. Standardize `Density` & `Age` with `StandardScaler`.  
-5. Merge Year‑3 survival data where available.
-
-**Output:**
-```
-data/interim/clean_feats_data.parquet
-```
-
----
-
-### 3. make pivot_data  →  src/data/pivot_data.py
-
-**Goal:** Extract variable-length spectral sequences.
-
-1. For each site and each year (2010–2023):  
-   - Mask the raster by the site polygon.  
-   - Compute the mean of all 12 spectral indices.  
-2. Stack annual rows into a DataFrame per site.  
-3. Save each sequence to `data/time_series/site_<ID>.parquet`.
-
-**Outputs (≈ 15 000 files):**
-```
-data/time_series/site_0001.parquet
-data/time_series/site_0002.parquet
-…
-```
-
----
-
-### 4. make data_split  →  src/data/data_split.py
-
-**Goal:** Create the lookup table and train/test partitions.
-
-1. Merge `clean_feats_data.parquet` with each sequence filename.  
-2. Derive **`target`**:
-   ```
-   target = 1  if canopy_Y7 ≥ $(THRESHOLD)
-           = 0  otherwise
-   ```
-3. Stratified 80/20 split by `Type` (random_state=591).
-
-**Outputs:**
-```
-data/processed/70/train_data70.0.parquet
-data/processed/70/test_data70.0.parquet
-```
-
----
-
-### Quality Control
-
-| Issue                       | Action                                  |
-|-----------------------------|-----------------------------------------|
-| Site missing > 1 raster     | Drop the site                           |
-| Intra‑series NaNs           | `DataFrame.interpolate(method="linear")`|
-| Extreme outliers            | Clip to 1st–99th percentile per feature |
-
----
-
-### Resulting Directory Structure
-
-```text
-data/
-├── raw/
-│   ├── afforestation_rasters.parquet
-│   ├── planting_records.csv
-│   └── survival_survey.csv
-├── interim/
-│   └── clean_feats_data.parquet
-├── time_series/
-│   ├── site_0001.parquet
-│   └── … (~15 000 files)
-└── processed/
-    └── 70/
-        ├── train_data70.0.parquet
-        └── test_data70.0.parquet
-```
-
----
-
-#### Static Feature Pipeline
-- **Targets:** `load_data`, `preprocess_features`, `data_split`  
-- **Final Output:** `data/processed/70/train_data70.0.parquet` (fixed-length features + target for classical models)
-
-#### Sequence Feature Pipeline
-- **Targets:** `load_data`, `pivot_data`, `data_split`  
-- **Final Output:** `data/time_series/site_<ID>.parquet` (per-site sequences) and processed Parquet lookup for RNNs
+- **Precision & Recall:** trade-off between false positives and negatives.
+- **F1 Score:** harmonic mean of Precision and Recall.
+- **AUC:** area under the ROC curve for ranking quality.

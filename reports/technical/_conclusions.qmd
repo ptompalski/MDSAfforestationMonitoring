@@ -1,28 +1,22 @@
-The core question driving this project was: **Can we accurately predict seven‐year canopy survival for newly planted forest sites using only early‐stage remote sensing and stand‐level data?**  Conventional field surveys are too slow and costly to cover Canada’s vast afforestation programs, so an automated, data‐driven tool can accelerate decision‐making and resource allocation.
+We developed a fully reproducible pipeline covering:
 
-Our reproducible pipeline—spanning raw R Data Series ingestion, feature preprocessing, spectral sequence extraction, and three model pipelines (logistic regression, XGBoost, GRU)—demonstrates that machine‐learning can indeed flag high‐risk sites early.  The XGBoost model (F1 = 0.72, AUC = 0.65) provides a practical balance of precision (75 %) and recall (60 %), allowing silviculture teams to prioritize field visits and remediation for those sites most likely to suffer seedling mortality.  The GRU model achieves comparable ranking ability (AUC ≈ 0.65), highlighting the value of capturing temporal trends, though at higher computational cost.
+1. **Data Ingestion & Preparation**  
+   - Loaded raw RDS rasters and planting/survey tables via `load_data.py`.  
+   - Cleaned static features (`preprocess_features.py`) and extracted per-site time series (`pivot_data.py`).  
+   - Created consistent train/test datasets with `data_split.py`.
 
-**Limitations**  
-1. **Label Proxy**: Using ≥ 70 % canopy retention at year 7 as a binary label simplifies a complex reality. Understory regeneration or partial survival can be missed by this threshold.  
-2. **Geographic & Survey Bias**: Training data come from plots where Year 7 surveys were conducted, often in accessible or pilot‐project zones. Remote or under‐surveyed regions may yield less reliable predictions.  
-3. **Resource Requirements**: Full reprocessing (raw raster → Parquet) takes significant CPU hours, and GRU training requires GPUs. Partners with limited computational capacity may struggle to retrain models.  
-4. **Feature Scope**: We used only spectral indices and basic stand attributes. Important predictors (soil texture, moisture regimes, LiDAR canopy height) were not available in the RDS. Incorporating them could boost performance but demands new data‐integration efforts.
+2. **Model Development & Benchmarking**  
+   - Phase 1: Trained and compared classical classifiers (Logistic Regression, Random Forest, XGBoost) using fixed-length features.  
+   - Phase 2: Trained GRU and LSTM networks on temporal sequences, demonstrating the benefit of sequence data.
 
-**Recommendations for the Partner**  
-1. **Deploy XGBoost as the Default Classifier**  
-   - Given its strong F1 score and moderate resource requirements (CPU‐only), XGBoost is the most practical choice for regular risk scoring.  
-   - Operationalize it by running `make train_models` each time a new satellite season’s data arrive.  
-2. **Expand Ground‐Truth Data Collection**  
-   - Encourage Year 7 surveys in underrepresented ecozones (e.g., northern or coastal regions) to reduce spatial bias.  
-   - If possible, record additional ecological metrics (e.g., sapling basal area) to refine survival labels beyond the 70 % canopy threshold.  
-3. **Monitor Model Drift & Retrain Regularly**  
-   - As climate and planting practices evolve, periodically validate model performance (e.g., every two years).  
-   - Automate a pipeline (e.g., via GitHub Actions or a nightly cron job) that reprocesses incoming RDS composites and retrains the classifier with updated labels.  
-4. **Assess Sequence‐Aware Methods When GPUs Are Available**  
-   - The GRU architecture shows promise, especially if partners can provision GPUs.  
-   - Over time, consider using bidirectional RNNs or attention‐based models to further capture subtle phenological signals in spectral data.  
-5. **Incorporate Additional Predictors**  
-   - Investigate integrating soil moisture indices (e.g., from SMAP), topographic data (e.g., slope, aspect), or LiDAR‐derived canopy height metrics.  
-   - Collaborate with data providers or research teams to secure these additional layers, which could raise AUC beyond 0.70.
-  
-In conclusion, our data product directly addresses the partner’s need for a scalable, interpretable, and reproducible tool to estimate afforestation success. While there are inherent limitations—most notably data availability and computational demands—the current workflow provides a strong foundation. By following the recommendations above, the partner can iteratively improve accuracy, reduce bias, and ultimately ensure that afforestation investments yield the intended ecological and economic benefits.
+3. **Evaluation & Results Interpretation**  
+   - Employed grouped 5-fold CV to avoid spatial leakage, optimized F1 for model selection, and reported Precision, Recall, F1, and AUC on held-out data.  
+   - XGBoost emerged as the top static model; GRU showed promise for temporal modeling.
+
+4. **Operational Recommendations**  
+   - **Deploy XGBoost** for immediate risk scoring without specialized hardware.  
+   - **Incorporate GRU** models where GPUs are available to capture early temporal signals.  
+   - **Enhance data** through expanded Year-7 surveys and new covariates (soil, LiDAR).  
+   - **Automate retraining** via Makefile and CI to adapt to new data.
+
+By integrating data engineering, machine learning, and reproducible DevOps practices, this workflow provides a scalable tool for early afforestation monitoring and resource prioritization.

@@ -26,29 +26,27 @@ format:
         \AtBeginEnvironment{longtable}{\rowcolors{2}{gray!15}{white}}
 ---
 
-::: {.callout-note}
-This document assembles six modular sections (`_introduction.qmd` through `_conclusions.qmd`), each included below.
-:::
+
 
 ---
 
-## 1 Introduction {#sec-introduction}
+##  Introduction {#sec-introduction}
 
 {{< include _introduction.qmd >}}
 
-## 2 Data & Pre-processing {#sec-data_prep}
+##  Data & Pre-processing {#sec-data_prep}
 
 {{< include _data_prep.qmd >}}
 
-## 3 Methods {#sec-methods}
+##  Methods {#sec-methods}
 
 {{< include _methods.qmd >}}
 
-## 4 Data Product & Results {#sec-product_results}
+##  Data Product & Results {#sec-product_results}
 
 {{< include _product_results.qmd >}}
 
-## 5 Conclusions & Recommendations {#sec-conclusions}
+##  Conclusions & Recommendations {#sec-conclusions}
 
 {{< include _conclusions.qmd >}}
 
