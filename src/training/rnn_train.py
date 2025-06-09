@@ -5,6 +5,7 @@ import os
 import click
 import pandas as pd
 import sys
+import numpy as np
 from torch.nn import Module
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader, Dataset
@@ -77,9 +78,11 @@ def train(model : Module,
             )
             train_loss.backward()
             optimizer.step()
+            
             total_train_loss += train_loss.item()
-        avg_train_loss = total_train_loss / len(train_dataloader)
+        avg_train_loss = np.sqrt(total_train_loss / len(train_dataloader))
         
+    
         # Validation Loop
         model.eval()
         total_valid_loss = 0
@@ -95,7 +98,7 @@ def train(model : Module,
                     batch['target'].to(device, non_blocking=True)
                 )
                 total_valid_loss += valid_loss.item()
-            avg_valid_loss = total_valid_loss/len(valid_dataloader)
+            avg_valid_loss = np.sqrt(total_valid_loss/len(valid_dataloader))
             valid_losses.append(avg_valid_loss)
 
         print(
@@ -114,7 +117,6 @@ def train(model : Module,
         if early_stopping_counter >= patience:
             print(f"Early stopping triggered at epoch {epoch+1}")
             break
-
     return best_model
 
 
