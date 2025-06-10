@@ -1,12 +1,14 @@
-.PHONY: clean clean_models clean_data \
+.PHONY: clean clean_models clean_data clean_results\
 load_data preprocess_features pivot_data \
 data_split_RNN time_series_train_data time_series_test_data \
 logistic_regression_pipeline random_forest_pipeline gru_pipeline_site_feats all_models \
 tune_gbm tune_lr tune_rf tune_classical_models \
 gradient_boosting_rfecv logistic_regression_rfecv random_forest_rfecv RFECV \
 gradient_boosting_shap random_forest_shap logistic_regression_shap SHAP \
+errors_gbm errors_lr errors_rf classical_model_evaluation \
 gradient_boosting_permute random_forest_permute logistic_regression_permute permutation_importance \
-rnn_model rnn_training rnn_evaluation rnn_pipeline \
+rnn_model rnn_training rnn_evaluation rnn_pipeline \ 
+
 
 # Variables
 DAY_RANGE ?= 15
@@ -127,6 +129,33 @@ data/processed/$(THRESHOLD_PCT)/train_data.parquet
 		--random_state=$(RANDOM_STATE) \
 		--return_results=$(RETURN_RESULTS) \
 		--output_dir=models/
+
+# evaluate_gbm
+results/$(THRESHOLD_PCT)/.gradient_boosting_evaluation.stamp: models/$(THRESHOLD_PCT)/tuned_gradient_boosting.joblib \
+data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/evaluation/error_metrics.py \
+		--tuned_model_path=models/$(THRESHOLD_PCT)/tuned_gradient_boosting.joblib \
+		--training_data_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=results/$(THRESHOLD_PCT)
+	touch $@
+
+# evaluate_lr 
+results/$(THRESHOLD_PCT)/.logistic_regression_evaluation.stamp: models/$(THRESHOLD_PCT)/tuned_logistic_regression.joblib \
+data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/evaluation/error_metrics.py \
+		--tuned_model_path=models/$(THRESHOLD_PCT)/tuned_logistic_regression.joblib \
+		--training_data_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=results/$(THRESHOLD_PCT)
+	touch $@
+
+# evaluate_rf
+results/$(THRESHOLD_PCT)/.random_forest_evaluation.stamp: models/$(THRESHOLD_PCT)/tuned_random_forest.joblib \
+data/processed/$(THRESHOLD_PCT)/train_data.parquet
+	python src/evaluation/error_metrics.py \
+		--tuned_model_path=models/$(THRESHOLD_PCT)/tuned_random_forest.joblib \
+		--training_data_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
+		--output_dir=results/$(THRESHOLD_PCT)
+	touch $@
 
 ## Feature Selection ##
 
@@ -249,7 +278,7 @@ models/$(THRESHOLD_PCT)/fitted_logistic_regression_permute.joblib: data/processe
 		--input_path=data/processed/$(THRESHOLD_PCT)/train_data.parquet \
 		--output_dir=models/$(THRESHOLD_PCT) \
 
-### Phony targets for classical models###
+### Phony targets for classical models ###
 
 # Data loading, interim processing
 load_data: data/raw/raw_data.parquet
@@ -274,6 +303,11 @@ models/$(THRESHOLD_PCT)/logs/tuned_random_forest_log.csv
 tune_lr: models/$(THRESHOLD_PCT)/tuned_logistic_regression.joblib \
 models/$(THRESHOLD_PCT)/logs/tuned_logistic_regression_log.csv
 
+# evaluate performance of tuned classsical models
+evaluate_gbm: results/$(THRESHOLD_PCT)/.gradient_boosting_evaluation.stamp
+evaluate_rf: results/$(THRESHOLD_PCT)/.random_forest_evaluation.stamp
+evaluate_lr: results/$(THRESHOLD_PCT)/.logistic_regression_evaluation.stamp
+
 # run RFECV feature selection
 gradient_boosting_rfecv: models/$(THRESHOLD_PCT)/fitted_gradient_boosting_rfecv.joblib
 logistic_regression_rfecv: models/$(THRESHOLD_PCT)/fitted_logistic_regression_rfecv.joblib
@@ -292,7 +326,6 @@ logistic_regression_permute: models/$(THRESHOLD_PCT)/fitted_logistic_regression_
 # construct all classical models at once
 all_classical_models: logistic_regression_pipeline random_forest_pipeline gradient_boosting_pipeline 
 
-
 # process data for classical model training (LR, GBM, RF)
 data_for_classical_models: data_split
 
@@ -308,6 +341,8 @@ permutation_importance: gradient_boosting_permute random_forest_permute logistic
 # tune all models
 tune_classical_models: tune_gbm tune_lr tune_rf
 
+# get error metrics for classical models
+classical_model_evaluation: evaluate_gbm evaluate_lr evaluate_rf
 
 # RNN Models
 
@@ -412,8 +447,6 @@ rnn_evaluation: $(TRAINED_RNN_PATH)
 		--batch_size=$(BATCH_SIZE) \
 		--num_workers=$(NUM_WORKERS)
 
-
-
 test:
 	pytest
 
@@ -426,7 +459,10 @@ clean_data:
 	mkdir data/processed
 	touch data/processed/.gitkeep
 
+clean_results:
+	rm -rf results
+
 clean_models:
 	rm -rf models
 
-clean_all: clean_data clean_models
+clean_all: clean_data clean_models clean_results

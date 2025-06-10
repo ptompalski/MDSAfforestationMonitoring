@@ -6,9 +6,10 @@ import pandas as pd
 import torch
 import os
 import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from src.training.rnn_dataset import AfforestationDataset, collate_fn, dataloader_wrapper
 from typing import Tuple
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 
 # Test data
 SITE_COLS = ['Density', 'Type_Conifer', 'Type_Decidous', 'Age']
