@@ -14,7 +14,6 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from src.models.feat_selection import ImportanceFeatureSelector
 
-
 # Test data 
 test_X = pd.DataFrame(
         {

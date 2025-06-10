@@ -116,6 +116,7 @@ def setup_model(setup_mock_data):
     
     model = RNNSurvivalPredictor(input_size=12,
                                  hidden_size=16,
+                                 linear_size=16,
                                  site_features_size=4,
                                  concat_features=True)
     
@@ -167,8 +168,8 @@ def test_rnn_get_metrics():
     # Test if results are returned in the correct format.
     assert isinstance(metrics, pd.Series)
     assert isinstance(conf_matrix, pd.DataFrame)
-    assert metrics.index.to_list() == [
-        'F1 Score', 'F2 Score', 'Precision', 'Recall', 'Accuracy', '% Low Risk', '% High Risk']
+    print(metrics.index.to_list())
+    assert metrics.index.to_list() == ['F1 Score', 'F2 Score', 'Precision', 'Recall', 'Accuracy', '% Low Survival Rate', '% High Survival Rate', 'RMSE']
     assert conf_matrix.shape == (2, 2)
 
     # Test if metrics values are calculated correctly.
@@ -177,8 +178,8 @@ def test_rnn_get_metrics():
     assert round(exp_precision, 3) == metrics['Precision']
     assert round(exp_recall, 3) == metrics['Recall']
     assert round(exp_accuracy, 3) == metrics['Accuracy']
-    assert exp_pct_low == metrics['% Low Risk']
-    assert exp_pct_high == metrics['% High Risk']
+    assert exp_pct_low == metrics['% Low Survival Rate']
+    assert exp_pct_high == metrics['% High Survival Rate']
     
     # Test if confusion matrix values are calculated correctly.
     assert conf_matrix.iloc[0, 0] == 6
@@ -194,11 +195,12 @@ def rnn_get_metrics_by_age():
     df = mock_pred_df
     metrics_age, conf_matrix = rnn_get_metrics_by_age(df)
     exp_cols = ['F1 Score', 'F2 Score', 'Precision', 'Recall', 'Accuracy',
-                 '% Low Risk', '% High Risk', 'Number of Records']
-    
+       '% Low Survival Rate', '% High Survival Rate', 'RMSE']
+
     assert isinstance(metrics_age, pd.DataFrame)
     assert metrics_age.shape == (6, 8)
     assert metrics_age.index.to_list() == [1, 2, 3, 4, 5, 7]
+    print(metrics_age.columns.to_list())
     assert metrics_age.columns.to_list() == exp_cols
     assert metrics_age['Number of Records'] == [4, 4, 5, 2, 4, 3]
     assert all(metrics_age.notna())
