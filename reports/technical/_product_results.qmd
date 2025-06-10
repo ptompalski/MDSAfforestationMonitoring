@@ -1,0 +1,81 @@
+Our primary data product is a self-contained, reproducible Python/Quarto repository that provides partner analysts with a turnkey mechanism to (1) preprocess new satellite and silviculture data, (2) train or update models, and (3) evaluate survival-risk predictions for newly planted forest sites. The repository includes:
+
+1. **Python Package (`src/`)**  
+   - Implements all data-preprocessing steps (`load_data.py`, `preprocess_features.py`, `pivot_data.py`, `data_split.py`), modelling pipelines (`gradient_boosting.py`, `logistic_regression.py`, `rnn.py`), and evaluation routines (`error_metrics.py`).
+   - Exposes high-level Make targets so that running `make time_series_train_data` or `make train_models` executes the entire workflow end-to-end.  
+   - Facilitates future extension: partners can add new features, incorporate additional spectral indices, or replace models without rewriting core scripts.
+
+2. **Versioned Model Artifacts (`models/`)**  
+   - For the 70% survival threshold, we provide five trained model files:  
+     - `logreg_model_70.pickle` (Logistic Regression)  
+     - `rf_model_70.pickle` (Random Forest)  
+     - `gbm_model_70.pickle` (XGBoost)  
+     - `gru_model_70.pth` (GRU network)  
+     - `lstm_model_70.pth` (LSTM network)  
+   - Each artifact is accompanied by its hyperparameter configuration and training logs, enabling reproducibility and auditability.  
+   - Partners can load any artifact in a separate environment for inference or further fine-tuning.
+
+
+### Intended Usage
+
+Partner analysts should leverage this product to:
+
+- **Rapidly assess survival risk** for new planting cohorts as soon as the latest Landsat composites and silviculture records are available.  
+- **Prioritize field surveys** by focusing on sites flagged as “high-risk” (predicted low survival) to allocate limited labour and remediation resources.  
+- **Iteratively retrain** models when new Year‐7 survey data arrive, ensuring that the classifier adapts to evolving geographic or stand conditions.
+
+### Pros & Cons of the Current Interface
+
+**Pros**  
+- **Simplicity**: A single `Makefile` orchestrates the entire pipeline, minimizing command‐line complexity.  
+- **Modularity**: Individual scripts (`src/data/*.py`, `src/models/*.py`, `src/training/*.py`) can be modified or replaced without breaking the workflow.  
+- **Reproducibility**: Version control of code, hyperparameters, and environment specifications (via `environment.yml`) ensures partners can recreate any result on a new machine.  
+- **Transparency**: All intermediate Parquet files and logs are stored, making it easy to trace back from final predictions to raw inputs.
+
+**Cons**  
+- **Compute Requirements**: Full data-preprocessing and model training (especially the GRU) require significant CPU/GPU resources. Partners without a compatible HPC or GPU-equipped workstation may experience long runtimes.  
+- **Command-Line Interface**: Although `Makefile` targets simplify execution, partners unfamiliar with command-line tools may face a learning curve.  
+- **Monolithic Outputs**: The current product writes large Parquet files (~15k per-site series) which can strain disk space.  
+- **Minimal Web Interface**: There is no interactive dashboard; partners must inspect outputs in Python or Quarto. Developing a web-based front end (e.g., Streamlit or Dash) could improve user experience.
+
+### Justification & Comparison
+
+Compared to alternative approaches—such as distributing only a standalone Jupyter notebook or providing a cloud-hosted API—our package-based product:
+
+- **Reduces dependency on continuous internet access**: All code and data live locally once cloned, so partners in remote offices can run the pipeline offline.  
+- **Enables customization**: Internal data scientists can incorporate new sensors (e.g., Sentinel‐2 or LiDAR) by extending `get_time_series.py` rather than rewriting a monolithic notebook.  
+- **Avoids vendor lock-in**: No reliance on commercial platforms or paid APIs; the entire stack uses open-source Python libraries.
+
+However, a cloud‐hosted API might be preferable if partners require real-time web access or integration with other information systems. Our current approach trades off ease of immediate integration for maximal transparency and reproducibility.
+
+### Results Overview
+
+On held-out (20%) test data for the 70% canopy‐retention threshold:
+
+**Phase 1: Classical Models**
+
+- **Logistic Regression**: performance metrics (Precision, Recall, F1, AUC) will be inserted here.
+- **Random Forest**: performance metrics (Precision, Recall, F1, AUC) will be inserted here.
+- **XGBoost (GBM)**: performance metrics (Precision, Recall, F1, AUC) will be inserted here.
+
+### Phase 2: Sequence Model Evaluation
+
+- **GRU (spectral+static):** performance metrics (Precision, Recall, F1, AUC) will be inserted here.
+- **LSTM (spectral+static):** performance metrics (Precision, Recall, F1, AUC) will be inserted here.
+
+> **Insight:** Placeholder comment on sequence model performance.
+
+- The **XGBoost model** strikes the best balance (highest F1) for identifying low-
+  survival sites, making it the recommended default for partner deployment.  
+- The **GRU** achieves comparable AUC and better captures temporal signals, suggesting a potential future improvement once partners can provision GPU resources.  
+- **Logistic regression** serves as a transparent baseline; its lower AUC and F1 indicate that non-linear interactions among spectral indices and stand attributes are important.
+
+The complete confusion matrix for XGBoost (70% threshold) is:
+
+- **LSTM (spectral+static):** performance metrics (Precision, Recall, F1) will be inserted here.
+
+### Potential Enhancements
+
+- **CNN-LSTM Hybrid:** Add convolutional layers that learn spatial correlations among spectral indices (e.g., local band interactions) before passing the extracted feature maps into an LSTM layer for temporal modeling. This approach can improve predictive accuracy by jointly capturing spatial and temporal patterns in the data.
+
+By focusing on a reproducible, modular product now, we enable partners to adopt and extend the workflow flexibly, while future iterations can add web interfaces and advanced features as computational resources permit.

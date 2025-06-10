@@ -1,4 +1,3 @@
-import rnn_dataset
 import torch
 import copy
 import os
@@ -11,6 +10,7 @@ from torch.optim import Optimizer
 from torch.utils.data import DataLoader, Dataset
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from models.rnn import RNNSurvivalPredictor
+from training.rnn_dataset import dataloader_wrapper
 
 def train(model : Module, 
           train_dataloader : DataLoader, 
@@ -174,7 +174,7 @@ def main(model_path,
     # Instantiate  optimizer, criterion, dataset and dataloader
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = torch.nn.MSELoss()
-    train_set, train_dataloader = rnn_dataset.dataloader_wrapper(
+    train_set, train_dataloader = dataloader_wrapper(
         lookup_dir=TRAIN_LOOKUP_PATH,
         seq_dir=data_dir,
         batch_size=batch_size,
@@ -183,7 +183,7 @@ def main(model_path,
         site_cols=site_cols,
         seq_cols=seq_cols
     )
-    valid_set, valid_dataloader = rnn_dataset.dataloader_wrapper(
+    valid_set, valid_dataloader = dataloader_wrapper(
         lookup_dir=VALID_LOOKUP_PATH,
         seq_dir=data_dir,
         batch_size=batch_size,
