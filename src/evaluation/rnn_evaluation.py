@@ -6,7 +6,7 @@ import torch
 import pickle
 from sklearn.metrics import (
     f1_score, fbeta_score, accuracy_score,
-    precision_score, recall_score)
+    precision_score, recall_score, root_mean_squared_error)
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from data.pivot_data import target_to_bin
 from evaluation.error_metrics import get_conf_matrix
@@ -107,14 +107,17 @@ def rnn_get_metrics(pred_df):
     # Confusion matrix
     conf_matrix = get_conf_matrix(y_pred, y_true)
     
+    rmse = root_mean_squared_error(pred_df['raw_y_true'], pred_df['raw_y_pred'])
+    
     metrics_dict = pd.Series({
         'F1 Score': f1,
         'F2 Score': f2,
         'Precision': precision,
         'Recall': recall,
         'Accuracy': accuracy,
-        '% Low Risk': pct_low,
-        '% High Risk': pct_high
+        '% Low Survival Rate': pct_low,
+        '% High Survival Rate': pct_high,
+        'RMSE': rmse
     })
 
     return metrics_dict, conf_matrix
@@ -153,7 +156,7 @@ def rnn_get_metrics_by_age(pred_df):
     -----
     - Only results for age groups with available data are included in the output.
     """
-    cols = ['F1 Score', 'F2 Score', 'Precision', 'Recall', 'Accuracy', '% Low Risk', '% High Risk']
+    cols = ['F1 Score', 'F2 Score', 'Precision', 'Recall', 'Accuracy', '% Low Survival Rate', '% High Survival Rate']
     metrics_age = pd.DataFrame(index=range(1, 8), columns=cols)
     num_rec = []
     conf_matrix_age = {}
@@ -171,7 +174,7 @@ def rnn_get_metrics_by_age(pred_df):
 
 @click.command()
 @click.option('--trained_model_path', type=click.Path(exists=True), required=True, help='Path to trained model.')
-@click.option('--eval_ouput_path', type=click.Path(exists=False), required=True, help='Path to save the evaluation results.')
+@click.option('--eval_output_path', type=click.Path(exists=False), required=True, help='Path to save the evaluation results.')
 @click.option('--lookup_dir', type=click.Path(exists=True), required=True, help='Directory to test lookup file.')
 @click.option('--seq_dir', type=click.Path(exists=True), required=True, help='Directory to sequence data files.')
 @click.option('--threshold', type=float, default=0.7, help='Survival rate threshold for target classification.')
@@ -190,7 +193,7 @@ def main(trained_model_path,
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     # Load trained model
-    checkpoint = torch.load(trained_model_path)
+    checkpoint = torch.load(trained_model_path, map_location=device)
     config = checkpoint["config"]
     site_cols = checkpoint['site_cols']
     seq_cols = checkpoint['seq_cols']
@@ -230,7 +233,8 @@ def main(trained_model_path,
         'error_metrics_overall': metrics_overall,
         'error_metrics_age' : metrics_age,
         'conf_matrix_overall' : conf_matrix_overall,
-        'conf_matrix_age' : conf_matrix_age
+        'conf_matrix_age' : conf_matrix_age,
+        'pred_df' : pred_df
     }
     
     os.makedirs(os.path.dirname(eval_output_path), exist_ok=True)
