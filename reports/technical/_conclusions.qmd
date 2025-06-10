@@ -14,8 +14,9 @@ We developed a fully reproducible pipeline covering:
    - XGBoost emerged as the top static model; GRU showed promise for temporal modeling.
 
 4. **Operational Recommendations**  
-   - **Deploy XGBoost** for immediate risk scoring without specialized hardware.  
-   - **Incorporate GRU** models where GPUs are available to capture early temporal signals.  
+   - **Use XGBoost models as a reference** for identifying high-risk sites, rather than for direct operational deployment.  
+   - **Explore GRU models** as proof-of-concept for temporal analysis, acknowledging their current performance limitations.  
+   - **Treat all model outputs as advisory** insights; validate predictions with local surveys before taking field action.  
    - **Enhance data** through expanded Year-7 surveys and new covariates (soil, LiDAR).  
    - **Automate retraining** via Makefile and CI to adapt to new data.
 
