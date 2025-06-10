@@ -151,6 +151,7 @@ def setup_trainer(setup_mock_data, capsys):
     )
     model = RNNSurvivalPredictor(input_size=12,
                                  hidden_size=16,
+                                 linear_size=16,
                                  site_features_size=4,
                                  concat_features=True)
     optimizer = torch.optim.Adam(model.parameters())
