@@ -102,7 +102,7 @@ def test_get_error_metrics(dummy_model, dummy_data):
     scores = get_error_metrics(preds['y_pred'], preds['y_prob'], preds['y_true'])
     expected_keys = {
         'F1 Score', 'F2 Score', 'Precision', 'Recall', 'Accuracy',
-        'AUC', 'AP', '% Low Risk', '% High Risk'
+        'AUC', 'AP', '% Low Rate', '% High Rate'
     }
     assert expected_keys.issubset(scores.keys())
     assert all(isinstance(v, float) for v in scores.values())
@@ -135,7 +135,7 @@ def test_get_test_errors(dummy_model, dummy_data):
     scores = get_test_errors(dummy_model, dummy_data, dummy_test)
     expected_keys = {
         'F1 Score', 'F2 Score', 'Precision', 'Recall', 'Accuracy',
-        'AUC', 'AP', '% Low Risk', '% High Risk'
+        'AUC', 'AP', '% Low Rate', '% High Rate'
     }
     assert expected_keys.issubset(scores.keys())
     assert all(isinstance(v, float) for v in scores.values())
@@ -171,5 +171,5 @@ def test_get_error_metrics_values():
     assert round(expected_accuracy,3) == scores['Accuracy']
     assert round(expected_f1,3) == scores['F1 Score']
     assert round(expected_f2,3) == scores['F2 Score']
-    assert expected_pct_low == scores['% Low Risk']
-    assert expected_pct_high == scores['% High Risk']
+    assert expected_pct_low == scores['% Low Rate']
+    assert expected_pct_high == scores['% High Rate']

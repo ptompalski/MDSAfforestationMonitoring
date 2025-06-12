@@ -12,6 +12,8 @@ from sklearn.pipeline import Pipeline
 import pandas as pd
 import click
 import numpy as np
+from pathlib import Path
+import joblib
 
 def get_validation_preds(
     model: Pipeline,
@@ -48,6 +50,7 @@ def get_validation_preds(
         - y_true: True binary labels (0 for 'Low Survival Rate' or 1 for 'High Survival Rate').
     '''
     # get features and target
+    df_train = df_train.dropna()
     X = df_train.drop(columns='target'); y_true = df_train['target']
     site_ids = df_train['ID']
     
@@ -255,8 +258,8 @@ def get_error_metrics(y_pred: np.array, y_prob: np.array, y_true: np.array):
         - 'Accuracy': Accuracy score
         - 'AUC': ROC AUC score
         - 'AP': Average Precision score
-        - '% Low Risk': Percentage of samples predicted as class 0
-        - '% High Risk': Percentage of samples predicted as class 1
+        - '% Low Rate': Percentage of samples predicted as class 0
+        - '% High Rate': Percentage of samples predicted as class 1
     '''
     # ROC and AP scores
     # Need to flip label, as these functions expect 1 to be the positive class
@@ -285,8 +288,61 @@ def get_error_metrics(y_pred: np.array, y_prob: np.array, y_true: np.array):
         'Accuracy':accuracy,
         'AUC':roc_auc,
         'AP': ap_score,
-        '% Low Risk': pct_low,
-        '% High Risk': pct_high
+        '% Low Rate': pct_low,
+        '% High Rate': pct_high
     }
 
-
+@click.command()
+@click.option('--tuned_model_path', type=click.Path(exists=True), required=True, help='Path to tuned model.')
+@click.option('--training_data_path', required=True, help='Path to training parquet file')
+@click.option('--output_dir', type=click.Path(file_okay=False), required=True, help='Directory to save the evaluation results.')
+def main(tuned_model_path,training_data_path,output_dir):
+    '''
+    CLI for reporting error metrics of classical ML models (RF, GBM, LR)
+    '''
+    # load in model, training data
+    model = joblib.load(tuned_model_path)
+    df_train = pd.read_parquet(training_data_path)
+    model_name = Path(tuned_model_path).name.removeprefix('tuned_').removesuffix('.joblib')
+    
+    # make a path to store results
+    output_dir = Path(output_dir)
+    output_dir.mkdir(exist_ok=True,parents=True)
+    
+    # get predictions
+    click.echo(f"Getting validation predictions for {model_name}...")
+    valid_pred_dict = get_validation_preds(model,df_train)
+    y_pred = valid_pred_dict['y_pred']
+    y_prob = valid_pred_dict['y_prob']
+    y_true = valid_pred_dict['y_true']
+    
+    # get error metrics
+    click.echo("Getting scores...")
+    scores = get_error_metrics(y_pred,y_prob,y_true)
+    scores_fname = f"{model_name}_scores.joblib"
+    joblib.dump(scores,output_dir/scores_fname)
+    click.echo(f"Scores saved to {output_dir/scores_fname}")
+    
+    # get PR curve
+    click.echo("Getting PR curve...")
+    pr_curve = get_valid_pr_curve(y_prob,y_true)
+    pr_curve_fname = f"{model_name}_pr_curve.csv"
+    pr_curve.to_csv(output_dir/pr_curve_fname,index=False)
+    click.echo(f"PR Curve saved to {output_dir/pr_curve_fname}")
+    
+    # get ROC curve
+    click.echo("Getting ROC curve...")
+    roc_curve = get_valid_roc_curve(y_prob,y_true)
+    roc_curve_fname = f"{model_name}_roc_curve.csv"
+    roc_curve.to_csv(output_dir/roc_curve_fname,index=False)
+    click.echo(f"ROC Curve saved to {output_dir/roc_curve_fname}")
+    
+    # get Confusion Matrix
+    click.echo("Getting Confusion Matrix...")
+    conf_matrix = get_conf_matrix(y_pred,y_true)
+    conf_matrix_fname = f"{model_name}_confusion_matrix.csv"
+    conf_matrix.to_csv(output_dir/conf_matrix_fname)
+    click.echo(f"Confusion matrix saved to {output_dir/conf_matrix_fname}")
+    
+if __name__ == '__main__':
+    main()

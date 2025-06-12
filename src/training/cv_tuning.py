@@ -49,17 +49,19 @@ def _get_rand_hparam_grid(model_pipeline: Pipeline):
     elif 'randomforestclassifier' in model_pipeline.named_steps:
         return {
             "randomforestclassifier__criterion": ['gini', 'entropy', 'log_loss'],
-            "randomforestclassifier__max_depth": np.arange(1, 20, 5),
+            "randomforestclassifier__max_depth": randint(1,20),
             "randomforestclassifier__bootstrap": [True, False],
             "randomforestclassifier__class_weight": ['balanced', None],
+            'randomforestclassifier__n_estimators': randint(100,1000),
+            "randomforestclassifier__max_features": ['sqrt', 'log2', None],
             "randomforestclassifier__n_jobs": [-1],
-            "randomforestclassifier__max_features": ['sqrt', 'log2', None]
         }
     elif 'logisticregression' in model_pipeline.named_steps:
         return {
-            "logisticregression__C":       loguniform(1e-3, 1e+2),
-            "logisticregression__penalty": ["l2", "l1",'elasticnet',None],
-            "logisticregression__solver":  ["lbfgs", "saga"],
+            "logisticregression__C": loguniform(1e-4, 1e2),
+            "logisticregression__penalty": ["l2",'l1','elasticnet',None],
+            "logisticregression__class_weight": ['balanced', None],
+            'logisticregression__max_iter': randint(5000,10000)
         }
     else:
         raise ValueError(
