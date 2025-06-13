@@ -1,0 +1,151 @@
+
+This phase of modeling began with three classical machine learning models:
+Logistic Regression (as a baseline), Random Forest, and Gradient Boosting Machines. 
+To better capture the temporal structure of the remote sensing time series, 
+two recurrent neural networks—GRU and LSTM—were subsequently developed. 
+This section provides detailed descriptions of each model's architecture and the rationale for their selection.
+Methods for training, tuning, and evaluating model performance will also be thoroughly outlined.
+
+### Baseline Modelling 
+
+#### Logistic Regression
+
+Logistic regression is a generalized linear model widely used for binary classification tasks, 
+valued for its simplicity and interpretability. 
+It models the **log-odds** of the probability that a given record belongs to class 1 
+as a linear combination of the input features [@enwiki:logreg]:
+ 
+$$
+\log\left( \frac{p}{1 - p} \right) = \boldsymbol{\beta}_0 + \boldsymbol{\beta}^\top \mathbf{x}_i,
+\quad i = 1, \dots, n
+$$ {#eq-logit}
+
+Here, 
+
+- $n$ denotes the sample size,  
+- $\mathbf{x}_i = [x_{i1}, x_{i2}, \dots, x_{iD}]$ is the $D$-dimensional feature vector for the $i$th observation (e.g., site-level features and aggregated vegetation indices),  
+- $p$ is the probability that the target label $y_i$ corresponds to the high survival class: $p = P(y_i = 1 \mid \mathbf{x}_i)$
+
+The coefficient vector $\boldsymbol{\beta} = [\beta_1, \beta_2, \dots, \beta_D]$ 
+represents the influence of the features on each prediction. 
+The $j$th entry of $\boldsymbol{\beta}$ corresponds to the change in the log-odds associated with a one-unit increase in the $j$th feature, 
+holding all other features constant.
+
+An optimal estimate of $\beta$ is determined by minimizing the **cross-entropy loss**:
+
+$$
+\mathcal{L} = -\frac{1}{n} \sum_{i=1}^{n} \left[ y_i \log(\hat p_i) + (1 - y_i) \log(1 - \hat p_i) \right],
+$$ {#eq-logloss}
+
+Where $\hat p_i$ is the estimated class probability obtained from the inverse of @eq-logit, which can be shown to be the **sigmoid function**:
+
+$$
+\hat p_i = \sigma(\boldsymbol{\beta}_0 + \boldsymbol{\beta}^\top \mathbf{x}_i) = \frac{1}{1 + \exp\left( -(\boldsymbol{\beta}_0 + \boldsymbol{\beta}^\top \mathbf{x}_i) \right)}
+$$ {#eq-sigmoid}
+
+These probabilistic predictions can be converted to binary class labels by applying a specified decision threshold, typically 0.5.
+Model performance across different thresholds can be evaluated using ROC and precision–recall (PR) curves, which are discussed in @sec-metrics.
+
+Overall, logistic regression provides an interpretable, statistically grounded baseline and serves as a proxy for the classical statistical modeling used prior to this analysis.
+To demonstrate the value of more sophisticated machine learning models in predicting survival rates, any subsequent models should achieve performance that exceeds that of logistic regression.
+
+### Tree-Based Modelling
+* Gradient Boosting mode generally  works well on ML tasks
+* Random Forest shown to utilize VIs for similar problems
+
+#### Decision Trees
+* Rule based modelling: branches represent decisions that split feature space, leaves represent subsets
+* Greedy algorithm: at each step, get split feature and threshold that best minimizes loss
+* Loss can be log loss, entropy, Gini Impurity
+* Stop splitting when leaf has one target, or max depth/ min samples per leaf is reached
+* max depth/min samples per leaf is user-specified hyperparameter, see more in cross-validation section
+
+#### Random Forest Classifier
+* Series of decision trees trained on subset of features and bootstrapped sample of data 
+* Typically large depth: each tree becomes 'expert' on particular subset of data
+* Computationally expensive but each tree is independent, can be parallelized and is highly scalable.
+
+#### Gradient Boosting Classifier
+* Opposite logic of RF: each tree is low-depth, underfit
+* First model F0(x) fit over entire dataset, predicts constant minimum of log-odds
+* Next model F1(x) uses gradient of loss WRT previous prediction as features
+* new prediction is F0(x) + learning_rate * F1(x)
+* repeat until max number of estimators is reached: final prediction = F0(x) + learning_rate * sum(Fi(x))
+* XGBoost implementation provides faster training, leaf weights as parameters for regularization (see @sec-regularization)
+
+### Sequential Deep Learning Models
+* Classical models do not naturally handle sequential data 
+* Literature indicates changes in VIs across time are vital to predicting survival rates
+* Problem: require large and diverse datasets.
+
+#### Recursive Neural Network (RNN)
+* Inputs passed sequentially to model
+* Each input updates a hidden state via a linear combination: h_t = (W_{xh} * X_t + W_{hh} * h_{t-1})
+* Hidden state represents memory data across time
+* Vanilla RNNs suffer from vanishing/exploding gradients (see section @sec-backpropagation)
+
+#### Long-term Short Term Memory (LSTM)
+* Uses keep and forget gates to capture long term memory more effectively 
+* Show equation for updating hidden state with image of cell
+
+#### Gated Recurrent Unit (GRU)
+* Simplified form of LSTM, one combined gate for forget and keep
+* Show equation for updating hidden state with image of cell
+
+#### Bidirectional RNNs
+* Add concatenated backward layer for encoding time in both directions
+
+#### Fully Connected Neural Network (FCNN)
+* Linear transformation of input
+* Activation functions: control output scales and add nonlinearity (show ReLU function and justify use)
+
+#### Training Neural Networks - Backpropagation
+* Loss Function: MSE 
+* Compute gradient of loss WRT to each parameter in model
+* Show equation for FCCN params
+* show time dependence for sequential parts
+* Show gradient descent equation for updating parameters
+* Mini-batch: Compute gradients on subsets of data per update step to reduce computational load
+* Repeat over succcessive epochs (epoch = 1 run through of data)
+
+
+#### Final Model architecture
+* time series into GRU or LSTM
+* concatenate with site features and pass to FCNN
+* FCNN output goes to sigmoid function * 100 to predict survival rate
+
+### Regularization and Hyperparameters
+* Reduce overfitting, general performance of models
+#### L1, L2, ElasticNet Regularization
+* penalize loss by parameter magnitude for logistic regression 
+* Logistic Regression: parameters are $\beta$
+* Gradient Boosting: weights calculated at each leaf in each treeusing higher order derivatives of loss, see paper
+* Larger parameter value = smaller weights, less overfitting
+
+#### Tree Hyperparameters
+* Control number of estimators and tree depth for model complexity
+* Random Forest: number of features per tree (usually square root of total)
+* Gradient Boosting: Learning rate, smaller = less contribution per tree and less overfitting
+
+#### Deep Learning Regularization
+* Dropout Rate before prediction, show paper for evidence of improvement
+* hidden layers size, size of hidden state, 
+
+#### Cross-Validation
+* Grid Search vs Random Search over hyperparameters
+* Split data into folds, use one as simulated test fold
+* Split by site to avoid leakage between folds
+* Choose model with best predefined score, F1 in our case (see metrics section)
+* CV feasible for NN training, use holdout validation set instead
+
+### Error metrics
+
+#### Precision, Recall, $F_{\beta}$ Score
+* definition of each
+* justification of F1 over other Fbeta and direct accuracy
+
+#### ROC and PR Curves
+* define TPR, FPR, and curves
+* AUROC, AUC to measure model performance
+* reference curves in results
+
