@@ -3,7 +3,6 @@ from sklearn import set_config
 from sklearn.utils import Bunch
 import shap
 from sklearn.linear_model import LogisticRegression
-from src.models.feat_selection import ImportanceFeatureSelector
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
@@ -13,6 +12,7 @@ import pandas as pd
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from src.models.feat_selection import ImportanceFeatureSelector
 
 # Test data 
 test_X = pd.DataFrame(

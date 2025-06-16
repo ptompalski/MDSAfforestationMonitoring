@@ -13,12 +13,13 @@ def test_rnn_model_init_GRU():
     """
     input_size = 10
     hidden_size = 20
+    linear_size = 16
     site_features_size = 5
     rnn_type = "GRU"
     num_layers = 2
     dropout_rate = 0.3
 
-    model = RNNSurvivalPredictor(input_size, hidden_size, site_features_size, rnn_type, num_layers, dropout_rate)
+    model = RNNSurvivalPredictor(input_size, hidden_size, linear_size, site_features_size, rnn_type, num_layers, dropout_rate)
 
     assert model.rnn_layers == num_layers
     assert model.rnn_hidden_size == hidden_size
@@ -33,11 +34,12 @@ def test_rnn_model_init_LSTM():
     input_size = 10
     hidden_size = 20
     site_features_size = 5
+    linear_size = 16
     rnn_type = "LSTM"
     num_layers = 2
     dropout_rate = 0.3
 
-    model = RNNSurvivalPredictor(input_size, hidden_size, site_features_size, rnn_type, num_layers, dropout_rate)
+    model = RNNSurvivalPredictor(input_size, hidden_size, linear_size, site_features_size, rnn_type, num_layers, dropout_rate)
 
     assert model.rnn_layers == num_layers
     assert model.rnn_hidden_size == hidden_size
@@ -51,12 +53,13 @@ def test_rnn_model_forward():
     """
     input_size = 10
     hidden_size = 20
+    linear_size =16
     site_features_size = 5
     rnn_type = "GRU"
     num_layers = 2
     dropout_rate = 0.3
 
-    model = RNNSurvivalPredictor(input_size, hidden_size, site_features_size, rnn_type, num_layers, dropout_rate)
+    model = RNNSurvivalPredictor(input_size, hidden_size, linear_size, site_features_size, rnn_type, num_layers, dropout_rate)
     batch_size = 4
     seq_length = 6
     sequence = torch.randn(batch_size, seq_length, input_size)
@@ -73,13 +76,14 @@ def test_rnn_model_invalid_rnn_type():
     """
     input_size = 10
     hidden_size = 20
+    linear_size = 16
     site_features_size = 5
     rnn_type = "INVALID_RNN_TYPE"
     num_layers = 2
     dropout_rate = 0.3
 
     with pytest.raises(ValueError):
-        RNNSurvivalPredictor(input_size, hidden_size, site_features_size, rnn_type, num_layers, dropout_rate)
+        RNNSurvivalPredictor(input_size, hidden_size, linear_size, site_features_size, rnn_type, num_layers, dropout_rate)
 
 
 def test_rnn_model_concat_features():
@@ -89,11 +93,12 @@ def test_rnn_model_concat_features():
     input_size = 10
     hidden_size = 20
     site_features_size = 5
+    linear_size = 16
     rnn_type = "GRU"
     num_layers = 2
     dropout_rate = 0.3
 
-    model = RNNSurvivalPredictor(input_size, hidden_size, site_features_size, 
+    model = RNNSurvivalPredictor(input_size, hidden_size, linear_size, site_features_size, 
                                  rnn_type, num_layers, dropout_rate, concat_features=True)
     batch_size = 4
     seq_length = 6
@@ -111,12 +116,13 @@ def test_rnn_model_no_concat_features():
     """
     input_size = 10
     hidden_size = 20
+    linear_size = 16
     site_features_size = 5
     rnn_type = "GRU"
     num_layers = 2
     dropout_rate = 0.3
 
-    model = RNNSurvivalPredictor(input_size, hidden_size, site_features_size, rnn_type, num_layers, dropout_rate, concat_features=False)
+    model = RNNSurvivalPredictor(input_size, hidden_size, linear_size, site_features_size, rnn_type, num_layers, dropout_rate, concat_features=False)
     batch_size = 4
     seq_length = 6
     sequence = torch.randn(batch_size, seq_length, input_size)
