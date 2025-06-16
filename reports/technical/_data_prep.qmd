@@ -27,7 +27,7 @@ time, with its corresponding site-level (@tbl-site) and pixel-level
 (@tbl-pixel) features.
 
 | Category | Column Name | Description |
-|------------------|------------------|------------------------------------|
+|------------------|------------------|-----------------------------------|
 | Identifier | `ID` | Site ID |
 | Spatial | `Area_ha` | Area of the Site (hectares) |
 |  | `prevUse` | Previous Land Use of the Site |
@@ -51,7 +51,7 @@ survival rates from Year 1 to Year 7. {#tbl-site}
 <br>
 
 | Category | Column Name | Description |
-|------------------|------------------|------------------------------------|
+|------------------|------------------|-----------------------------------|
 | Identifier | `PixelID` | Pixel ID |
 | Temporal | `ImgDate` | Image Date of the Remote Sensing Data |
 |  | `Year` | Image Year of the Remote Sensing Data |
@@ -121,6 +121,20 @@ our dataset.
     density. We removed the area and number of trees planted columns
     after obtaining the new column to avoid redundancy.
 
+```{python}
+#| label: fig-missing
+#| tbl-cap: Missingness of the dataset
+#| echo: False
+
+import missingno as msno
+import pandas as pd
+import matplotlib as plt
+df = pd.read_parquet('../../data/raw/raw_data.parquet')
+msno.matrix(df,label_rotation=80)
+plt.title('Missingess Across Training Dataset',fontsize=20)
+```
+
+
 ### Imputing Species Type
 
 1.  The species type column is missing a lot of values. We are able to
@@ -154,7 +168,7 @@ our dataset.
     `DOY` since it is useful for keeping track of time of year in time
     series analysis.
 
-### Phase 1:  Classical Models
+### Phase 1: Classical Models
 
 ### Manual Data Preprocessing
 
