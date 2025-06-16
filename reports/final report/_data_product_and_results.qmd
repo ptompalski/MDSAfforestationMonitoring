@@ -1,0 +1,36 @@
+## Data Product & Results
+
+**Deliverables**  
+- **CLI Pipeline:** `make data`, `make train_models`, `make train_rnn`, `make evaluate`  
+- **Model Artifacts:** Pickled models under `models/<threshold>/`  
+- **Evaluation Plots:** ROC / PR curves in `results/<threshold>/`  
+- **Quick-start Notebook:** `notebooks/data_product_quickstart.ipynb`
+
+---
+
+### Phase 1: Static Models Performance (80 % Threshold)
+
+| Model               | Precision | Recall | F1    |
+|---------------------|-----------|--------|-------|
+| Gradient Boosting   | **0.485** | 0.403  | 0.411 |
+| Random Forest       | 0.427     | **0.668** | **0.521** |
+| Logistic Regression | 0.435     | 0.630  | 0.515 |
+
+
+---
+
+### Phase 2: Sequence Models Performance (80 % Threshold)
+
+| Model (Features)    | Precision | Recall | F1    |
+|---------------------|-----------|--------|-------|
+| LSTM (Site + Sat)   | 0.367     | 0.369  | 0.368 |
+| GRU (Site + Sat)    | **0.359** | **0.569** | **0.440** |
+
+The GRU with site + satellite features is the best performing RNN configuration.
+
+---
+
+> **Interpretation:**  
+> * Classical static models plateau around F1 ≈ 0.52, with Random Forest achieving the highest F1.  
+> * GRU significantly improves Recall on high-risk sites, while LSTM offers modest gains.  
+> * Temporal models increase false positives, suggesting a CNN–LSTM hybrid could better capture spatial–temporal patterns.

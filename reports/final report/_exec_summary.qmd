@@ -1,0 +1,25 @@
+**Problem.** Field surveys at Year‑7 are costly and delayed; need forecasts for 80% survival threshold to guide timely interventions.  
+The **Canada Forest Service** requires an early-warning system to flag high-risk sites for proactive intervention.
+
+**Approach.**  
+- Merged multispectral rasters (2010–2023) with planting and Year‑7 survival survey tables.  
+- Two modeling phases:  
+  1. **Static classifiers** (Logistic Regression, Random Forest, XGBoost) on aggregated features.  
+  2. **Temporal RNNs** (GRU, LSTM) on annual spectral sequences.  
+- Employed grouped 5‑fold cross‑validation by site ID; optimized for F1 score.
+
+**Key Findings.**  
+- **Random Forest** (80% threshold) achieved the highest F1 = 0.521.  
+- **Gradient Boosting** F1 = 0.411; **Logistic Regression** F1 = 0.515.  
+- **GRU** sequence model (site + spectral features) reached F1 = 0.440 and Recall = 0.569, outperforming LSTM (F1 = 0.368).
+
+**Deliverables.**  
+- Reproducible Makefile targets (`make data`, `make train_models`, `make train_rnn`, `make evaluate`).  
+- Versioned model artifacts in `models/80` and evaluation plots in `results/80`.  
+- Quick-start Jupyter notebook for batch scoring.
+
+**Recommendations.**  
+- **Advisory use only:** Validate flagged sites with targeted surveys before field action.  
+- **Data enhancement:** Expand ground surveys in under-sampled ecozones.  
+- **Future exploration:** Prototype a CNN–LSTM hybrid to jointly learn spatial and temporal patterns.  
+- **Deployment:** Develop a Streamlit dashboard for non-technical planners.

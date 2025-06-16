@@ -1,0 +1,12 @@
+Early canopy survival surveys (Year 7) are critical for assessing reforestation success, yet they are time‐consuming and expensive. The **Canada Forest Service** seeks a data‐driven early‐warning system to identify sites at high risk of low survival before costly field surveys occur.
+
+### Data Overview
+- **Multispectral Imagery (2010–2023):** Annual raster stacks of 10 spectral indices per site, capturing vegetation health over time.  
+- **Planting Records:** Approximately 11,000 geolocated planting sites with attributes such as planting density, species type, and planting year.  
+- **Survival Surveys:** Year‐7 canopy cover measurements, binarized as survival (80%) or failure (<80%).
+
+### Refined Objectives
+1. **Static Classification:** Train and evaluate Logistic Regression, Random Forest, and XGBoost models on aggregated spectral and site features to predict seven‐year survival.  
+2. **Temporal Modeling:** Develop sequence models (GRU and LSTM) that leverage annual spectral time series for improved early forecasting.  
+3. **Performance Comparison:** Compare static and sequence pipelines using grouped 5‐fold cross‐validation by site ID, optimizing for F1 score to balance precision and recall.  
+4. **Reproducibility:** Package the entire workflow into a Makefile and Jupyter notebooks, enabling non‐technical stakeholders to run data preparation, model training, and evaluation with minimal setup.

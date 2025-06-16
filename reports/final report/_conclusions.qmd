@@ -1,0 +1,23 @@
+
+**Problem Recap.**  
+Year‑7 survival field surveys by the Canada Forest Service are time-consuming and expensive, delaying actionable insights on reforestation success.
+
+**Methodological Summary.**  
+- **Phase 1:** Static classifiers (Logistic Regression, Random Forest, XGBoost) on aggregated spectral and site features.  
+- **Phase 2:** Temporal RNNs (GRU, LSTM) on annual spectral time series, with and without site features.  
+
+**Key Outcomes.**  
+- At the **80 % survival threshold**, the best static model (Random Forest) achieved **F1 = 0.521** and **Recall = 0.668**, outperforming Gradient Boosting (F1 = 0.411) and Logistic Regression (F1 = 0.515).  
+- The **GRU** sequence model (site + spectral features) delivered **F1 = 0.440** and improved recall from 0.403 → 0.569 (**+16 pp**) relative to XGBoost, demonstrating the value of temporal information.  
+- **LSTM** yielded F1 = 0.368 and was less stable, confirming GRU as the more efficient RNN choice for this dataset.
+
+**Limitations.**  
+- **Class Imbalance & Thresholding:** The high‑survival class dominates; even at an 80 % cut‑off we observe skewed precision/recall trade‑offs.  
+- **Data Gaps:** Irregular satellite acquisition dates and missing rasters introduce noise.  
+- **Model Complexity vs. Interpretability:** RNNs capture temporal patterns but are less transparent than tree‑based methods.
+
+**Recommendations.**  
+1. **Advisory Monitoring:** Use model outputs as early‑warning flags; validate with targeted ground surveys before intervention.  
+2. **Data Enrichment:** Increase sampling in under‑represented ecozones and improve temporal coverage of satellite inputs.  
+3. **Model Enhancements:** Prototype a CNN–LSTM hybrid to jointly learn spatial context and temporal dynamics.  
+4. **Operationalization:** Develop a lightweight dashboard (e.g., Streamlit) for CFS planners to review flagged high‑risk sites and track model confidence.
