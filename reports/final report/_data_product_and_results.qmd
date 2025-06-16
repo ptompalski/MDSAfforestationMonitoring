@@ -1,4 +1,3 @@
-## Data Product & Results
 
 **Deliverables**  
 - **CLI Pipeline:** `make data`, `make train_models`, `make train_rnn`, `make evaluate`  
