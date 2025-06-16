@@ -50,16 +50,31 @@ Overall, logistic regression provides an interpretable, statistically grounded b
 To demonstrate the value of more sophisticated machine learning models in predicting survival rates, any subsequent models should achieve performance that exceeds that of logistic regression.
 
 #### Tree-Based Modelling
-* Rule based modelling: branches represent decisions that split feature space, leaves represent subsets
-* Greedy algorithm: at each step, get split feature and threshold that best minimizes loss
-* Loss can be log loss, entropy, Gini Impurity
-* Stop splitting when leaf has one target, or max depth/ min samples per leaf is reached
-* max depth/min samples per leaf is user-specified hyperparameter, see more in cross-validation section
+
+Many high-performing machine learning models are composed of simple, rule-based structures known as decision trees.
+These models make predictions by recursively partitioning the input dataset into distinct regions based on selected features and threshold values.
+An example of a decision tree is shown in @fig-decision_tree.
+
+![A simple example of a Decision Tree with a depth of 2. 
+The predictions $Y$ are made by comparing selected features $X_A$ and $X_B$ via comparison with threshold values $T_1$ and $T_2$.](../../img/decision_tree.png){#fig-decision_tree width=70%}
+
+Each internal node in the tree represents a decision based on a specific feature and a corresponding threshold,
+and each leaf node corresponds to a unique subset of the data, defined by the path of decision rules leading to it.
+Feature-threshold pairs are selected using a greedy algorithm: starting from the root node, the tree is grown iteratively by choosing the split that most effectively reduces the value of a given loss function.
+The cross-entropy loss defined in @eq-logloss is commonly used for binary classification tasks; however, Gini impurity is another frequently used criterion [@scikit-learn].
+Tree construction halts either when a leaf node contains only one class (resulting in zero loss for that subset) or when a predefined stopping criterion, such as the maximum depth, is met.
+See @sec-tree_hparams for guidance on selecting an appropriate maximum tree depth; choosing a higher max depth generally leads to a greater number of decisons and an overall more complex model.
 
 #### Random Forest Classifier
-* Series of decision trees trained on subset of features and bootstrapped sample of data 
-* Typically large depth: each tree becomes 'expert' on particular subset of data
-* Computationally expensive but each tree is independent, can be parallelized and is highly scalable.
+The Random Forest model is an aggregate model composed of many decision trees,
+each trained on a bootstrapped subset of the training data and a randomly selected subset of the features.
+Typically, the maximum allowable depth for each tree in a Random Forest is quite high, resulting in individual trees that are often overfitted and exhibit high variance.
+However, this high variance is mitigated through aggregation: by combining the predictions of many diverse trees, the overall model can generalize effectively to unseen data.
+For binary classification tasks, the final prediction is determined by majority vote among the individual trees.
+
+Although training Random Forests can be computationally intensive, each tree is trained independently, enabling efficient parallelization and scalability.
+Previous studies from @bergmuller2022predicting, have demonstrated that Random Forests perform well when using vegetation indices to predict canopy tree mortality.
+Becuase of this, this model was selected as a candidate for the present analysis.
 
 #### Gradient Boosting Classifier
 * Opposite logic of RF: each tree is low-depth, underfit
@@ -71,7 +86,7 @@ To demonstrate the value of more sophisticated machine learning models in predic
 
 ### Training Classical Models
 
-#### Tree Hyperparameters
+#### Tree Hyperparameters {#sec-tree_hparams}
 * Control number of estimators and tree depth for model complexity
 * Random Forest: number of features per tree (usually square root of total)
 * Gradient Boosting: Learning rate, smaller = less contribution per tree and less overfitting
