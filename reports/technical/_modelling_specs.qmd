@@ -6,7 +6,7 @@ two recurrent neural networks—GRU and LSTM—were subsequently developed.
 This section provides detailed descriptions of each model's architecture and the rationale for their selection.
 Methods for training, tuning, and evaluating model performance will also be thoroughly outlined.
 
-### Baseline Modelling 
+### Classial Modelling
 
 #### Logistic Regression
 
@@ -49,11 +49,7 @@ Model performance across different thresholds can be evaluated using ROC and pre
 Overall, logistic regression provides an interpretable, statistically grounded baseline and serves as a proxy for the classical statistical modeling used prior to this analysis.
 To demonstrate the value of more sophisticated machine learning models in predicting survival rates, any subsequent models should achieve performance that exceeds that of logistic regression.
 
-### Tree-Based Modelling
-* Gradient Boosting mode generally  works well on ML tasks
-* Random Forest shown to utilize VIs for similar problems
-
-#### Decision Trees
+#### Tree-Based Modelling
 * Rule based modelling: branches represent decisions that split feature space, leaves represent subsets
 * Greedy algorithm: at each step, get split feature and threshold that best minimizes loss
 * Loss can be log loss, entropy, Gini Impurity
@@ -72,6 +68,26 @@ To demonstrate the value of more sophisticated machine learning models in predic
 * new prediction is F0(x) + learning_rate * F1(x)
 * repeat until max number of estimators is reached: final prediction = F0(x) + learning_rate * sum(Fi(x))
 * XGBoost implementation provides faster training, leaf weights as parameters for regularization (see @sec-regularization)
+
+### Training Classical Models
+
+#### Tree Hyperparameters
+* Control number of estimators and tree depth for model complexity
+* Random Forest: number of features per tree (usually square root of total)
+* Gradient Boosting: Learning rate, smaller = less contribution per tree and less overfitting
+
+#### L1, L2, ElasticNet Regularization
+* penalize loss by parameter magnitude for logistic regression 
+* Logistic Regression: parameters are $\beta$
+* Gradient Boosting: weights calculated at each leaf in each treeusing higher order derivatives of loss, see paper
+* Larger parameter value = smaller weights, less overfitting
+
+#### Cross-Validation
+* Grid Search vs Random Search over hyperparameters
+* Split data into folds, use one as simulated test fold
+* Split by site to avoid leakage between folds
+* Choose model with best predefined score, F1 in our case (see metrics section)
+* CV feasible for NN training, use holdout validation set instead
 
 ### Sequential Deep Learning Models
 * Classical models do not naturally handle sequential data 
@@ -99,7 +115,14 @@ To demonstrate the value of more sophisticated machine learning models in predic
 * Linear transformation of input
 * Activation functions: control output scales and add nonlinearity (show ReLU function and justify use)
 
-#### Training Neural Networks - Backpropagation
+#### Final Model architecture
+* time series into GRU or LSTM
+* concatenate with site features and pass to FCNN
+* FCNN output goes to sigmoid function * 100 to predict survival rate
+* Dropout Rate before prediction, show paper for evidence of improvement
+* hidden layers size, size of hidden state, all hyperparameters
+
+### Training Deep Learning Models
 * Loss Function: MSE 
 * Compute gradient of loss WRT to each parameter in model
 * Show equation for FCCN params
@@ -108,37 +131,7 @@ To demonstrate the value of more sophisticated machine learning models in predic
 * Mini-batch: Compute gradients on subsets of data per update step to reduce computational load
 * Repeat over succcessive epochs (epoch = 1 run through of data)
 
-
-#### Final Model architecture
-* time series into GRU or LSTM
-* concatenate with site features and pass to FCNN
-* FCNN output goes to sigmoid function * 100 to predict survival rate
-
-### Regularization and Hyperparameters
-* Reduce overfitting, general performance of models
-#### L1, L2, ElasticNet Regularization
-* penalize loss by parameter magnitude for logistic regression 
-* Logistic Regression: parameters are $\beta$
-* Gradient Boosting: weights calculated at each leaf in each treeusing higher order derivatives of loss, see paper
-* Larger parameter value = smaller weights, less overfitting
-
-#### Tree Hyperparameters
-* Control number of estimators and tree depth for model complexity
-* Random Forest: number of features per tree (usually square root of total)
-* Gradient Boosting: Learning rate, smaller = less contribution per tree and less overfitting
-
-#### Deep Learning Regularization
-* Dropout Rate before prediction, show paper for evidence of improvement
-* hidden layers size, size of hidden state, 
-
-#### Cross-Validation
-* Grid Search vs Random Search over hyperparameters
-* Split data into folds, use one as simulated test fold
-* Split by site to avoid leakage between folds
-* Choose model with best predefined score, F1 in our case (see metrics section)
-* CV feasible for NN training, use holdout validation set instead
-
-### Error metrics
+### Error Metrics
 
 #### Precision, Recall, $F_{\beta}$ Score
 * definition of each
