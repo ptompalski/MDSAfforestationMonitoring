@@ -35,7 +35,7 @@ These probabilistic predictions can be converted to binary class labels by apply
 
 Overall, logistic regression provides an interpretable, statistically grounded baseline and serves as a proxy for the classical statistical modeling used prior to this analysis. To demonstrate the value of more sophisticated machine learning models in predicting survival rates, any subsequent models should achieve performance that exceeds that of logistic regression.
 
-#### Tree-Based Modelling
+#### Tree-Based Modelling {#sec-tree_models}
 
 Many high-performing machine learning models are composed of simple, rule-based structures known as decision trees. These models make predictions by recursively partitioning the input dataset into distinct regions based on selected features and threshold values. An example of a decision tree is shown in @fig-decision_tree.
 
@@ -89,7 +89,7 @@ To update the model prediction after initialization, a regression tree is fitted
 
 $$
 \omega_j^{(1)}  = \frac{\sum_{i \in j} g_i}{\sum_{i \in j} h_i}
-$$
+$$ {#eq-gbm_weight}
 
 The overall model prediction is then updated:
 
@@ -111,20 +111,37 @@ Where $K$ is the total number of iterations of the algorithm.
 
 ### Training and Tuning Classical Models
 
-#### L1, L2, ElasticNet Regularization
+Most machine learning models involve a set of hyperparameters—values specified *a priori*—that govern model complexity and influence training behavior. Inappropriate hyperparameter choices can result in models that are either overly biased or unnecessarily complex, leading to poor generalization on unseen data. This section provides a detailed overview of the key hyperparameters for each candidate model in this analysis, along with the methodology used for their selection.
 
--   penalize loss by parameter magnitude for logistic regression
--   Logistic Regression: parameters are $\beta$
--   Gradient Boosting: weights calculated at each leaf in each treeusing higher order derivatives of loss, see paper
--   Larger parameter value = smaller weights, less overfitting
+#### Regularization
+
+In general, regularization involves a penalty to the loss function of that is proportional to the magnitude 
+of the model parameters; stronger regularization leads to smaller parameters and more conservative predictions, which often aids in decreasing overfitting and variance. In Logistic Regression, this is implemented through an additional term in @eq-logloss:
+
+$$
+\mathcal{L} = -\frac{1}{n} \sum_{i=1}^{n} \left[ y_i \log(\hat p_i) + (1 - y_i) \log(1 - \hat p_i) \right] + \lambda R(\boldsymbol{\beta})
+$$ {#eq-logloss_reg}
+
+Where $\lambda$ controls the strength of regularization (larger values lead to stronger regularization), and $R(\boldsymbol{\beta})$ is some function of the model parameter magnitude. In $L_1$ regularization, $R(\boldsymbol{\beta}) = \sum_j |\beta_j|$, and for $L_2$ regularization, $R(\boldsymbol{\beta}) = \sum_j (\beta_j)^2$. $L_1$ tends to decrease parameter values to 0 in a linear fashion, whereas $L_2$ causes parameters to asymptotically decrease towards, but never exactly to 0. 
+
+In the context of Gradient Boosting with XGBoost, regularization is applied to the loss function in the form:
+
+$$
+\mathcal{L} = -\frac{1}{n} \sum_{i=1}^{n} \left[ y_i \log(\hat p_i) + (1 - y_i) \log(1 - \hat p_i) \right] + \lambda \left( T + R(\boldsymbol{\beta})\right)
+$$ {#eq-logloss_reg_gbm}
+
+Where $T$ is the number of leaves in the tree. Regularization is also applied to the weights directly, via modification of @eq-gbm_weight as implemented by @xgboost:
+
+$$
+\omega_j  = \frac{\sum_{i \in j} g_i}{\sum_{i \in j} h_i + \lambda}
+$$ {#eq-gbm_weight_reg}
+
 
 #### Tree Hyperparameters {#sec-tree_hparams}
 
--   Control number of estimators and tree depth for model complexity
--   Random Forest: number of features per tree (usually square root of total)
--   Gradient Boosting: Learning rate, smaller = less contribution per tree and less overfitting
+Nonparametric models such as Random Forest cannot be implemented with regularization, therefore they must be optimized solely by controlling other hyperparameters. As stated in @sec-tree_models, the maximum depth directly controls model complexity by limiting the number of decisions made in each tree in, however other parameters such as minimum samples per leaf, the cost-complexity parameter $\alpha$, and the number of estimators may be adjusted as well [@scikit-learn]. For simplicity and to reduce the necessary training time, only maximum depth and number of estimators were controlled for in this analysis.
 
-#### Cross-Validation
+#### Random Search Cross-Validation
 
 -   Grid Search vs Random Search over hyperparameters
 -   Split data into folds, use one as simulated test fold
