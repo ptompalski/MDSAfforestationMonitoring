@@ -139,33 +139,52 @@ Generally, model performance varies logarithmically with $\lambda$, therefore it
 
 #### Tree Hyperparameters {#sec-tree_hparams}
 
-Nonparametric models such as Random Forest do not support regularization, therefore they must be optimized by controlling other hyperparameters. As stated in @sec-tree_models, the maximum depth directly controls model complexity by limiting the number of rules formulated by each tree, however other parameters such as minimum samples per leaf, the cost-complexity parameter $\alpha$, and the number of estimators may be adjusted as well [@scikit-learn]. For simplicity and to reduce the necessary training time, only maximum depth and number of estimators were controlled for in this analysis.
+Nonparametric models such as Random Forest do not incorporate explicit regularization terms. Instead, they are controlled through structural hyperparameters that constrain model complexity. As discussed in @sec-tree_models, **maximum depth** is a key hyperparameter that limits the number of hierarchical decision rules in each tree, thereby directly affecting overfitting. Additional parameters—such as the **minimum number of samples per leaf**, the **cost-complexity pruning parameter** ($\alpha$), and the **number of estimators** (trees)—can also be tuned to control generalization error [@scikit-learn]. However, to reduce computational cost and simplify the tuning process, only maximum depth and the number of estimators were optimized in this analysis.
 
 #### Random Search Cross-Validation
 
-Given a candidate model and a set of variable hyperparameters, an optimization problem arises: what configuration of hyperparameters best optimizes model performance? Various methods exist, however this analysis used random search cross validation to tune the model hyperparameters. @fig-cross_validation illustrates the process of cross-validation.
+Given a candidate model and a set of tunable hyperparameters, an optimization problem naturally arises: which hyperparameter configuration yields the best model performance? To address this, the present analysis employed random search cross-validation to tune hyperparameters. The process is illustrated in @fig-cross_validation.
 
-![An example of four-fold cross-validation. A given model with a configuration of hyperparameters is trained four times, with one subset of the data left as a 'hold-out' validation subset to be used to test model performance. After this, the test scores are averaged. This is repeated for multiple configurations of hyperparameters, and the configuration that achieves the highest score may be selected for further evaluation. Many scoring metrics exist, depending on the use case and nature of the data. See @sec-error_metrics for further details regarding the metrics used in this analysis.](../../img/cross_validation.png)
+![An example of four-fold cross-validation. A given model with a configuration of hyperparameters is trained four times, each time leaving out one subset of the data as a hold-out validation set. The model is evaluated on the hold-out fold, and the resulting scores are averaged. This process is repeated for multiple hyperparameter configurations. The configuration with the best average score is selected for further evaluation. Many scoring metrics exist depending on the use case and data characteristics; see @sec-error_metrics for details on the metrics used in this analysis.](../../img/cross_validation.png){#fig-cross_validation width="70%"}
 
-By averaging over a hold-out validation subset, this method gives the advantage of simulating model performance in deployment; simply optimizing over the entire training set would likely lead to an overestimation of performance and failure to evaluate model overfitting. In **random search**, hyperparameters are randomly sampled according to a predefined distribution after each iteration of the cross-validaiton algorithm. **Grid search** is another popular method, in which all combinations of specified hyperparameter values are tested. However, this method becomes computationally exhaustive as the number of hyperparameters and test values increases. Therefore, random search was opted for in this analysis.
+Cross-validation mitigates the risk of overfitting by simulating model performance on unseen data through repeated training on subsets of the data while reserving a separate fold for validation. Averaging the resulting scores provides a more realistic estimate of generalization performance than fitting on the entire training set alone.
+
+In random search, hyperparameter values are sampled from predefined distributions at each iteration, offering an efficient alternative to grid search, which exhaustively evaluates all combinations of specified values. Although grid search can be effective for low-dimensional hyperparameter spaces, it quickly becomes computationally prohibitive as the number of parameters increases. Accordingly, random search was chosen for its efficiency and scalability in this analysis.
 
 ### Sequential Deep Learning Models
 
--   Classical models do not naturally handle sequential data
--   Literature indicates changes in VIs across time are vital to predicting survival rates
--   Problem: require large and diverse datasets.
+While the previously discussed models perform well across a range of supervised learning tasks and provide a strong performance baseline, they are limited by their assumption that each input instance is independent. This assumption is ill-suited to the sequential structure of the vegetation index data in this study, which exhibits temporal dynamics and potential spatial correlations between pixels within sites. To better model these dependencies, the final phase of the analysis employed sequential deep learning architectures based on Recurrent Neural Networks (RNNs), specifically Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU) models. Despite their increased complexity and computational demands, these models are efficiently implemented using modern deep learning libraries in Python, such as PyTorch [@paszke2019pytorch].
 
 #### Recursive Neural Network (RNN)
 
--   Inputs passed sequentially to model
--   Each input updates a hidden state via a linear combination: h_t = (W\_{xh} \* X_t + W\_{hh} \* h\_{t-1})
--   Hidden state represents memory data across time
--   Vanilla RNNs suffer from vanishing/exploding gradients (see section @sec-backpropagation)
+The simplest deep learning model that supports sequential modelling is the RNN. @fig-rnn outlines the architecture of this model.
 
-#### Long-term Short Term Memory (LSTM)
+![Basic architecture of a many-to-one RNN. Inputs from a sequence of vectors $(X_1,X_2,...,X_n)$ are taken one-by-one, which updates a hidden state vector $h_i$ according to a linear transformation with a weight matrix $W_{xh}$. As furher inputs are processed, the hidden state recursively updates according to the input as well as the previous hidden state through the weight matrix $W_{hh}$. A many-to-one RNN outputs one prediction $Y$ after the final entry of the sequence is processed.](../../img/rnn.png){#fig-rnn width="70%"}
 
--   Uses keep and forget gates to capture long term memory more effectively
--   Show equation for updating hidden state with image of cell
+The key component of the RNN is the **hidden state**, which encodes the 'memory' of previous instances in the sequence. The transformation of the hidden state is governed by weight matrices $W_{hh}$ and $W_{xh}$. Additionally, bias vectors $b_{xh}$ and $b_{hh}$ are included, and the linear transformation is passed through the hyperbolic tangent (tanh) function to introduce nonlinearity. Therefore, the hidden state $h_t$ at time $t$ in the sequence is updated given the previous hidden state $h_{t-1}$ and current sequence entry $x_{t}$ according to the transformation:
+
+$$
+h_t = \text{tanh} \left(x_tW_{xh}^T + b_{xh} + h_{t-1}W_{hh}^T + b_{hh} \right)
+$$ {#eq-rnn}
+
+Although the RNN is capable of capturing short term dependencies in sequential data, long-term trends are difficult to capture due to issues of 'vanishing' and 'exploding' gradients during training [@pascanu2013difficultytrainingrecurrentneural]. See @sec-training_deep_learning for further details regarding this.
+
+#### Long-Term Short Term Memory (LSTM)
+
+To address the long-term dependency issue regarding RNNs, several models of similar, but more complex architecture have been proposed. One such model is the LSTM, which includes additional weights in the form of **input**, **output**, **cell**, and **forget** gates $(i_t, o_t, g_t, f_t)$ respectively. These gates determine which aspects of the prior hidden state and current input are 'important' for prediction. These gates are used to update the cell state $c_t$, which is then used to update the current hidden state according to the equation:
+
+$$
+\begin{aligned}
+i_t &= \sigma(W_{ii} x_t + b_{ii} + W_{hi} h_{t-1} + b_{hi}) \\
+f_t &= \sigma(W_{if} x_t + b_{if} + W_{hf} h_{t-1} + b_{hf}) \\
+g_t &= \tanh(W_{ig} x_t + b_{ig} + W_{hg} h_{t-1} + b_{hg}) \\
+o_t &= \sigma(W_{io} x_t + b_{io} + W_{ho} h_{t-1} + b_{ho}) \\
+c_t &= f_t \odot c_{t-1} + i_t \odot g_t \\
+h_t &= o_t \odot \tanh(c_t)
+\end{aligned}
+$$ {#eq-lstm}
+
+Where $\odot$ represents the Hadamard product (elementwise multiplication of vector entries) and $\sigma$ represents the sigmoidm function introduced in @eq-sigmoid. The cyclical behaviour of the hidden state update helps to control for problematic gradients during training, making the LSTM suitable for many long-term sequential modelling and prediction tasks [@sak2014longshorttermmemorybased].
 
 #### Gated Recurrent Unit (GRU)
 
@@ -189,7 +208,7 @@ By averaging over a hold-out validation subset, this method gives the advantage 
 -   Dropout Rate before prediction, show paper for evidence of improvement
 -   hidden layers size, size of hidden state, all hyperparameters
 
-### Training Deep Learning Models
+### Training Deep Learning Models {#sec-training_deep_learning}
 
 -   Loss Function: MSE
 -   Compute gradient of loss WRT to each parameter in model
