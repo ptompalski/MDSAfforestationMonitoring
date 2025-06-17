@@ -1,20 +1,22 @@
-The dataset used in this project combines field-measured survival rates
+## Data Description
+
+The dataset used in this study combines field-measured survival rates
 for more than 2,500 afforested sites collected by Forest Canada
 [@ubc2025remotesensing] with remote sensing data obtained from the
 Harmonized Landsat Sentinel-2 (HLS) project [@hls].
 
 The field-measured survival data and remote sensing data are of
-different resolution. The field-measured survival rate is obtained at
-site-level, however the satellite is obtained at pixel-level. The data
-has irregular time intervals in measurements. The survey records is
-recorded annually with most sites missing records in year 3, 4, 6, 7.
-The satellite data are obtained much more frequently. Since the
-Harmonized Landsat Sentinel-2 satellite circles the earth every 16 days,
-the satellite records has a average time interval around 16 days. but
-the actual time intervals is irregular, with missing readings in
+different resolutions. The field-measured survival rate was obtained at
+the site level. However, the satellite was at the pixel level. The data
+has irregular time intervals in measurements. The survival rate surveys
+were conducted annually with most sites missing records in years 3, 4,
+6, 7. Satellite data are obtained much more frequently. Since the
+Harmonized Landsat Sentinel-2 satellite circles the Earth every 16 days,
+the satellite records have an average time interval of 16 days. However,
+the actual time intervals are irregular, with missing readings in
 between. Most sites will have at least one satellite reading per month.
-The satellite records starts in 2013, but the survey records start
-earliest in 2008. So we have a lot of missing values.
+The earliest satellite records were taken in 2013, but the earliest
+survey records were started in 2008. So we have a lot of missing values.
 
 @tbl-pixel shows the pixel-level features and @tbl-site shows the
 site-level features in the original dataset.
@@ -27,7 +29,7 @@ time, with its corresponding site-level (@tbl-site) and pixel-level
 (@tbl-pixel) features.
 
 | Category | Column Name | Description |
-|------------------|------------------|-----------------------------------|
+|-------------------|-------------------|----------------------------------|
 | Identifier | `ID` | Site ID |
 | Spatial | `Area_ha` | Area of the Site (hectares) |
 |  | `prevUse` | Previous Land Use of the Site |
@@ -51,7 +53,7 @@ survival rates from Year 1 to Year 7. {#tbl-site}
 <br>
 
 | Category | Column Name | Description |
-|------------------|------------------|-----------------------------------|
+|-------------------|-------------------|----------------------------------|
 | Identifier | `PixelID` | Pixel ID |
 | Temporal | `ImgDate` | Image Date of the Remote Sensing Data |
 |  | `Year` | Image Year of the Remote Sensing Data |
@@ -64,15 +66,15 @@ predictor: the spectral indices. {#tbl-pixel}
 
 ### Data Split
 
-We did a 70:30 split on the preprocessed data into train set and test
-set. Since the survey record is site-level, different pixels from the
-same site will share the same survey records, and there are multiple
-survival rate record for each site (for different year). Instead of
-using train-test split for all records in scikit-learn, we split the
-data by site. Each site will either be in train data or the test data.
-We do this to avoid data leakage and to preserve the temporal
-dependencies in the data. This ensures that the models was not trained
-on any of the survey records in the test data and all the models are
+We performed a 70:30 split on the preprocessed data, creating a train
+set and a test set. Since the survey record is site-level, different
+pixels from the same site will share the same survey records, and there
+are multiple survival rate records for each site (one for each survey
+year). Instead of using a train-test split for all records in
+scikit-learn, we split the data by site. Each site can only be in the
+train or test data. We do this to avoid data leakage and to preserve the
+temporal dependencies in the data. This ensures that the models were not
+trained on any of the survey records in the test data and all models are
 trained with the full set of survey and satellite records for each
 pixel.
 
@@ -83,9 +85,9 @@ our dataset.
 
 ### Loading Data
 
-1.  The original dataset was in RDS format, which is native data format
-    for R. Since we are doing our modelling in Python, we converted the
-    data into parquet file.
+1.  The original dataset was in RDS format, a native data format for R.
+    Since we are using Python for modelling, we converted the data into
+    a parquet file.
 
 ### Removing rows
 
@@ -93,8 +95,8 @@ our dataset.
     complicating our model, we decided to remove all records involving
     replanted sites.
 
-2.  When doing exploratory data analysis on the dataset, we notice some
-    out-of-range values some of the columns.
+2.  During exploratory data analysis, we noticed some out-of-range
+    values in some columns.
 
     a\. For most spectral indices (except for TCB, TCG, TCW), the range
     should be within \[-1, 1\]. But there are values where the values
@@ -102,24 +104,24 @@ our dataset.
     \[-1, 1\].
 
     b\. For survival rate, it should be within 0 to 100, but we notice
-    values that are over 100%. We will also be removing these rows.
+    values that exceed 100%. We will also be removing these rows.
 
 3.  From the missing plot, we can observe some rows with missing
     spectral indices. We will remove these rows.
 
-4.  While the earliest satellite records starts in 2013, some sites are
-    planted years after. The satellite records before plantation was not
-    relevant, therefore, we removed all the satellite records before the
-    trees were planted.
+4.  While the earliest satellite records were obtained in 2013, some
+    sites were planted years after. The satellite records before
+    planting were not relevant. Therefore, we removed all satellite
+    records before the plantation date.
 
 ### Data engineering
 
-1.  Since the vegetation indices measures vegetation density and
+1.  Since the vegetation indices measure vegetation density and
     vegetation health, we believe the initial density of trees planted
-    may be a useful features to add to our data. We used the Area and
+    may be a useful feature to add to our data. We used the Area and
     number of trees planted in the original dataset to calculate the
-    density. We removed the area and number of trees planted columns
-    after obtaining the new column to avoid redundancy.
+    density. We removed the \`Area\` and \`Number of trees planted\`
+    columns after obtaining the new column to avoid redundancy.
 
 ```{python}
 #| label: fig-missing
@@ -128,45 +130,45 @@ our dataset.
 
 import missingno as msno
 import pandas as pd
-import matplotlib as plt
+import matplotlib.pyplot as plt
 df = pd.read_parquet('../../data/raw/raw_data.parquet')
 msno.matrix(df,label_rotation=80)
 plt.title('Missingess Across Training Dataset',fontsize=20)
+plt.show()
 ```
-
 
 ### Imputing Species Type
 
-1.  The species type column is missing a lot of values. We are able to
+1.  The species type column is missing many values. We were able to
     impute the missing values from the species comp column. According to
     the definition of forest type by Natural Resources Canada, a forest
     is classified as a mixed stand forest if less than 80% of trees are
     of a single species. Using this threshold, we calculated the
-    percentage of conifer and deciduous tree using the species comp
+    percentage of conifer and deciduous trees using the species comp
     column. And classify it into `Mixed`, `Conifer` and `Deciduous`
     accordingly.
 
 ### Removing Columns
 
-1.  `PlantDt`: From the missing plots, we also notice that the `PlantDt`
-    is missing in most rows, so we will be removing this column.
+1.  `PlantDt`: From the missing plots, the `PlantDt` is missing in most
+    of the rows. As such, we decided to remove this column.
 2.  `prevUse`: During exploratory data analysis, we investigated the
-    distribution of `prevUse` column, since the majority of sites are
-    previously argricultural lands, it is to imbalance to be of use for
-    analysis. We remove this column.
+    distribution of the `prevUse` column. We discovered that the
+    majority of sites are previously agricultural lands, it is too
+    imbalanced to be of use for analysis. Thus, this column was removed
+    from the data.
 3.  `SpcsCmp` : The survey data is from two sources, the earlier survey
-    data does not have detailed species composition, and only have the
-    proportion of hard vs soft wood species. This covers over 50% of
-    records. While the latter survey data has more detailed species
-    composition. It is not practical to use this columns for analysis.
-    We remove this column after using it to classify the forest type.
-4.  `NmblR`,`NmblT`, `NmblO`: The columns `NmblR`, `NmblT`, `NmblO`
-    records the replanting information, since we removed all sites that
-    are replanted, they are no longer useful, we remove these column.
+    data does not have detailed species composition, and only has the
+    proportion of hard vs softwood species. This covers over 50% of
+    records, while the latter survey data has a more detailed species
+    composition. It is not practical to use this column for analysis. We
+    remove this column after using it to classify the forest type.
+4.  `NmblR`,`NmblT`, `NmblO`: The columns `NmblR`, `NmblT`, and `NmblO`
+    record the replanting information. Since we removed all sites that
+    are replanted, they are no longer useful, we removed these columns.
 5.  `Year`: Since we already have `ImgDate`, `Year` and `DOY` are
-    actually redundant, we decided to remove the `Year` column but keep
-    `DOY` since it is useful for keeping track of time of year in time
-    series analysis.
+    redundant. We decided to remove the `Year` column but keep `DOY`, as
+    it is useful for tracking the time of year in time series analysis.
 
 ### Phase 1: Classical Models
 
@@ -176,30 +178,29 @@ plt.title('Missingess Across Training Dataset',fontsize=20)
     data to combine the survival rates columns (`SrvvR_1` to `SrvvR_7`)
     into a single column (`target`), and the survey dates columns
     (`AsssD_1` to `AsssD_7`) into a survey date column (`SrvvR_Date`).
-    We add an `Age` column to keep track of the tree age at the time of
-    survey (number of years since plantation).
-2.  Since for most sites, we have almost bi-monthly or monthly satellite
-    records, but we only have 3 years (Year 1, 2, 5) of survival rate
-    record for most sites. With dozens, even hundreds of satellite
-    records and only 3 survival rate records, we need a way to match the
-    survival records with the survey records. Since there is seasonality
-    in the satellite records, we cannot just take an annual average of
-    the vegetation indices. Since most survey date does not align with
-    the satellite image date, we instead calculated the average signal
-    within a ±16 days time window of the survey date. We choose a ±16
-    day window since the Landsat satellite has a repeat cycle of 16 days
-    (covers the entire globe every 16 days). This time window should
-    give us at least 1 (maybe even 2-3) satellite records for most
-    survey records. This time window can be adjust as needed when
-    running the scripts for generating the data.
+    We add an `Age` column to keep track of the tree's age at the time
+    of the survey (number of years since plantation).
+2.  For most afforested sites, we have almost bi-monthly or monthly
+    satellite records, but only 3 years (Years 1, 2, 5) of survival rate
+    records. With dozens, even hundreds of satellite records and only 3
+    survival rate records, we need a way to match the survival records
+    with the survey records. Since there is seasonality in the satellite
+    records, we cannot just take an annual average of the vegetation
+    indices. Since most survey data did not align with the satellite
+    imaging date, we instead calculated the average signal within a ±16
+    days time window of the survey date. We chose a ±16 day window since
+    the Landsat satellite has a repeat cycle of 16 days (covers the
+    entire globe every 16 days). This time window would return at least
+    1 satellite record for most survey records. This time window can be
+    adjusted as needed when running the scripts for generating the data.
 3.  We approached the problem as a classification problem. To do this,
     we map the target (survival rates) into binary classes 0/1 (0 for
-    low survival rates and 1 for high survival rates). If the target is
-    ≤ threshold, we classify it as low survival rate and high survival
-    rate vice versa. Since we do not have a defined threshold for high
-    survival rates and low survival rates, we tried multiple thresholds
-    (50%, 60%, 70% and 80%) and obtain results for each threshold for
-    comparison.
+    low survival rates and 1 for high survival rates). The target is
+    classified as having a low survival rate if the target is ≤
+    threshold. Otherwise, it is classified as having a high survival
+    rate. Since we do not have a defined classification threshold for
+    high and low survival rates, we tried multiple thresholds (50%, 60%,
+    70% and 80%) and obtained results for each threshold for comparison.
 
 @tbl-classical shows what our data looks like after preprocessing. This
 is the data we used for training all our classical models.
@@ -216,82 +217,85 @@ pd.read_parquet('../../data/processed/70/test_data.parquet').head()
 ### Data Preprocessing in sklearn
 
 1.  Since logistic regression models can only handle numeric features,
-    we need to do one hot encoding on the species Type column. While
-    random forest and XGBoosting models can native support for handling
-    categorical features, we decided to apply one hot encoding instead
-    for consistency with the logistic regression model.
-2.  Since logistic regression model is also sensitive to data scale,
-    standard scaler is also applied to the numeric features prior to
+    we need to do one hot encoding on the species-type column. While
+    Random Forest and Gradient Boosting models can natively support
+    handling categorical features, we decided to apply one hot encoding
+    instead for consistency with the logistic regression model.
+2.  Since the logistic regression model is also sensitive to data scale,
+    a standard scaler is also applied to the numeric features before
     model fitting.
 
 ### Phase 2: Data Preparation for RNN models
 
-In phase 2 of our project, we used RNN models which are able to capture
-sequential changes. This calls for a different way to preprocess the
-cleaned data. For the RNN model, we used the satellite records as a
-time-series of spectral indices.
+During the second phase of our project, we worked on RNN models which
+are designed to capture sequential changes. RNN models require a
+different data format, processing the satellite records as a time series
+of spectral indices instead of individual observations.
 
 ### Validation Split
 
-When training RNN model, we need a validation dataset to evaluate model
-performance during training. Therefore, we did a 50:50 split on the test
-data to obtain a validation set.
+When training the RNN model, we need a validation dataset to evaluate
+model performance during training. Therefore, we did a 50:50 split on
+the test data to obtain a validation set.
 
 ### Data Preprocessing:
 
 1.  Data Engineering: To better capture the time dependencies in the
     satellite data, we procure two new features to the satellite data.
 
-    a\. `Log transformed time_delta`: `time_delta` records the
-    difference between the image date and the survey date. We use this
-    to capture the irregularities in the time steps of the satellite
-    records. Base on the difference between the dates, this also helps
-    the model prioritize the recent data over the old data. We did a log
-    transformation on the time_delta to normalise it since it range up
-    to thousands.
+    a.`Log transformed time_delta`: `time_delta` records the difference
+    between the image date and the survey date. We use this to capture
+    the irregularities in the time steps of the satellite records. This
+    column also helps the model prioritise the recent data over the old
+    data. We conduct a log transformation on the time_delta to normalise
+    it since its values can go up to thousands.
 
-    b\. `negative cosine transformation DOY` : We use a cosine
-    transformation DOY to capture seasonality of the spectral indices.
-    We choose a negative cosine transformation specifically since it
-    mimics the fluctuation patterns for all spectral indices (except for
-    TCB), which is highest during summer and lower in winter. (plot
-    seasonality + negative cosine plot)
+    b\. `negative cosine transformation DOY`: We use a cosine
+    transformation of `DOY` to capture the seasonality of the spectral
+    indices. We chose a negative cosine transformation specifically as
+    it mimics the fluctuation patterns of all the vegetation indices
+    (except for `TCB`), which peaks during summer and drops in winter.
+    (plot seasonality + negative cosine plot)
 
 2.  Data Normalisation: Since RNN models are sensitive to the scale of
     the data, we need to normalise the data to avoid vanishing or
-    exploding gradient. Since the most of the spectral indices are
-    bounded between \[-1, 1\], we only normalise the TCB, TCW, TCG
-    values, as well as Density. To avoid data leakage, we calculate
-    summary statistics of the train data only and use the statistics
-    (mean and std) to normalise the train, test and validation data.
+    exploding gradient. Since most of the spectral indices are bounded
+    between \[-1, 1\], we only normalise the `TCB`, `TCW`, and `TCG`
+    values, as well as `Density`. To avoid data leakage, we calculated
+    the summary statistics of the training data, before using them (mean
+    and standard deviation) for normalising the train data, test data
+    and validation data.
 
-3.  Since RNN models can only handle numeric data, we use one hot
-    encoding to transform the species type column into Type_Deciduous
-    and Type_Conifer columns. Since the species type are mutually
-    exclusive, the Type_Mixed column was dropped to remove linear
-    dependencies between type columns and reduce redundancy.
+3.  Since RNN models can only handle numeric data, we use one-hot
+    encoding to transform the species type column into the
+    `Type_Deciduous` and `Type_Conifer` columns. Since the species types
+    are mutually exclusive, the `Type_Mixed` column was dropped to
+    remove linear dependencies between type columns and reduce
+    redundancy.
 
 ### Sequence Generation
 
-1.  We split the survey records and satellite records into separate
-    dataframe: The look up table containing the site-level survey
-    records and the image records table containing the pixel-level
-    satellite data.
-2.  Just like what we did for the classical models, we pivot the survey
+1.  We split the survey records and satellite records into separate data
+    frames: The look-up table containing the site-level survey records
+    and the image records table containing the pixel-level satellite
+    data.
+
+2.  Similar to what we did for the classical models, we pivot the survey
     records so all survey records and survey dates are combined into
     respective columns.
-3.  For each row in the lookup table, we searched the image table for
-    all records with match `ID`, `PixelID` and selected all satellite
-    records up until the survey date. This would be the sequence data we
-    use for training our RNN model. We saved the sequence for each
-    survival records in their own parquet file. The file name was saved
-    in the look up table to allow easy access during model training. The
-    rows with no sequences available (e.g. survival records before 2013,
-    when the first satellite record is obtained) was removed.
 
-@tbl-lookup shows what the lookup table looks like and @tbl-sequence
-shows a example of the sequence data we used for training the rnn
-models.
+3.  For each row in the lookup table, we searched the image table for
+    all records with match `ID`, and `PixelID` and selected all
+    satellite records up until the survey date. This would be the
+    sequence data we use for training our RNN model. We saved the
+    sequence for each survival record as an individual parquet file. The
+    file name was saved in the look-up table to allow easy access during
+    model training. The rows with no sequences available (e.g. survival
+    records before 2013, when the first satellite record was obtained)
+    were removed.
+
+\@tbl-lookup shows what the lookup table looks like and \@tbl-sequence
+shows an example of the sequence data used for training the RNN models.
 
 ```{python}
 #| label: tbl-lookup
@@ -313,28 +317,28 @@ pd.read_parquet('../../data/processed/sequences/797_4049252_49564055_2013-07-01.
 
 ### Target mapping
 
-Since training RNN model is time consuming, and we do not have a defined
-classification threshold, we decided to train a regression RNN model
-instead. This way, we do not need to train a separate RNN model for each
-threshold value. Therefore, we will not be mapping the target values to
-binary classes in the data preprocessing state. The mapping will be done
-after the model is trained, right before model evaluation.
+Since training the RNN model is time-consuming, and we do not have a
+defined classification threshold, we decided to train a regression RNN
+model instead. This way, we do not need to train a separate RNN model
+for each threshold value. Therefore, we did not map the target values to
+binary classes in the data preprocessing state. The mapping was done
+before model evaluation after the model had been trained.
 
 ### RNN Dataset and Dataloader
 
 Depending on the age of the site, the sequence length for each survival
-records varies. For example, for a year 7 survival record, its sequence
-can contain up to 7 years of satellite records (which was recorded every
-16 days in theory). To feed the sequence data into the RNN model, the
-sequence within the same batch needs to have the same sequence length.
-In pytorch, by default, the dataset is shuffled randomly before each
-epoch to improve generalization. However, with such a large variation in
-sequence length, random shuffling will result in excessive padding for
-short sequences. To reduce the amount of padding needed to optimise
-memory usage while still introducing randomness to the data, we created
-a custom pytorch dataset for passing the sequence data to the RNN model.
-This custom dataset class has a associated method that shuffles the
-dataset within their Age group. The idea is that samples of the same age
-is more likely to have a similar sequence length. By shuffling within
-age group, we are able to introduce randomness to the training data,
-while minimizing the padding lengths.
+record varies. For example, for a year 7 survival record, the sequence
+can contain up to 7 years of satellite records (which were recorded
+every 16 days in theory). To feed the sequence data into the RNN model,
+the sequence within the same batch needs to have the same sequence
+length. In pytorch, by default, the dataset is shuffled randomly before
+each epoch to improve generalization. However, with such a large
+variation in sequence length, random shuffling will result in excessive
+padding for short sequences. To reduce the amount of padding needed to
+optimise memory usage while still introducing randomness to the data, we
+created a custom Pytorch dataset for passing the sequence data to the
+RNN model. This custom dataset class has an associated method that
+shuffles the dataset within their Age group. The idea is that samples of
+the same age are more likely to have a similar sequence length. By
+shuffling within their age group, we were able to introduce randomness
+to the training data, while minimizing the padding lengths.
