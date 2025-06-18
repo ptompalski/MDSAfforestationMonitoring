@@ -381,8 +381,8 @@ data_for_RNN_models: time_series_train_data time_series_test_data
 # Variables for RNN Model Pipeline
 # rnn_odel
 INPUT_SIZE ?= 12 
-HIDDEN_SIZE ?= 16
-LINEAR_SIZE ?= 16
+HIDDEN_SIZE ?= 32
+LINEAR_SIZE ?= 32
 SITE_FEATURES_SIZE ?= 4
 RNN_TYPE ?= 
 NUM_LAYERS ?= 1
@@ -393,7 +393,7 @@ RNN_PIPELINE_PATH ?=
 # rnn_training 
 RNN_PIPELINE_PATH ?=
 TRAINED_RNN_OUTPUT_PATH ?=
-LR ?= 0.01
+LR ?= 0.001
 BATCH_SIZE ?= 64
 EPOCHS ?= 10
 PATIENCE ?= 5

@@ -156,7 +156,7 @@ def rnn_get_metrics_by_age(pred_df):
     -----
     - Only results for age groups with available data are included in the output.
     """
-    cols = ['F1 Score', 'F2 Score', 'Precision', 'Recall', 'Accuracy', '% Low Survival Rate', '% High Survival Rate']
+    cols = ['F1 Score', 'F2 Score', 'Precision', 'Recall', 'Accuracy', '% Low Survival Rate', '% High Survival Rate', 'RMSE']
     metrics_age = pd.DataFrame(index=range(1, 8), columns=cols)
     num_rec = []
     conf_matrix_age = {}
