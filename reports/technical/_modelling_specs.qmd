@@ -31,7 +31,7 @@ $$
 \hat p_i = \sigma(\boldsymbol{\beta}_0 + \boldsymbol{\beta}^\top \mathbf{x}_i) = \frac{1}{1 + \exp\left( -(\boldsymbol{\beta}_0 + \boldsymbol{\beta}^\top \mathbf{x}_i) \right)}
 $$ {#eq-sigmoid}
 
-These probabilistic predictions can be converted to binary class labels by applying a specified decision threshold, typically 0.5. Model performance across different thresholds can be evaluated using ROC and precision–recall (PR) curves, which are discussed in @sec-metrics.
+These probabilistic predictions can be converted to binary class labels by applying a specified decision threshold, typically 0.5. Model performance across different thresholds can be evaluated using ROC and precision–recall (PR) curves, which are discussed in @sec-error_metrics.
 
 Overall, logistic regression provides an interpretable, statistically grounded baseline and serves as a proxy for the classical statistical modeling used prior to this analysis. To demonstrate the value of more sophisticated machine learning models in predicting survival rates, any subsequent models should achieve performance that exceeds that of logistic regression.
 
@@ -151,11 +151,11 @@ Cross-validation mitigates the risk of overfitting by simulating model performan
 
 In random search, hyperparameter values are sampled from predefined distributions at each iteration, offering an efficient alternative to grid search, which exhaustively evaluates all combinations of specified values. Although grid search can be effective for low-dimensional hyperparameter spaces, it quickly becomes computationally prohibitive as the number of parameters increases. Accordingly, random search was chosen for its efficiency and scalability in this analysis.
 
-### Sequential Deep Learning Models
+### Sequential Deep Learning Models {#sec-sequential_deep_learning}
 
 While the previously discussed models perform well across a range of supervised learning tasks and provide a strong performance baseline, they are limited by their assumption that each input instance is independent. This assumption is ill-suited to the sequential structure of the vegetation index data in this study, which exhibits temporal dynamics and potential spatial correlations between pixels within sites. To better model these dependencies, the final phase of the analysis employed sequential deep learning architectures based on Recurrent Neural Networks (RNNs), specifically Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU) models. Despite their increased complexity and computational demands, these models are efficiently implemented using modern deep learning libraries in Python, such as PyTorch [@paszke2019pytorch].
 
-#### Recursive Neural Network (RNN)
+#### Recursive Neural Network (RNN) {#sec-rnn}
 
 The simplest deep learning model that supports sequential modelling is the RNN. @fig-rnn outlines the architecture of this model.
 
@@ -169,7 +169,7 @@ $$ {#eq-rnn}
 
 Although the RNN is capable of capturing short term dependencies in sequential data, long-term trends are difficult to capture due to issues of 'vanishing' and 'exploding' gradients during training [@pascanu2013difficultytrainingrecurrentneural]. See @sec-training_deep_learning for further details regarding this.
 
-#### Long-Term Short Term Memory (LSTM)
+#### Long-Term Short Term Memory (LSTM)  {#sec-lstm}
 
 To address the long-term dependency issue regarding RNNs, several models of similar, but more complex architecture have been proposed. One such model is the LSTM, which includes additional weights in the form of **input**, **output**, **cell**, and **forget** gates $(i_t, o_t, g_t, f_t)$ respectively. These gates determine which aspects of the prior hidden state and current input are 'important' for prediction. These gates are used to update the cell state $c_t$, which is then used to update the current hidden state according to the equation:
 
@@ -184,11 +184,11 @@ h_t &= o_t \odot \tanh(c_t)
 \end{aligned}
 $$ {#eq-lstm}
 
-Where $\odot$ represents the Hadamard product (elementwise multiplication of vector entries) and $\sigma$ represents the sigmoid  function introduced in @eq-sigmoid. The cyclical behaviour of the hidden state update helps to control for problematic gradients during training, making the LSTM suitable for many long-term sequential modelling and prediction tasks[@sak2014longshorttermmemorybased]. However, the introducion of several new weight matrices and bias vectors can lead to excessively complex models that take extensive time to train.
+Where $\odot$ represents the Hadamard product (elementwise multiplication of vector entries) and $\sigma$ represents the sigmoid  function introduced in @eq-sigmoid. The cyclical behaviour of the hidden state update helps to control for problematic gradients during training, making the LSTM suitable for many long-term sequential modelling and prediction tasks [@sak2014longshorttermmemorybased]. However, the introducion of several new weight matrices and bias vectors can lead to excessively complex models that take extensive time to train.
 
-#### Gated Recurrent Unit (GRU)
+#### Gated Recurrent Unit (GRU) {#sec-gru}
 
-Like LSTMs, GRUs were developed to handle the vanishing gradient problem of RNNs. However, GRUs only utilize a **reset**,**update**, and **candidate** hidden state gate: $(r_t, z_t, \hat{h_t})$. This allows for a lighter model than the LSTM, often with comparable performance on certain tasks [@Ravanelli_2018]. Hidden states are updated according to the equation:
+Like LSTMs, GRUs were developed to handle the vanishing gradient problem of RNNs. However, GRUs only utilize a **reset**, **update**, and **candidate** hidden state gate: $(r_t, z_t, \hat{h_t})$. This allows for a lighter model than the LSTM, often with comparable performance on certain tasks [@Ravanelli_2018]. Hidden states are updated according to the equation:
 
 $$
 \begin{aligned}
@@ -200,19 +200,19 @@ h_t &= (1 - z_t) \odot \hat{h}_t + z_t \odot h_{t-1}
 $$ {#eq-gru}
 
 
-#### Bidirectional RNNs
+#### Bidirectional RNNs {#sec-bidirectional}
 
 In addition to the usage of GRUs and LSTMs, additional hidden layers that update in reverse sequential direction may also be used to capture more complex, past and future dependencies. The hidden states can then be concatenated and used for prediction, as shown in @fig-rnn_bidirectional.
 
-![A schematic of a bidirectional RNN, where inputs are passed to hidden states in the forward and reverse temporal direction. The produced hidden states can be combined via concatenation, addition, or averaging to produce a final vector to be used for predicion.](../../img/rnn_bidirectional.png){#fig-rnn_bidirectional, width="70%"}
+![A schematic of a bidirectional RNN, where inputs are passed to hidden states in the forward and reverse temporal direction. The produced hidden states can be combined via concatenation, addition, or averaging to produce a final vector to be used for predicion.](../../img/rnn_bidirectional.png){#fig-rnn_bidirectional width="70%"}
 
 In this analysis, including bidirectional layers appeared to slightly improve model performance. See @sec-product_results for further details.
 
-#### Fully Connected Neural Network (FCNN)
+#### Fully Connected Neural Network (FCNN) {#sec-fcnn}
 
-The RNN model produces a hidden state which acts as a vectorization the processed vegetation index sequence. To convert this to a single scalar prediction, a **fully connected neural network (FCNN)** layer can be used. The architecture of this model is shown in @fig-fcnn.
+The RNN model produces a hidden state which acts as a vectorization the processed vegetation index sequence. To convert this to a single scalar prediction, a **Fully Connected Neural Network (FCNN)** layer can be used. The architecture of this model is shown in @fig-fcnn.
 
-![An example of an FCNN of two layers, with a three-dimensional input and one-dimensional output.](../../img/fcnn.png){#fig-fcnn, width="70%"}
+![An example of an FCNN of two layers, with a three-dimensional input and one-dimensional output.](../../img/fcnn.png){#fig-fcnn width="70%"}
 
 Inputs are passed between layers through a linear transformation using weight matrices and bias vectors, wrapped by an activation function to scale outputs and introduce nonlinearity into the system. For example, the first hidden layer $h^{(1)}$ in @fig-fcnn is produced by the transformation:
 
@@ -220,21 +220,23 @@ $$
 h^{(1)} = \text{ReLU}\left(W^{(1)}x + b^{(1)} \right)
 $$
 
-Where $W^{(1)}$ is a 4x3 matrix and $b^{(1)}$ is a vector of length 3, both of which have values that are learned during training. A common activation function is the **Rectifier Linear Unit (ReLU)** which simply has the form:
+Where $W^{(1)}$ is a 4x3 matrix and $b^{(1)}$ is a vector of length 4, both of which have values that are learned during training. A common activation function is the **Rectifier Linear Unit (ReLU)** which simply has the form:
 
 $$
 \text{ReLU}(x) = \text{max}(0,x)
-$$ {eq-relu}
+$$ {#eq-relu}
 
-Although @eq-sigmoid is also a common activation function due to its controlled range of (0,1). 
+Although @eq-sigmoid is also a common activation function due to its controlled range of (0,1). Generally, more hidden layers and higher dimensional hidden layers allow for higher performing models, at the cost of model complexity and training time.
 
-#### Final Model architecture
+#### Proposed Model Architecture
 
--   time series into GRU or LSTM
--   concatenate with site features and pass to FCNN
--   FCNN output goes to sigmoid function \* 100 to predict survival rate
--   Dropout Rate before prediction, show paper for evidence of improvement
--   hidden layers size, size of hidden state, all hyperparameters
+Following preprocessing (@sec-data_prep), the deep learning pipeline —comprising components from @sec-lstm through @sec-fcnn— proceeds as follows:
+
+1. The sequence of vegetation indices and engineered features is passed through a bidirectional GRU or LSTM, producing a hidden state.
+2. The static site features are concatenated onto the hidden state vector and passed to a multilayer FCNN.
+3. The final layer of the FCNN output is a scalar, which is passed through a sigmoid activation and multiplied by 100 to produce an estimate of the survival rate of the site pixel.
+
+In addition to these steps, **layer normalization** -which normalizes hidden layer output as a method of stabilizing predictions- was experimented with, although no improvement to predictions was observed. **Dropout** -which randomly sets some parameter values to zero as a method of regularization- was also added within the FCNN layers. Modelling was attemped with and without site features to assess their usage in predicting survival rate. Hidden state and hidden layer sizes, and the number of hidden layers are all variable hyperparameters than may effect model performance [@7508408].
 
 ### Training Deep Learning Models {#sec-training_deep_learning}
 
