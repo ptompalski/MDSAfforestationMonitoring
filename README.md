@@ -17,7 +17,13 @@ Ensure Quarto CLI is installed. For installation instructions, visit [Quarto Get
 To generate the proposal report, execute the following command in your terminal:
 
 ```bash
-quarto render reports/proposal/report.qmd
+quarto render reports/proposal/report.qmd --to pdf
+```
+
+To generate the technical report, execute the following command in your terminal:
+
+```bash
+quarto render reports/technical/report.qmd --to pdf
 ```
 
 ## Quick Start
