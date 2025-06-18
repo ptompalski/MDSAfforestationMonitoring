@@ -109,6 +109,28 @@ $$
 
 Where $K$ is the total number of iterations of the algorithm.
 
+### Feature Selection Methods
+
+To address collinearity among vegetation indices and evaluate the importance of both site-based and remote sensing features, we applied three feature selection methods:
+
+#### Permutation Importance
+
+We estimate each feature's importance by randomly shuffling its values across samples before training, then measuring the resulting change in the model’s performance ($F_1$ score; see @sec-error_metrics). This yields an interpretable, global importance metric. However, when predictors are highly correlated, it can misattribute importance—because different features may serve as proxies for one another—leading to misleading rankings [@scikit-learn].
+
+#### SHAP Values
+
+SHAP (SHapley Additive exPlanations) return per-prediction feature contributions based on Shapley values from cooperative game theory [@NIPS2017_7062]. Concretely:
+
+1. A baseline expectation is defined (e.g., the average model output when no features are known).  
+2. For each feature, all possible subsets of features including and excluding that feature are considered, and the marginal contribution is averaged.  
+3. Taking the mean absolute SHAP values across all samples yields a global importance ranking.
+
+This method provides both local (per-prediction) and global interpretability. However, SHAP may tacitly distribute credit among highly correlated features—sometimes giving a near-zero or inflated value to one feature over another—depending on whether the model uses marginal or conditional expectations when computing the baseline.
+
+#### Recursive Feature Elimination with Cross‑Validation (RFECV)
+
+Finally, RFECV is used to iteratively train the model and remove the least important features based on model-derived importance metrics (e.g., coefficients or feature gains). Each reduced feature subset was evaluated by its $F_1$ performance using cross-validation (see @sec-cross_val). This method directly handles correlated features by eliminating them if they do not contribute to the model performance, however it can be quite computationally exhaustive. Feature rankings based on how early features were removed are used as importance metrics.
+
 ### Training and Tuning Classical Models
 
 Most machine learning models involve a set of hyperparameters—values specified *a priori*—that govern model complexity and influence training behavior. Inappropriate hyperparameter choices can result in models that are either overly biased or unnecessarily complex, leading to poor generalization on unseen data. This section provides a detailed overview of the key hyperparameters for each candidate model in this analysis, along with the methodology used for their selection.
@@ -141,7 +163,7 @@ Generally, model performance varies logarithmically with $\lambda$, therefore it
 
 Nonparametric models such as Random Forest do not incorporate explicit regularization terms. Instead, they are controlled through structural hyperparameters that constrain model complexity. As discussed in @sec-tree_models, **maximum depth** is a key hyperparameter that limits the number of hierarchical decision rules in each tree, thereby directly affecting overfitting. Additional parameters—such as the **minimum number of samples per leaf**, the **cost-complexity pruning parameter** ($\alpha$), and the **number of estimators** (trees)—can also be tuned to control generalization error [@scikit-learn]. However, to reduce computational cost and simplify the tuning process, only maximum depth and the number of estimators were optimized in this analysis.
 
-#### Random Search Cross-Validation
+#### Random Search Cross-Validation {#sec-cross_val}
 
 Given a candidate model and a set of tunable hyperparameters, an optimization problem naturally arises: which hyperparameter configuration yields the best model performance? To address this, the present analysis employed random search cross-validation to tune hyperparameters. The process is illustrated in @fig-cross_validation.
 
