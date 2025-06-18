@@ -346,6 +346,8 @@ Our ROC curves as shown in @fig-roc-curve appear more linear rather than hugging
 #| fig-cap: "ROC curves for each of model across different thresholds"
 #| fig-pos: "H"
 #| fig-align: center
+#| fig-width: 4
+#| fig-height: 4
 
 roc_dfs = []
 
@@ -364,10 +366,13 @@ roc_plot = alt.Chart(roc_df).mark_line().encode(
     x=alt.X('False Positive Rate:Q'),
     y=alt.Y('True Positive Rate:Q'),
     color=alt.Color('Threshold:O',sort=['50%','60%','70%','80%'],scale=alt.Scale(scheme='greens'))
+).properties(
+    width=200,   # Width of each facet
+    height=200
 ).facet(
     column=alt.Column('Model:N', title='ROC Curves')
 ).configure_view(
-    strokeWidth=0  # Removes the border around each facet
+    strokeWidth=0
 ).configure_header(
     titleFontSize=20,  # Size of the facet title
 )
@@ -384,6 +389,9 @@ Confusion matrices as illustrated in @fig-confusion-matrix reaveals how our clas
 #| fig-cap: "Confusion matrices for each model across different thresholds"
 #| fig-pos: "H"
 #| fig-align: center
+#| fig-width: 4
+#| fig-height: 4
+
 
 conf_matrix_dfs = []
 
@@ -401,9 +409,6 @@ heatmap = alt.Chart(conf_matrix_df).mark_rect().encode(
     x=alt.X('Predicted:N', title='',axis=alt.Axis(labelAngle=0)),
     y=alt.Y('True:N', title=''),
     color=alt.Color('Count:Q', scale=alt.Scale(scheme='greens'),legend=None),
-).properties(
-    width=200,
-    height=200
 )
 
 text = alt.Chart(conf_matrix_df).mark_text(baseline='middle').encode(
@@ -411,17 +416,23 @@ text = alt.Chart(conf_matrix_df).mark_text(baseline='middle').encode(
     y='True:N',
     text='Count:Q'
 ).properties(
-    width=200,
-    height=200
+    width=100,
+    height=100
 )
 
-conf_mat_plot = (heatmap+text).facet(
+conf_mat_plot = (heatmap+text).properties(
+    width=110,   # Width of each facet
+    height=110
+).facet(
     row=alt.Row('Model:N',title='',header=alt.Header(labelAngle=0,labelPadding=7,labelOrient='right')),
     column=alt.Column('Threshold:O',sort=['50%','60%','70%','80%'],title='Confusion Matrices')
 ).configure_view(
     strokeWidth=0  # Removes the border around each facet
 ).configure_header(
     titleFontSize=20,  # Size of the facet title
+).configure_axis(
+    labelFontSize=8,    # Axis tick labels
+    titleFontSize=12
 )
 
 conf_mat_plot
@@ -507,8 +518,8 @@ def plot_residual(threshold, file_list):
         y=alt.Y('Residual:Q', title='Residual'),
         color=alt.Color('Model:N', legend=None)
     ).properties(
-        width=250,
-        height=300).facet(
+        width=200,
+        height=200).facet(
         row=alt.Row('Model:N', title='', header=alt.Header(
             labelAngle=0, labelPadding=7, labelOrient='right', labelFontSize=15)),
         column=alt.Column('Features:O', sort=[
@@ -613,10 +624,53 @@ The table highlights the F1 Scores for LSTM and GRU models using Site + Satellit
 
 ```{python}
 #| echo: false
+#| label: tbl-lstm-no-site-scores
+#| tbl-cap: "Scores for LSTM model without site features"
 
-#| fig-pos: "H"
-#| fig-align: center
-print('Placeholder for evaluation metrics table')
+metrics_no_site, metrics_site = [], []
+for threshold in [50, 60, 70, 80]:
+    with open(f'../../results/{threshold}/lstm_no_site.pkl', 'rb') as f:
+        data = pickle.load(f)
+        metrics_no_site.append(data['error_metrics_overall'])
+df_lstm_no_site = pd.DataFrame(metrics_no_site, index=['50%', '60%', '70%', '80%'])
+for threshold in [50, 60, 70, 80]:
+    with open(f'../../results/{threshold}/lstm_site.pkl', 'rb') as f:
+        data = pickle.load(f)
+        metrics_site.append(data['error_metrics_overall'])
+df_lstm_site = pd.DataFrame(metrics_site, index=['50%', '60%', '70%', '80%'])
+display(df_lstm_no_site.drop(columns=df_lstm_no_site.columns[-3:]))
+```
+
+```{python}
+#| echo: false
+#| label: tbl-lstm-site-scores
+#| tbl-cap: "Scores for LSTM model with site features"
+display(df_lstm_site.drop(columns=df_lstm_site.columns[-3:]))
+```
+
+```{python}
+#| echo: false
+#| label: tbl-gru-no-site-scores
+#| tbl-cap: "Scores for GRU model without site features"
+
+metrics_no_site, metrics_site = [], []
+for threshold in [50, 60, 70, 80]:
+    with open(f'../../results/{threshold}/gru_no_site.pkl', 'rb') as f:
+        data = pickle.load(f)
+        metrics_no_site.append(data['error_metrics_overall'])
+df_gru_no_site = pd.DataFrame(metrics_no_site, index=['50%', '60%', '70%', '80%'])
+for threshold in [50, 60, 70, 80]:
+    with open(f'../../results/{threshold}/gru_site.pkl', 'rb') as f:
+        data = pickle.load(f)
+        metrics_site.append(data['error_metrics_overall'])
+df_gru_site = pd.DataFrame(metrics_site, index=['50%', '60%', '70%', '80%'])
+display(df_gru_no_site.drop(columns=df_gru_no_site.columns[-3:]))
+```
+```{python}
+#| echo: false
+#| label: tbl-gru-site-scores
+#| tbl-cap: "Scores for GRU model with site features"
+display(df_gru_site.drop(columns=df_lstm_site.columns[-3:]))
 ```
 
 
