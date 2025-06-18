@@ -66,9 +66,11 @@ approaches:
     Our current field-measured survival rates are recorded only at the
     site level, while satellite data is available at the pixel level. To
     improve the precision of our training targets, we recommend
-    collecting or estimating survival rates at a finer spatial
-    resolution—ideally at the pixel or sub-site level. This would allow
-    models to learn localized vegetation dynamics.
+    collecting survival rates at a finer spatial
+    resolution—ideally at the pixel or sub-site level. When combined
+    with high resolution satellite data, this would allow models to
+    learn localized vegetation dynamics more efficiently, improving
+    model accuracy.s
 
 3.  **Obtaining Annual Survival Records**
 
