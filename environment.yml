@@ -18,6 +18,7 @@ dependencies:
   - tqdm=4.67.1
   - shap=0.47.2
   - pytorch=2.7.0
+  - missingno=0.5.2
   - pip
   - pip:
       - altair-ally==0.1.1
