@@ -1,23 +1,77 @@
-We developed a fully reproducible pipeline covering:
+### Limitations
 
-1. **Data Ingestion & Preparation**  
-   - Loaded raw RDS rasters and planting/survey tables via `load_data.py`.  
-   - Cleaned static features (`preprocess_features.py`) and extracted per-site time series (`pivot_data.py`).  
-   - Created consistent train/test datasets with `data_split.py`.
+Despite exploring both classical modeling and RNN modeling approaches,
+all our models failed to deliver satisfactory results for predicting
+tree survival rates. Here are the key limitations of our modeling
+approaches:
 
-2. **Model Development & Benchmarking**  
-   - Phase 1: Trained and compared classical classifiers (Logistic Regression, Random Forest, XGBoost) using fixed-length features.  
-   - Phase 2: Trained GRU and LSTM networks on temporal sequences, demonstrating the benefit of sequence data.
+1.  **Data Imbalance**
 
-3. **Evaluation & Results Interpretation**  
-   - Employed grouped 5-fold CV to avoid spatial leakage, optimized F1 for model selection, and reported Precision, Recall, F1, and AUC on held-out data.  
-   - XGBoost emerged as the top static model; GRU showed promise for temporal modeling.
+    Our data distribution was highly imbalanced, with the target values
+    skewed heavily towards high survival rates. We believe this is the leading cause for the biased predictions
+    across all of our models. 
 
-4. **Operational Recommendations**  
-   - **Use XGBoost models as a reference** for identifying high-risk sites, rather than for direct operational deployment.  
-   - **Explore GRU models** as proof-of-concept for temporal analysis, acknowledging their current performance limitations.  
-   - **Treat all model outputs as advisory** insights; validate predictions with local surveys before taking field action.  
-   - **Enhance data** through expanded Year-7 surveys and new covariates (soil, LiDAR).  
-   - **Automate retraining** via Makefile and CI to adapt to new data.
+2.  **Loss of Temporal Information in Classical Models**
 
-By integrating data engineering, machine learning, and reproducible DevOps practices, this workflow provides a scalable tool for early afforestation monitoring and resource prioritization.
+    Our classical models fail to capture complex temporal structures in the
+    satellite data.  By averaging the satellite data over time, we were losing a lot of
+    vital information, including seasonal variations and short-term
+    vegetation responses.
+
+3.  **Lack of Spatial Information in RNN Models**
+
+    Our RNN model lacks the ability to model spatial relationships between
+    pixels. Each pixel is processed independently, ignoring spatial
+    context within the same site. Neighboring pixels often share similar
+    micro-climate and environmental conditions, without spatial data, 
+    our model may overlook key spatial dependencies that influence vegetation response.
+
+4.  **Misleading Target Labels**
+
+    While our models were predicting at pixel level, survival records
+    were recorded at site level and assigned uniformly to each pixel
+    within a site. As a result, ‘healthy’ pixels and ‘unhealthy’ pixels are assigned
+    identical targets labels, potentially misleading the model during
+    training.
+
+### Recommendations
+
+1.  **Using Higher Resolution Satellite and Survey Data**
+
+    Using higher-resolution satellite and field-survey data may help capture finer details and
+    spatial variations between pixels of the a site,
+    improving model performance. 
+
+2.  **Obtaining Annual Survival Records**
+
+    Acquiring additional training data with complete annual
+    survival rate records would substantially enhance the dataset’s
+    temporal resolution and modeling potential.
+
+3.  **Modeling at Site Level**
+
+    Since survival records are measured at site level, we recommend that 
+    future models should aggregate satellite information across all pixels 
+    within a site, making predictions per site rather than per pixel.
+
+4.  **Incorporating Spatial Data**
+
+    We suggest incorporating spatial data such as GPS coordinates to the
+    current dataset, allowing the model to capture spatial
+    correlations across sites and pixels.
+
+5.  **CNN-LSTM model**
+
+    Alternatively, we suggest using raw satellite imagery instead of
+    pre-extracted spectral indices. Using satellite image directly allow us 
+    to utilize convolutional architectures to learn spatial patterns, 
+    potentially improving model performance.
+
+    We propose exploring a CNN-LSTM architecture as a next step. In this
+    hybrid approach, the satellite image for each site will first passed through a
+    CNN to extract spatial features. The CNN outputs at each time step is then 
+    fed into an LSTM or GRU to capture temporal patterns.
+    The final hidden state can be passed through fully connected layers
+    to predict the survival rate for the entire site. This architecture
+    naturally accommodates both spatial and temporal dependencies,
+    addressing key shortcomings of our current models.
