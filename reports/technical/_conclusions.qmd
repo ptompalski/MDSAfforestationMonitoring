@@ -45,7 +45,12 @@ approaches:
     spectral responses within the same site vary significantly. As a
     result, ‘healthy’ pixels and ‘unhealthy’ pixels are assigned
     identical targets labels, potentially confusing the model during
-    training.
+    training. This spatial mismatch creates ambiguity: each pixel within
+    a site is assigned the same survival rate, regardless of local
+    conditions or spectral responses. This not only introduces label
+    noise but may also mislead the model during training, especially
+    when individual pixels exhibit vegetation signals inconsistent with
+    the site-level outcome.
 
 ### Recommendations
 
@@ -54,10 +59,20 @@ approaches:
     The current satellite data has a resolution of 30m x 30m. Using
     higher-resolution satellite data may help capture finer details and
     spatial variations between pixels of the a site, potentially
-    improving model performance. Currently the Sentinel-2 satellite
-    offers 10m x 10m resolution.
+    improving model performance.
 
-2.  **Obtaining Annual Survival Records**
+2.  **Obtaining Higher Resolution Field Survival Records**
+
+    Our current field-measured survival rates are recorded only at the
+    site level, while satellite data is available at the pixel level. To
+    improve the precision of our training targets, we recommend
+    collecting or estimating survival rates at a finer spatial
+    resolution—ideally at the pixel or sub-site level. When combined
+    with high resolution satellite data, this would allow models to
+    learn localized vegetation dynamics more efficiently, improving
+    model accuracy.s
+
+3.  **Obtaining Annual Survival Records**
 
     For current dataset, most sites only have 3 (Year 1, 2, 5) survival
     rate records. Imputing these records could improve the temporal
@@ -67,21 +82,21 @@ approaches:
     survival rate records would substantially enhance the dataset’s
     temporal resolution and modeling potential.
 
-3.  **Modeling at Site Level**
+4.  **Modeling at Site Level**
 
     Given the mismatch spatial resolution of the survey data and
     satellite data, we recommend that future models should aggregate
     satellite information across all pixels within a site and making
     predictions per site rather than per pixel.
 
-4.  **Incorporating Spatial Data**
+5.  **Incorporating Spatial Data**
 
     Currently, our dataset does not have any spatial information. We
     suggest incorporating spatial data such as GPS coordinates to the
     current dataset. This would allow the model to capture spatial
     correlations across sites and pixels.
 
-5.  **CNN-LSTM model**
+6.  **CNN-LSTM model**
 
     Alternatively, we suggest using raw satellite imagery instead of
     pre-extracted spectral indices. Using satellite image directly would

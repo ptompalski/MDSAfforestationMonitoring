@@ -180,7 +180,7 @@ outlined below:
 
     -   **Missing Spectral Data**
 
-        As shown in @fig-missing, some rows were missing spectral data.
+        The missingness plot (@fig-missing) suggest that some spectral data were missing from the dataset.
         These rows were removed from the data.
 
     -   **Pre-Plantation** **Satellite Data**
