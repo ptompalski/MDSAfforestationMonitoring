@@ -228,35 +228,73 @@ $$ {#eq-relu}
 
 Although @eq-sigmoid is also a common activation function due to its controlled range of (0,1). Generally, more hidden layers and higher dimensional hidden layers allow for higher performing models, at the cost of model complexity and training time.
 
-#### Proposed Model Architecture
+#### Proposed Model Architecture {#sec-model_architecture}
 
 Following preprocessing (@sec-data_prep), the deep learning pipeline —comprising components from @sec-lstm through @sec-fcnn— proceeds as follows:
 
 1. The sequence of vegetation indices and engineered features is passed through a bidirectional GRU or LSTM, producing a hidden state.
 2. The static site features are concatenated onto the hidden state vector and passed to a multilayer FCNN.
-3. The final layer of the FCNN output is a scalar, which is passed through a sigmoid activation and multiplied by 100 to produce an estimate of the survival rate of the site pixel.
+3. The final layer of the FCNN output is a scalar, which is passed through a sigmoid activation and multiplied by 100 to produce an estimate of the survival rate of the site pixel. 
 
 In addition to these steps, **layer normalization** -which normalizes hidden layer output as a method of stabilizing predictions- was experimented with, although no improvement to predictions was observed. **Dropout** -which randomly sets some parameter values to zero as a method of regularization- was also added within the FCNN layers. Modelling was attemped with and without site features to assess their usage in predicting survival rate. Hidden state and hidden layer sizes, and the number of hidden layers are all variable hyperparameters than may effect model performance [@7508408].
 
 ### Training Deep Learning Models {#sec-training_deep_learning}
 
--   Loss Function: MSE
--   Compute gradient of loss WRT to each parameter in model
--   Show equation for FCCN params
--   show time dependence for sequential parts
--   Show gradient descent equation for updating parameters
--   Mini-batch: Compute gradients on subsets of data per update step to reduce computational load
--   Repeat over succcessive epochs (epoch = 1 run through of data)
+Training relied on mini-batch stochastic gradient descent (SGD)—specifically the Adam optimizer, which combines momentum and adaptive learning rates. Gradients of model parameters are computed via backpropagation (chain rule) and updated in the direction opposite to the gradient, scaled by the learning rate. Mini-batch SGD, using shuffled subsets of training data, was employed to improve convergence speed and generalization.
+
+Deep or recurrent architectures (e.g., long sequences or many layers) can suffer **vanishing gradients**, where gradient magnitudes shrink exponentially, or **exploding gradients**, where they grow uncontrollably—both impeding effective training. To mitigate these, we applied regularization techniques from @sec-model_architecture (e.g., dropout, layer normalization) and utilized GRU/LSTM architectures designed to ease gradient propagation. 
+
+Training used the **Mean Squared Error (MSE)** loss:
+
+$$
+\mathcal{L}_{MSE} = \frac{1}{N}\sum_{i=1}^{N} (y_i - \hat{y}_i)^2
+$$
+
+where $y_i$ and $\hat y_i$ are true and predicted survival rates. MSE is appropriate for continuous targets -especially when additional penalization of drastic errors is reqiured- however this introduced a methodological discrepancy between this phase of deep modeling and the classification-oriented baselines, which is addressed in  @sec-error_metrics. Further discussion on transforming targets into binary form appears in @sec-data_prep.
+
 
 ### Error Metrics {#sec-error_metrics}
 
-#### Precision, Recall, $F_{\beta}$ Score
+Model performance was primarily evaluated using $\boldsymbol{F_1}$ score, **precision**, and **recall**, with classification accuracy treated as a secondary metric due to class imbalance favoring high-survival sites. To enable comparison between classical classification models and deep learning regression models, continuous survival rate predictions were thresholded to produce binary labels. In the context of these metrics, **low-survival sites are treated as the positive class**, reflecting the goal of identifying potentially failing afforestation sites for targeted intervention.
 
--   definition of each
--   justification of F1 over other Fbeta and direct accuracy
+#### Precision, Recall, $\boldsymbol{F_\beta}$ Score
+
+The **precision** of a classifier measures the proportion of true positive (TP) predictions among all instances predicted as positive, including both true positives and false positives (FP):
+
+$$
+\text{Precision} = \frac{\sum \text{TP}}{\sum (\text{TP} + \text{FP})}
+$$
+
+In contrast, **recall** (also known as sensitivity or true positive rate) measures the proportion of true positive predictions among all actual positive instances, including false negatives (FN):
+
+$$
+\text{Recall} = \frac{\sum \text{TP}}{\sum (\text{TP} + \text{FN})}
+$$
+
+Recall is particularly important in this imbalanced classification task, as it reflects the model's ability to correctly identify **low-survival (high-risk)** afforestation sites—those most in need of intervention.
+
+To balance both precision and recall in a single metric, the **$F_\beta$ score** is used, defined as the weighted harmonic mean:
+
+$$
+F_\beta = (1 + \beta^2) \cdot \frac{\text{Precision} \cdot \text{Recall}}{(\beta^2 \cdot \text{Precision}) + \text{Recall}}
+$$
+
+Larger values of $\beta$ emphasize recall more heavily. This analysis primarily used the **$F_1$ score** ($\beta = 1$), which equally weights precision and recall, and also reported the **$F_2$ score** as a secondary metric to emphasize recall in support of the primary goal of detecting unhealthy sites.
 
 #### ROC and PR Curves
 
--   define TPR, FPR, and curves
--   AUROC, AUC to measure model performance
--   reference curves in results
+To evaluate classifier performance across a range of decision thresholds, two widely used diagnostic tools are the **Receiver Operating Characteristic (ROC) curve** and the **Precision–Recall (PR) curve**.
+
+The **ROC curve** plots the **true positive rate** (recall) against the **false positive rate** (FPR) at various classification thresholds:
+
+$$
+\text{TPR} = \frac{TP}{TP + FN}, \qquad \text{FPR} = \frac{FP}{FP + TN}
+$$
+
+It summarizes a model’s ability to distinguish between the positive and negative classes, regardless of their prevalence. **Note:** this treshold is intrinstic to the probabilistic predictions of the model, and is **not** the same threshold used in the preprocessing target conversion.
+
+The **area under the ROC curve (AUC-ROC)** provides a scalar summary of this performance; a value of 1 indicates perfect separation, while 0.5 indicates no discriminative ability.
+
+ROC curves can be misleading in **imbalanced classification problems**, where the majority class dominates performance metrics. In this analysis, most afforestation sites exhibit **high survival**, so the model may appear to perform well overall even if it fails to identify the few low-survival sites of interest.
+The **Precision–Recall (PR) curve** more directly reflects performance on the **minority (positive) class**, which in this case is defined as **low-survival** sites.
+This curve focuses on the trade-off between **false positives** and **false negatives** when trying to identify high-risk sites. The **area under the PR curve (AUC-PR)** is more informative than AUC-ROC in this context because it penalizes false positives more explicitly and does not assume a balanced label distribution.
