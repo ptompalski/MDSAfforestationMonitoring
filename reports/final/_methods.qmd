@@ -5,19 +5,19 @@
 
 #### Logistic Regression
 
-Logistic regression is a generalized linear model widely used for binary classification tasks, valued for its simplicity and interpretability. It models the **log-odds** of the probability, or the **logit** that a given record belongs to class 1 as a linear combination of the input features [@enwiki:logreg]. It provides a statistically grounded baseline and serves as a proxy for the classical statistical modeling used prior to this analysis. To demonstrate the value of more sophisticated machine learning models in predicting survival rates, subsequent models were expected to achieve performance exceeding that of logistic regression.
+Logistic regression is a generalized linear model widely used for binary classification tasks, valued for its simplicity and interpretability. It provides a statistically grounded baseline and serves as a proxy for the classical statistical modeling used prior to this analysis. To demonstrate the value of more sophisticated machine learning models in predicting survival rates, subsequent models were expected to achieve performance exceeding that of logistic regression.
 
 #### Random Forest
 
-The Random Forest model is an aggregate model composed of many decision trees, each trained on a bootstrapped subset of the training data and a randomly selected subset of the features. Although training Random Forests can be computationally intensive, each tree is trained independently, enabling efficient parallelization and scalability. Previous studies from @bergmuller2022predicting, have demonstrated that Random Forests perform well when using vegetation indices to predict canopy tree mortality. Becuase of this, this model was selected as a candidate for the present analysis.
+The Random Forest model is an aggregate model composed of many decision trees, each trained on a bootstrapped subset of the training data and a randomly selected subset of the features. Although training Random Forests can be computationally intensive, each tree is trained independently, enabling efficient parallelization and scalability. Previous studies from @bergmuller2022predicting have demonstrated that Random Forests perform well when using vegetation indices to predict canopy tree mortality. Becuase of this, this model was selected as a candidate for the present analysis.
 
 #### Gradient Boosting
 
-The Gradient Boosting model is a popular model that exists in a collection of 'boosting' models, which -unlike Random Forests- consists of a sequence of underfit and biased 'weak learner' models which converge to a high-performing 'strong learner' model when combined [@zhou2025ensemble]. This model was selected as a candidate model due to strong performance across a wide variety of machine learning tasks; in particular, the implementation offered by the XGBoost library offers optimized training and additional regularization methods [@xgboost].
+The Gradient Boosting model is a popular model that exists in a collection of 'boosting' models, which -unlike Random Forests- consists of a sequence of underfit and biased 'weak learner' models which converge to a high-performing 'strong learner' model when combined [@zhou2025ensemble] by training on the errors of previous iterations. This model was selected as a candidate model due to strong performance across a wide variety of machine learning tasks; in particular, the implementation offered by the XGBoost library offers optimized training and additional regularization methods [@xgboost].
 
 #### Feature Selection
 
-To address collinearity among vegetation indices and evaluate the importance of both site-based and remote sensing features,  three feature selection methods were applied prior to tuning.
+To address collinearity among vegetation indices and evaluate the importance of both site-based and remote sensing features,  three feature selection methods were applied prior to tuning. Each of the methods vary in interpretabilty and handling of collinearity, and were chosen to compensate for eachother's disadvantages in this regard.
 
 ##### Permutation Importance
 
@@ -47,7 +47,9 @@ Following preprocessing, the deep learning pipeline proceeds as follows:
 2. The static site features are concatenated onto the hidden state vector and passed to a multilayer FCNN.
 3. The final layer of the FCNN output is a scalar, which is passed through a sigmoid activation and multiplied by 100 to produce an estimate of the survival rate of the site pixel. 
 
-In addition to these steps, **layer normalization** was experimented with, although no improvement to predictions was observed. **Dropout** was also added within the FCNN layers. Bidirectionality was added later in he analysis, as doing so seemed to generally increase performance by decreasing overfitting. Modelling was attemped with and without site features to assess their usage in predicting survival rate. Hidden state and hidden layer sizes, and the number of hidden layers are all variable hyperparameters than may effect model performance [@7508408], however model performance seemed to 'plateau' after a certain degree of model complexity. For example, increasing the hidden state size beyond 32 did not increase prediction accuracy, nor did increasing hidden state layers beyond 3. Initally, prediction output was constrained to [0,100] using a simple 'clamp' function, but it was found that a smoother, scaled sigmoid actvation produced more consistent predictions. 
+In addition to these steps, **layer normalization** was experimented with, although no improvement to predictions was observed. **Dropout** was also added within the FCNN layers, decreasing overfitting. Bidirectionality was added later in he analysis, as doing so seemed to generally increase performance by decreasing overfitting. Modelling was attemped with and without site features to assess their usage in predicting survival rate. Initally, prediction output was constrained to [0,100] using a simple 'clamp' function, but it was found that a smoother, scaled sigmoid actvation produced more consistent predictions. 
+
+Hidden state and hidden layer sizes, and the number of hidden layers are all variable hyperparameters than may effect model performance [@7508408], however model performance seemed to 'plateau' after a certain degree of model complexity. For example, increasing the hidden state size beyond 32 did not increase prediction accuracy, nor did increasing hidden state layers beyond 3. 
 
 ### Evaluation Metrics
 
