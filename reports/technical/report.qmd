@@ -38,9 +38,9 @@ format:
 
 {{< include _data_prep.qmd >}}
 
-##  Methods {#sec-methods}
+##  Modelling Specifications {#sec-modelling_specs}
 
-{{< include _methods.qmd >}}
+{{< include _modelling_specs.qmd >}}
 
 ##  Data Product & Results {#sec-product_results}
 
