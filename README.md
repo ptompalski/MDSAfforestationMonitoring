@@ -20,6 +20,12 @@ To generate the proposal report, execute the following command in your terminal:
 quarto render reports/proposal/report.qmd
 ```
 
+To generate the technical report, execute the following command in your terminal:
+
+```bash
+quarto render reports/technical/report.qmd
+```
+
 ## Quick Start
 
 To quickly get started with the project, you can refer to the notebook [`Data Product Quick Start`](./notebooks/data_product_quickstart.ipynb). This notebook provides a step-by-step guide on how to set up the environment, run the scripts, and visualize the results.
