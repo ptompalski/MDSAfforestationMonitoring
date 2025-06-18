@@ -1,0 +1,322 @@
+This phase of modeling began with three classical machine learning models: Logistic Regression (as a baseline), Random Forest, and Gradient Boosting Machines. To better capture the temporal structure of the remote sensing time series, two recurrent neural networks—GRU and LSTM—were subsequently developed. This section provides detailed descriptions of each model's architecture and the rationale for their selection. Methods for training, tuning, and evaluating model performance will also be thoroughly outlined.
+
+### Classial Modelling
+
+#### Logistic Regression
+
+Logistic regression is a generalized linear model widely used for binary classification tasks, valued for its simplicity and interpretability. It models the **log-odds** of the probability, or the **logit** that a given record belongs to class 1 as a linear combination of the input features [@enwiki:logreg]:
+
+$$
+\log\left( \frac{p}{1 - p} \right) = \boldsymbol{\beta}_0 + \boldsymbol{\beta}^\top \mathbf{x}_i,
+\quad i = 1, \dots, n
+$$ {#eq-logit}
+
+Here,
+
+-   $n$ denotes the sample size,\
+-   $\mathbf{x}_i = [x_{i1}, x_{i2}, \dots, x_{iD}]$ is the $D$-dimensional feature vector for the $i$th observation (e.g., site-level features and aggregated vegetation indices),\
+-   $p$ is the probability that the target label $y_i$ corresponds to the high survival class: $p = P(y_i = 1 \mid \mathbf{x}_i)$
+
+The coefficient vector $\boldsymbol{\beta} = [\beta_1, \beta_2, \dots, \beta_D]$ represents the influence of the features on each prediction. The $j$th entry of $\boldsymbol{\beta}$ corresponds to the change in the log-odds associated with a one-unit increase in the $j$th feature, holding all other features constant.
+
+An optimal estimate of $\beta$ is determined by minimizing the **cross-entropy loss**:
+
+$$
+\mathcal{L} = -\frac{1}{n} \sum_{i=1}^{n} \left[ y_i \log(\hat p_i) + (1 - y_i) \log(1 - \hat p_i) \right],
+$$ {#eq-logloss}
+
+Where $\hat p_i$ is the estimated class probability obtained from the inverse of @eq-logit, which can be shown to be the **sigmoid function**:
+
+$$
+\hat p_i = \sigma(\boldsymbol{\beta}_0 + \boldsymbol{\beta}^\top \mathbf{x}_i) = \frac{1}{1 + \exp\left( -(\boldsymbol{\beta}_0 + \boldsymbol{\beta}^\top \mathbf{x}_i) \right)}
+$$ {#eq-sigmoid}
+
+These probabilistic predictions can be converted to binary class labels by applying a specified decision threshold, typically 0.5. Model performance across different thresholds can be evaluated using ROC and precision–recall (PR) curves, which are discussed in @sec-error_metrics.
+
+Overall, logistic regression provides an interpretable, statistically grounded baseline and serves as a proxy for the classical statistical modeling used prior to this analysis. To demonstrate the value of more sophisticated machine learning models in predicting survival rates, any subsequent models should achieve performance that exceeds that of logistic regression.
+
+#### Tree-Based Modelling {#sec-tree_models}
+
+Many high-performing machine learning models are composed of simple, rule-based structures known as decision trees. These models make predictions by recursively partitioning the input dataset into distinct regions based on selected features and threshold values. An example of a decision tree is shown in @fig-decision_tree.
+
+![A simple example of a Decision Tree with a depth of 2. The predictions $Y$ are made by comparing selected features $X_A$ and $X_B$ via comparison with threshold values $T_1$ and $T_2$.](../../img/decision_tree.png){#fig-decision_tree width="70%"}
+
+Each internal node in the tree represents a decision based on a specific feature and a corresponding threshold, and each leaf node corresponds to a unique subset of the data, defined by the path of decision rules leading to it. In binary classification, the majority label of samples in a leaf node is used as the prediction, but for regression, the mean of the target within the leaf node is given. Feature-threshold pairs are selected using a greedy algorithm: starting from the root node, the tree is grown iteratively by choosing the split that most effectively reduces the value of a given loss function. The cross-entropy loss defined in @eq-logloss is commonly used for binary classification tasks; however, Gini impurity is another frequently used criterion [@scikit-learn]. Alternatively, regression loss functions such as MSE can be used for Regression Tree tasks. Tree construction halts either when a leaf node contains only one class (resulting in zero loss for that subset) or when a predefined stopping criterion, such as the maximum depth, is met. See @sec-tree_hparams for guidance on selecting an appropriate maximum tree depth; choosing a higher max depth generally leads to a greater number of decisons and an overall more complex model.
+
+#### Random Forest Classifier
+
+The Random Forest model is an aggregate model composed of many decision trees, each trained on a bootstrapped subset of the training data and a randomly selected subset of the features. Typically, the maximum allowable depth for each tree in a Random Forest is quite high, resulting in individual trees that are often overfitted and exhibit high variance. However, this high variance is mitigated through aggregation: by combining the predictions of many diverse trees, the overall model can generalize effectively to unseen data. For binary classification tasks, the final prediction is determined by majority vote among the individual trees.
+
+Although training Random Forests can be computationally intensive, each tree is trained independently, enabling efficient parallelization and scalability. Previous studies from @bergmuller2022predicting, have demonstrated that Random Forests perform well when using vegetation indices to predict canopy tree mortality. Becuase of this, this model was selected as a candidate for the present analysis.
+
+#### Gradient Boosting Classifier
+
+The Gradient Boosting model is a popular model that exists in a collection of 'boosting' models, which -unlike Random Forests- consists of a sequence of underfit and biased 'weak learner' models which converge to a high-performing 'strong learner' model when combined [@zhou2025ensemble]. This model was selected as a candidate model due to fast implementation and strong performance across a wide variety of machine learning tasks [@xgboost].
+
+Convergence to a strong learner from a series of weak learners is performed by iteratively fitting a regression tree to the errors of the previous model estimate. To understand this, we firt define the per-sample the loss to be the negative of @eq-logloss evaluated for a particular class prediction $\hat p_i$:
+
+$$
+\ell_i(\hat p_i, y_i) = -\left[ y_i \log(\hat p_i) + (1 - y_i) \log(1 - \hat p_i) \right]
+$$ {#eq-persample_loss}
+
+The model outputs raw logit predictions $f_i(\mathbf{x}_i)$, which can be converted to probabilistic predictions via the sigmoid function shown in @eq-sigmoid:
+
+$$
+\hat p_i = \sigma(f_i(\mathbf{x}_i))
+$$
+
+The errors associated to each prediction are quantified by the **gradient** $g_i$ and **Hessian** $h_i$ of the loss with respect to the model estimate:
+
+$$
+g_i = \frac{\partial \ell_i}{\partial f(\mathbf{x}_i)} = \hat{p}_i - y_i\
+$$ {#eq-gradient}
+
+$$
+h_i = \frac{\partial^2 \ell_i}{\partial f(\mathbf{x}_i)^2} = \hat{p}_i (1 - \hat{p}_i)
+$$ {#eq-hessian}
+
+##### Initialization
+
+The model initializes with a constant prediction $f_0$ across all training sample, usually taken as the logit function (ie. the left-hand side of @eq-logit) evaluated over the proportion of samples with label 1:
+
+$$
+f_0 = \log\left( \frac{P(Y=1)}{1 - P(Y=1)} \right)
+$$
+
+##### Update step
+
+To update the model prediction after initialization, a regression tree is fitted with the gradients given by @eq-gradient as the target predictor. Using Newton's method, the output for a particular leaf node $j$ is given by the sum of $g_i$ and $h_i$ for all samples that reach that leaf node.
+
+$$
+\omega_j^{(1)}  = \frac{\sum_{i \in j} g_i}{\sum_{i \in j} h_i}
+$$ {#eq-gbm_weight}
+
+The overall model prediction is then updated:
+
+$$
+f_1(\mathbf{x}_i) = f_0 + \eta \omega_{\mathbf{x}_i}^{(1)}
+$$
+
+Where $\omega_{\mathbf{x}_i}$ denotes the leaf node that sample $\mathbf{x}_i$ is assigned.
+
+Where $\eta$ is a predefined **learning rate** which controls the degree to which each weak learner can make contributions to the overall model estimate. See @sec-tree_hparams for further details.
+
+This update process is repeated iteratively, producing a final estimate of the log-odds which can be converted to a class probability and class labels through the same process as that of the logistic regression model:
+
+$$
+F(\mathbf{x}_i) = f_0 + \eta \sum_{k = 1}^{K} \omega_{\mathbf{x}_i}^{(k)}
+$$
+
+Where $K$ is the total number of iterations of the algorithm.
+
+### Feature Selection Methods
+
+To address collinearity among vegetation indices and evaluate the importance of both site-based and remote sensing features, we applied three feature selection methods:
+
+#### Permutation Importance
+
+We estimate each feature's importance by randomly shuffling its values across samples before training, then measuring the resulting change in the model’s performance ($F_1$ score; see @sec-error_metrics). This yields an interpretable, global importance metric. However, when predictors are highly correlated, it can misattribute importance—because different features may serve as proxies for one another—leading to misleading rankings [@scikit-learn].
+
+#### SHAP Values
+
+SHAP (SHapley Additive exPlanations) return per-prediction feature contributions based on Shapley values from cooperative game theory [@NIPS2017_7062]. Concretely:
+
+1. A baseline expectation is defined (e.g., the average model output when no features are known).  
+2. For each feature, all possible subsets of features including and excluding that feature are considered, and the marginal contribution is averaged.  
+3. Taking the mean absolute SHAP values across all samples yields a global importance ranking.
+
+This method provides both local (per-prediction) and global interpretability. However, SHAP may tacitly distribute credit among highly correlated features—sometimes giving a near-zero or inflated value to one feature over another—depending on whether the model uses marginal or conditional expectations when computing the baseline.
+
+#### Recursive Feature Elimination with Cross‑Validation (RFECV)
+
+Finally, RFECV is used to iteratively train the model and remove the least important features based on model-derived importance metrics (e.g., coefficients or feature gains). Each reduced feature subset was evaluated by its $F_1$ performance using cross-validation (see @sec-cross_val). This method directly handles correlated features by eliminating them if they do not contribute to the model performance, however it can be quite computationally exhaustive. Feature rankings based on how early features were removed are used as importance metrics.
+
+### Training and Tuning Classical Models
+
+Most machine learning models involve a set of hyperparameters—values specified *a priori*—that govern model complexity and influence training behavior. Inappropriate hyperparameter choices can result in models that are either overly biased or unnecessarily complex, leading to poor generalization on unseen data. This section provides a detailed overview of the key hyperparameters for each candidate model in this analysis, along with the methodology used for their selection.
+
+#### Regularization
+
+In general, regularization involves a penalty to the loss function of that is proportional to the magnitude of the model parameters; stronger regularization leads to smaller parameters and more conservative predictions, which often aids in decreasing overfitting and variance. In Logistic Regression, this is implemented through an additional term in @eq-logloss:
+
+$$
+\mathcal{L} = -\frac{1}{n} \sum_{i=1}^{n} \left[ y_i \log(\hat p_i) + (1 - y_i) \log(1 - \hat p_i) \right] + \lambda R(\boldsymbol{\beta})
+$$ {#eq-logloss_reg}
+
+Where $\lambda$ controls the strength of regularization (larger values lead to stronger regularization), and $R(\boldsymbol{\beta})$ is some function of the model parameter magnitude. In $L_1$ regularization, $R(\boldsymbol{\beta}) = \sum_j |\beta_j|$, and for $L_2$ regularization, $R(\boldsymbol{\beta}) = \sum_j (\beta_j)^2$. $L_1$ tends to decrease parameter values to 0 in a linear fashion, whereas $L_2$ causes parameters to asymptotically decrease towards, but never exactly to 0.
+
+In the context of Gradient Boosting with XGBoost, regularization is applied to the loss function in the form:
+
+$$
+\mathcal{L} = -\frac{1}{n} \sum_{i=1}^{n} \left[ y_i \log(\hat p_i) + (1 - y_i) \log(1 - \hat p_i) \right] + \lambda \left( T + R(\boldsymbol{\beta})\right)
+$$ {#eq-logloss_reg_gbm}
+
+Where $T$ is the number of leaves in the tree. Regularization is also applied to the weights directly, via modification of @eq-gbm_weight as implemented by @xgboost:
+
+$$
+\omega_j  = \frac{\sum_{i \in j} g_i}{\sum_{i \in j} h_i + \lambda}
+$$ {#eq-gbm_weight_reg}
+
+Generally, model performance varies logarithmically with $\lambda$, therefore it is advised that test values be sampled on a logarithmic scale when optimizing for performance.
+
+#### Tree Hyperparameters {#sec-tree_hparams}
+
+Nonparametric models such as Random Forest do not incorporate explicit regularization terms. Instead, they are controlled through structural hyperparameters that constrain model complexity. As discussed in @sec-tree_models, **maximum depth** is a key hyperparameter that limits the number of hierarchical decision rules in each tree, thereby directly affecting overfitting. Additional parameters—such as the **minimum number of samples per leaf**, the **cost-complexity pruning parameter** ($\alpha$), and the **number of estimators** (trees)—can also be tuned to control generalization error [@scikit-learn]. However, to reduce computational cost and simplify the tuning process, only maximum depth and the number of estimators were optimized in this analysis.
+
+#### Random Search Cross-Validation {#sec-cross_val}
+
+Given a candidate model and a set of tunable hyperparameters, an optimization problem naturally arises: which hyperparameter configuration yields the best model performance? To address this, the present analysis employed random search cross-validation to tune hyperparameters. The process is illustrated in @fig-cross_validation.
+
+![An example of four-fold cross-validation. A given model with a configuration of hyperparameters is trained four times, each time leaving out one subset of the data as a hold-out validation set. The model is evaluated on the hold-out fold, and the resulting scores are averaged. This process is repeated for multiple hyperparameter configurations. The configuration with the best average score is selected for further evaluation. Many scoring metrics exist depending on the use case and data characteristics; see @sec-error_metrics for details on the metrics used in this analysis.](../../img/cross_validation.png){#fig-cross_validation width="70%"}
+
+Cross-validation mitigates the risk of overfitting by simulating model performance on unseen data through repeated training on subsets of the data while reserving a separate fold for validation. Averaging the resulting scores provides a more realistic estimate of generalization performance than fitting on the entire training set alone.
+
+In random search, hyperparameter values are sampled from predefined distributions at each iteration, offering an efficient alternative to grid search, which exhaustively evaluates all combinations of specified values. Although grid search can be effective for low-dimensional hyperparameter spaces, it quickly becomes computationally prohibitive as the number of parameters increases. Accordingly, random search was chosen for its efficiency and scalability in this analysis.
+
+### Sequential Deep Learning Models {#sec-sequential_deep_learning}
+
+While the previously discussed models perform well across a range of supervised learning tasks and provide a strong performance baseline, they are limited by their assumption that each input instance is independent. This assumption is ill-suited to the sequential structure of the vegetation index data in this study, which exhibits temporal dynamics and potential spatial correlations between pixels within sites. To better model these dependencies, the final phase of the analysis employed sequential deep learning architectures based on Recurrent Neural Networks (RNNs), specifically Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU) models. Despite their increased complexity and computational demands, these models are efficiently implemented using modern deep learning libraries in Python, such as PyTorch [@paszke2019pytorch].
+
+#### Recursive Neural Network (RNN) {#sec-rnn}
+
+The simplest deep learning model that supports sequential modelling is the RNN. @fig-rnn outlines the architecture of this model.
+
+![Basic architecture of a many-to-one RNN. Inputs from a sequence of vectors $(X_1,X_2,...,X_n)$ are taken one-by-one, which updates a hidden state vector $h_i$ according to a linear transformation with a weight matrix $W_{xh}$. As furher inputs are processed, the hidden state recursively updates according to the input as well as the previous hidden state through the weight matrix $W_{hh}$. A many-to-one RNN outputs one prediction $Y$ after the final entry of the sequence is processed.](../../img/rnn.png){#fig-rnn width="70%"}
+
+The key component of the RNN is the **hidden state**, which encodes the 'memory' of previous instances in the sequence. The transformation of the hidden state is governed by weight matrices $W_{hh}$ and $W_{xh}$. Additionally, bias vectors $b_{xh}$ and $b_{hh}$ are included, and the linear transformation is passed through the hyperbolic tangent (tanh) function to introduce nonlinearity. Therefore, the hidden state $h_t$ at time $t$ in the sequence is updated given the previous hidden state $h_{t-1}$ and current sequence entry $x_{t}$ according to the transformation:
+
+$$
+h_t = \text{tanh} \left(x_tW_{xh}^T + b_{xh} + h_{t-1}W_{hh}^T + b_{hh} \right)
+$$ {#eq-rnn}
+
+Although the RNN is capable of capturing short term dependencies in sequential data, long-term trends are difficult to capture due to issues of 'vanishing' and 'exploding' gradients during training [@pascanu2013difficultytrainingrecurrentneural]. See @sec-training_deep_learning for further details regarding this.
+
+#### Long-Term Short Term Memory (LSTM)  {#sec-lstm}
+
+To address the long-term dependency issue regarding RNNs, several models of similar, but more complex architecture have been proposed. One such model is the LSTM, which includes additional weights in the form of **input**, **output**, **cell**, and **forget** gates $(i_t, o_t, g_t, f_t)$ respectively. These gates determine which aspects of the prior hidden state and current input are 'important' for prediction. These gates are used to update the cell state $c_t$, which is then used to update the current hidden state according to the equation:
+
+$$
+\begin{aligned}
+i_t &= \sigma(W_{xi} x_t + b_{xi} + W_{hi} h_{t-1} + b_{hi}) \\
+f_t &= \sigma(W_{xf} x_t + b_{xf} + W_{hf} h_{t-1} + b_{hf}) \\
+g_t &= \tanh(W_{xg} x_t + b_{xg} + W_{hg} h_{t-1} + b_{hg}) \\
+o_t &= \sigma(W_{xo} x_t + b_{xo} + W_{ho} h_{t-1} + b_{ho}) \\
+c_t &= f_t \odot c_{t-1} + i_t \odot g_t \\
+h_t &= o_t \odot \tanh(c_t)
+\end{aligned}
+$$ {#eq-lstm}
+
+Where $\odot$ represents the Hadamard product (elementwise multiplication of vector entries) and $\sigma$ represents the sigmoid  function introduced in @eq-sigmoid. The cyclical behaviour of the hidden state update helps to control for problematic gradients during training, making the LSTM suitable for many long-term sequential modelling and prediction tasks [@sak2014longshorttermmemorybased]. However, the introducion of several new weight matrices and bias vectors can lead to excessively complex models that take extensive time to train.
+
+#### Gated Recurrent Unit (GRU) {#sec-gru}
+
+Like LSTMs, GRUs were developed to handle the vanishing gradient problem of RNNs. However, GRUs only utilize a **reset**, **update**, and **candidate** hidden state gate: $(r_t, z_t, \hat{h_t})$. This allows for a lighter model than the LSTM, often with comparable performance on certain tasks [@Ravanelli_2018]. Hidden states are updated according to the equation:
+
+$$
+\begin{aligned}
+r_t &= \sigma(W_{ir} x_t + b_{ir} + W_{hr} h_{t-1} + b_{hr}) \\
+z_t &= \sigma(W_{iz} x_t + b_{iz} + W_{hz} h_{t-1} + b_{hz}) \\
+\hat{h}_t &= \tanh(W_{in} x_t + b_{in} + r_t \odot (W_{hn} h_{t-1} + b_{hn})) \\
+h_t &= (1 - z_t) \odot \hat{h}_t + z_t \odot h_{t-1}
+\end{aligned}
+$$ {#eq-gru}
+
+
+#### Bidirectional RNNs {#sec-bidirectional}
+
+In addition to the usage of GRUs and LSTMs, additional hidden layers that update in reverse sequential direction may also be used to capture more complex, past and future dependencies. The hidden states can then be concatenated and used for prediction, as shown in @fig-rnn_bidirectional.
+
+![A schematic of a bidirectional RNN, where inputs are passed to hidden states in the forward and reverse temporal direction. The produced hidden states can be combined via concatenation, addition, or averaging to produce a final vector to be used for predicion.](../../img/rnn_bidirectional.png){#fig-rnn_bidirectional width="70%"}
+
+In this analysis, including bidirectional layers appeared to slightly improve model performance. See @sec-product_results for further details.
+
+#### Fully Connected Neural Network (FCNN) {#sec-fcnn}
+
+The RNN model produces a hidden state which acts as a vectorization the processed vegetation index sequence. To convert this to a single scalar prediction, a **Fully Connected Neural Network (FCNN)** layer can be used. The architecture of this model is shown in @fig-fcnn.
+
+![An example of an FCNN of two layers, with a three-dimensional input and one-dimensional output.](../../img/fcnn.png){#fig-fcnn width="70%"}
+
+Inputs are passed between layers through a linear transformation using weight matrices and bias vectors, wrapped by an activation function to scale outputs and introduce nonlinearity into the system. For example, the first hidden layer $h^{(1)}$ in @fig-fcnn is produced by the transformation:
+
+$$
+h^{(1)} = \text{ReLU}\left(W^{(1)}x + b^{(1)} \right)
+$$
+
+Where $W^{(1)}$ is a 4x3 matrix and $b^{(1)}$ is a vector of length 4, both of which have values that are learned during training. A common activation function is the **Rectifier Linear Unit (ReLU)** which simply has the form:
+
+$$
+\text{ReLU}(x) = \text{max}(0,x)
+$$ {#eq-relu}
+
+Although @eq-sigmoid is also a common activation function due to its controlled range of (0,1). Generally, more hidden layers and higher dimensional hidden layers allow for higher performing models, at the cost of model complexity and training time.
+
+#### Proposed Model Architecture {#sec-model_architecture}
+
+Following preprocessing (@sec-data_prep), the deep learning pipeline —comprising components from @sec-lstm through @sec-fcnn— proceeds as follows:
+
+1. The sequence of vegetation indices and engineered features is passed through a bidirectional GRU or LSTM, producing a hidden state.
+2. The static site features are concatenated onto the hidden state vector and passed to a multilayer FCNN.
+3. The final layer of the FCNN output is a scalar, which is passed through a sigmoid activation and multiplied by 100 to produce an estimate of the survival rate of the site pixel. 
+
+In addition to these steps, **layer normalization** -which normalizes hidden layer output as a method of stabilizing predictions- was experimented with, although no improvement to predictions was observed. **Dropout** -which randomly sets some parameter values to zero as a method of regularization- was also added within the FCNN layers. Modelling was attemped with and without site features to assess their usage in predicting survival rate. Hidden state and hidden layer sizes, and the number of hidden layers are all variable hyperparameters than may effect model performance [@7508408].
+
+### Training Deep Learning Models {#sec-training_deep_learning}
+
+Training relied on mini-batch stochastic gradient descent (SGD)—specifically the Adam optimizer, which combines momentum and adaptive learning rates. Gradients of model parameters are computed via backpropagation (chain rule) and updated in the direction opposite to the gradient, scaled by the learning rate. Mini-batch SGD, using shuffled subsets of training data, was employed to improve convergence speed and generalization.
+
+Deep or recurrent architectures (e.g., long sequences or many layers) can suffer **vanishing gradients**, where gradient magnitudes shrink exponentially, or **exploding gradients**, where they grow uncontrollably—both impeding effective training. To mitigate these, we applied regularization techniques from @sec-model_architecture (e.g., dropout, layer normalization) and utilized GRU/LSTM architectures designed to ease gradient propagation. 
+
+Training used the **Mean Squared Error (MSE)** loss:
+
+$$
+\mathcal{L}_{MSE} = \frac{1}{N}\sum_{i=1}^{N} (y_i - \hat{y}_i)^2
+$$
+
+where $y_i$ and $\hat y_i$ are true and predicted survival rates. MSE is appropriate for continuous targets -especially when additional penalization of drastic errors is reqiured- however this introduced a methodological discrepancy between this phase of deep modeling and the classification-oriented baselines, which is addressed in  @sec-error_metrics. Further discussion on transforming targets into binary form appears in @sec-data_prep.
+
+
+### Error Metrics {#sec-error_metrics}
+
+Model performance was primarily evaluated using $\boldsymbol{F_1}$ score, **precision**, and **recall**, with classification accuracy treated as a secondary metric due to class imbalance favoring high-survival sites. To enable comparison between classical classification models and deep learning regression models, continuous survival rate predictions were thresholded to produce binary labels. In the context of these metrics, **low-survival sites are treated as the positive class**, reflecting the goal of identifying potentially failing afforestation sites for targeted intervention.
+
+#### Precision, Recall, $\boldsymbol{F_\beta}$ Score
+
+The **precision** of a classifier measures the proportion of true positive (TP) predictions among all instances predicted as positive, including both true positives and false positives (FP):
+
+$$
+\text{Precision} = \frac{\sum \text{TP}}{\sum (\text{TP} + \text{FP})}
+$$
+
+In contrast, **recall** (also known as sensitivity or true positive rate) measures the proportion of true positive predictions among all actual positive instances, including false negatives (FN):
+
+$$
+\text{Recall} = \frac{\sum \text{TP}}{\sum (\text{TP} + \text{FN})}
+$$
+
+Recall is particularly important in this imbalanced classification task, as it reflects the model's ability to correctly identify **low-survival (high-risk)** afforestation sites—those most in need of intervention.
+
+To balance both precision and recall in a single metric, the **$F_\beta$ score** is used, defined as the weighted harmonic mean:
+
+$$
+F_\beta = (1 + \beta^2) \cdot \frac{\text{Precision} \cdot \text{Recall}}{(\beta^2 \cdot \text{Precision}) + \text{Recall}}
+$$
+
+Larger values of $\beta$ emphasize recall more heavily. This analysis primarily used the **$F_1$ score** ($\beta = 1$), which equally weights precision and recall, and also reported the **$F_2$ score** as a secondary metric to emphasize recall in support of the primary goal of detecting unhealthy sites.
+
+#### ROC and PR Curves
+
+To evaluate classifier performance across a range of decision thresholds, two widely used diagnostic tools are the **Receiver Operating Characteristic (ROC) curve** and the **Precision–Recall (PR) curve**.
+
+The **ROC curve** plots the **true positive rate** (recall) against the **false positive rate** (FPR) at various classification thresholds:
+
+$$
+\text{TPR} = \frac{TP}{TP + FN}, \qquad \text{FPR} = \frac{FP}{FP + TN}
+$$
+
+It summarizes a model’s ability to distinguish between the positive and negative classes, regardless of their prevalence. **Note:** this treshold is intrinstic to the probabilistic predictions of the model, and is **not** the same threshold used in the preprocessing target conversion.
+
+The **area under the ROC curve (AUC-ROC)** provides a scalar summary of this performance; a value of 1 indicates perfect separation, while 0.5 indicates no discriminative ability.
+
+ROC curves can be misleading in **imbalanced classification problems**, where the majority class dominates performance metrics. In this analysis, most afforestation sites exhibit **high survival**, so the model may appear to perform well overall even if it fails to identify the few low-survival sites of interest.
+The **Precision–Recall (PR) curve** more directly reflects performance on the **minority (positive) class**, which in this case is defined as **low-survival** sites.
+This curve focuses on the trade-off between **false positives** and **false negatives** when trying to identify high-risk sites. The **area under the PR curve (AUC-PR)** is more informative than AUC-ROC in this context because it penalizes false positives more explicitly and does not assume a balanced label distribution.
