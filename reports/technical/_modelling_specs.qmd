@@ -175,30 +175,58 @@ To address the long-term dependency issue regarding RNNs, several models of simi
 
 $$
 \begin{aligned}
-i_t &= \sigma(W_{ii} x_t + b_{ii} + W_{hi} h_{t-1} + b_{hi}) \\
-f_t &= \sigma(W_{if} x_t + b_{if} + W_{hf} h_{t-1} + b_{hf}) \\
-g_t &= \tanh(W_{ig} x_t + b_{ig} + W_{hg} h_{t-1} + b_{hg}) \\
-o_t &= \sigma(W_{io} x_t + b_{io} + W_{ho} h_{t-1} + b_{ho}) \\
+i_t &= \sigma(W_{xi} x_t + b_{xi} + W_{hi} h_{t-1} + b_{hi}) \\
+f_t &= \sigma(W_{xf} x_t + b_{xf} + W_{hf} h_{t-1} + b_{hf}) \\
+g_t &= \tanh(W_{xg} x_t + b_{xg} + W_{hg} h_{t-1} + b_{hg}) \\
+o_t &= \sigma(W_{xo} x_t + b_{xo} + W_{ho} h_{t-1} + b_{ho}) \\
 c_t &= f_t \odot c_{t-1} + i_t \odot g_t \\
 h_t &= o_t \odot \tanh(c_t)
 \end{aligned}
 $$ {#eq-lstm}
 
-Where $\odot$ represents the Hadamard product (elementwise multiplication of vector entries) and $\sigma$ represents the sigmoidm function introduced in @eq-sigmoid. The cyclical behaviour of the hidden state update helps to control for problematic gradients during training, making the LSTM suitable for many long-term sequential modelling and prediction tasks [@sak2014longshorttermmemorybased].
+Where $\odot$ represents the Hadamard product (elementwise multiplication of vector entries) and $\sigma$ represents the sigmoid  function introduced in @eq-sigmoid. The cyclical behaviour of the hidden state update helps to control for problematic gradients during training, making the LSTM suitable for many long-term sequential modelling and prediction tasks[@sak2014longshorttermmemorybased]. However, the introducion of several new weight matrices and bias vectors can lead to excessively complex models that take extensive time to train.
 
 #### Gated Recurrent Unit (GRU)
 
--   Simplified form of LSTM, one combined gate for forget and keep
--   Show equation for updating hidden state with image of cell
+Like LSTMs, GRUs were developed to handle the vanishing gradient problem of RNNs. However, GRUs only utilize a **reset**,**update**, and **candidate** hidden state gate: $(r_t, z_t, \hat{h_t})$. This allows for a lighter model than the LSTM, often with comparable performance on certain tasks [@Ravanelli_2018]. Hidden states are updated according to the equation:
+
+$$
+\begin{aligned}
+r_t &= \sigma(W_{ir} x_t + b_{ir} + W_{hr} h_{t-1} + b_{hr}) \\
+z_t &= \sigma(W_{iz} x_t + b_{iz} + W_{hz} h_{t-1} + b_{hz}) \\
+\hat{h}_t &= \tanh(W_{in} x_t + b_{in} + r_t \odot (W_{hn} h_{t-1} + b_{hn})) \\
+h_t &= (1 - z_t) \odot \hat{h}_t + z_t \odot h_{t-1}
+\end{aligned}
+$$ {#eq-gru}
+
 
 #### Bidirectional RNNs
 
--   Add concatenated backward layer for encoding time in both directions
+In addition to the usage of GRUs and LSTMs, additional hidden layers that update in reverse sequential direction may also be used to capture more complex, past and future dependencies. The hidden states can then be concatenated and used for prediction, as shown in @fig-rnn_bidirectional.
+
+![A schematic of a bidirectional RNN, where inputs are passed to hidden states in the forward and reverse temporal direction. The produced hidden states can be combined via concatenation, addition, or averaging to produce a final vector to be used for predicion.](../../img/rnn_bidirectional.png){#fig-rnn_bidirectional, width="70%"}
+
+In this analysis, including bidirectional layers appeared to slightly improve model performance. See @sec-product_results for further details.
 
 #### Fully Connected Neural Network (FCNN)
 
--   Linear transformation of input
--   Activation functions: control output scales and add nonlinearity (show ReLU function and justify use)
+The RNN model produces a hidden state which acts as a vectorization the processed vegetation index sequence. To convert this to a single scalar prediction, a **fully connected neural network (FCNN)** layer can be used. The architecture of this model is shown in @fig-fcnn.
+
+![An example of an FCNN of two layers, with a three-dimensional input and one-dimensional output.](../../img/fcnn.png){#fig-fcnn, width="70%"}
+
+Inputs are passed between layers through a linear transformation using weight matrices and bias vectors, wrapped by an activation function to scale outputs and introduce nonlinearity into the system. For example, the first hidden layer $h^{(1)}$ in @fig-fcnn is produced by the transformation:
+
+$$
+h^{(1)} = \text{ReLU}\left(W^{(1)}x + b^{(1)} \right)
+$$
+
+Where $W^{(1)}$ is a 4x3 matrix and $b^{(1)}$ is a vector of length 3, both of which have values that are learned during training. A common activation function is the **Rectifier Linear Unit (ReLU)** which simply has the form:
+
+$$
+\text{ReLU}(x) = \text{max}(0,x)
+$$ {eq-relu}
+
+Although @eq-sigmoid is also a common activation function due to its controlled range of (0,1). 
 
 #### Final Model architecture
 
