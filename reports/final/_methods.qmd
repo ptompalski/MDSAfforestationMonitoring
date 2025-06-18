@@ -1,23 +1,55 @@
-### Phase 1: Static Models
-- **Preprocessing:** Drop IDs/dates, scale spectral indices & density, one-hot encode species type.
-- **Models & Hyperparameters:**  
-  - Logistic Regression: C (regularization strength), penalty=l2  
-  - Random Forest: n_estimators, max_depth  
-  - XGBoost: learning_rate (eta), max_depth, reg_alpha, reg_lambda  
-- **Tuning & Validation:** Randomized search (50–300 iterations) with grouped 5-fold CV (by site ID), optimizing F1 score.
+### Phase 1: Static Modelling
+
+#### Preprocessing
+
+
+#### Logistic Regression
+
+Logistic regression is a generalized linear model widely used for binary classification tasks, valued for its simplicity and interpretability. It models the **log-odds** of the probability, or the **logit** that a given record belongs to class 1 as a linear combination of the input features [@enwiki:logreg]. It provides a statistically grounded baseline and serves as a proxy for the classical statistical modeling used prior to this analysis. To demonstrate the value of more sophisticated machine learning models in predicting survival rates, subsequent models were expected to achieve performance exceeding that of logistic regression.
+
+#### Random Forest
+
+The Random Forest model is an aggregate model composed of many decision trees, each trained on a bootstrapped subset of the training data and a randomly selected subset of the features. Although training Random Forests can be computationally intensive, each tree is trained independently, enabling efficient parallelization and scalability. Previous studies from @bergmuller2022predicting, have demonstrated that Random Forests perform well when using vegetation indices to predict canopy tree mortality. Becuase of this, this model was selected as a candidate for the present analysis.
+
+#### Gradient Boosting
+
+The Gradient Boosting model is a popular model that exists in a collection of 'boosting' models, which -unlike Random Forests- consists of a sequence of underfit and biased 'weak learner' models which converge to a high-performing 'strong learner' model when combined [@zhou2025ensemble]. This model was selected as a candidate model due to strong performance across a wide variety of machine learning tasks; in particular, the implementation offered by the XGBoost library offers optimized training and additional regularization methods [@xgboost].
+
+#### Feature Selection
+
+To address collinearity among vegetation indices and evaluate the importance of both site-based and remote sensing features,  three feature selection methods were applied prior to tuning.
+
+##### Permutation Importance
+
+We estimate each feature's importance by randomly shuffling its values across samples before training, then measuring the resulting change in the model’s performance. This yields an interpretable, global importance metric. However, when predictors are highly correlated, it can misattribute importance—because different features may serve as proxies for one another—leading to misleading rankings [@scikit-learn].
+
+##### SHAP Values
+
+SHAP (SHapley Additive exPlanations) return per-prediction feature contributions based on Shapley values from cooperative game theory [@NIPS2017_7062]. This method provides both local (per-prediction) and global interpretability. However, SHAP may tacitly distribute credit among highly correlated features, depending on whether the model uses marginal or conditional expectations when computing the baseline.
+
+##### Recursive Feature Elimination with Cross‑Validation (RFECV)
+
+Finally, RFECV is used to iteratively train the model and remove the least important features based on model-derived importance metrics (e.g., coefficients or feature gains). Each reduced feature subset was evaluated by its $F_1$ performance using cross-validation. This method directly handles correlated features by eliminating them if they do not contribute to the model performance, however it can be quite computationally exhaustive. Feature rankings based on how early features were removed are used as importance metrics.
 
 ### Phase 2: Temporal Models
-- **Sequence Preparation:**  
+
+While previous models provide strong benchmarks for supervised learning, their assumption of independent input instances fails to capture the sequential and spatial dependencies inherent in the vegetation index data. To address this, the final phase of analysis employed Recurrent Neural Networks (RNNs), specifically Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU) architectures, which are well-suited for modeling temporal dynamics. These models, though more computationally intensive, are efficiently implemented using modern libraries such as PyTorch [@paszke2019pytorch].
+
+#### Processing and Sequence Generation
   - Aggregate per-site yearly spectral indices into variable-length sequences.  
   - Engineer time features: log-transformed Δt, seasonality via sine/cosine of Day-of-Year.
-- **Models & Hyperparameters:**  
-  - GRU: hidden_size=32, num_layers=1, dropout=0.2, lr=1e-3, optimizer=Adam  
-  - LSTM: same architecture and training settings.
-- **Training & Evaluation:**  
-  - Trained for 25 epochs with early stopping (patience=5).  
-  - Batch size=64, padded sequences, tracked sequence lengths.  
 
-### Metrics & Ethics
-- **Primary Metrics:** Precision, Recall, F1 (primary).  
-- **Cross-Validation:** GroupKFold to prevent spatial leakage.  
-- **Stakeholder Impact:** Emphasize recall to minimize false negatives (missed high-risk sites).  
+#### Modelling Pipeline
+
+Following preprocessing, the deep learning pipeline proceeds as follows:
+
+1. The sequence of vegetation indices and engineered features is passed through a bidirectional GRU or LSTM, producing a hidden state.
+2. The static site features are concatenated onto the hidden state vector and passed to a multilayer FCNN.
+3. The final layer of the FCNN output is a scalar, which is passed through a sigmoid activation and multiplied by 100 to produce an estimate of the survival rate of the site pixel. 
+
+In addition to these steps, **layer normalization** was experimented with, although no improvement to predictions was observed. **Dropout** was also added within the FCNN layers. Bidirectionality was added later in he analysis, as doing so seemed to generally increase performance by decreasing overfitting. Modelling was attemped with and without site features to assess their usage in predicting survival rate. Hidden state and hidden layer sizes, and the number of hidden layers are all variable hyperparameters than may effect model performance [@7508408], however model performance seemed to 'plateau' after a certain degree of model complexity. For example, increasing the hidden state size beyond 32 did not increase prediction accuracy, nor did increasing hidden state layers beyond 3. Initally, prediction output was constrained to [0,100] using a simple 'clamp' function, but it was found that a smoother, scaled sigmoid actvation produced more consistent predictions. 
+
+### Evaluation Metrics
+
+Model performance was primarily evaluated using $\boldsymbol{F_1}$ score, **precision**, and **recall**, with classification accuracy treated as a secondary metric due to class imbalance favoring high-survival sites. To enable comparison between classical classification models and deep learning regression models, continuous survival rate predictions were thresholded to produce binary labels. In the context of these metrics, **low-survival sites are treated as the positive class**, reflecting the goal of identifying potentially failing afforestation sites for targeted intervention. To evaluate classical model performance across a range of decision thresholds, **Precision-Recall (PR) Curves** and **Receiver Operating Characteristic (ROC) Curves** were produced. As is standard for machine learning analysis, the area under each curve (**AUC, AUROC** respectively) were reported as a summary of performance across all thresholds.
+
