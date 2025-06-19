@@ -114,6 +114,14 @@ To install Conda, refer to the [User Guide](https://docs.conda.io/projects/conda
 
 For instructions on creating and activating environments, see the [`Quick Start Guide`](./notebooks/data_product_quickstart.ipynb).
 
+### GNU Make
+
+[GNU Make](https://www.gnu.org/software/make/) is a build automation tool that automatically determines which parts of a program or workflow need to be re-executed, based on file dependencies and modification times. It uses a `Makefile` to define rules and targets, making it easy to manage complex or repetitive tasks such as data processing, model training, and report generation.
+
+This project includes a `Makefile` to simplify tasks. See the [`Data Product Quick Start`](./notebooks/data_product_quickstart.ipynb) for further details.
+
+If GNU Make is not already available on your personal computer, see [this guide](https://www.gnu.org/software/make/#download) to download it.
+
 ## Rendering the Reports
 
 To generate any of the project reports as PDFs, run the following command in your terminal:
