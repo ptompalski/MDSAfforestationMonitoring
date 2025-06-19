@@ -1,35 +1,58 @@
 
-**Deliverables**  
-- **CLI Pipeline:** `make data`, `make train_models`, `make train_rnn`, `make evaluate`  
-- **Model Artifacts:** Pickled models under `models/<threshold>/`  
-- **Evaluation Plots:** ROC / PR curves in `results/<threshold>/`  
-- **Quick-start Notebook:** `notebooks/data_product_quickstart.ipynb`
+Our project delivers a comprehensive, modular machine learning pipeline for predicting low survival rates in afforestation projects. This tool is designed for land managers, researchers, and anyone interested in using data to support better decisions in tree planting. The pipeline is also a practical example of how data science can be applied to real-world environmental challenges, and is intended to be accessible to users with a range of technical backgrounds.
 
----
+### What Does the Data Product Do?
 
-### Phase 1: Static Models Performance (80 % Threshold)
-
-| Model               | Precision | Recall | F1    |
-|---------------------|-----------|--------|-------|
-| Gradient Boosting   | **0.485** | 0.403  | 0.411 |
-| Random Forest       | 0.427     | **0.668** | **0.521** |
-| Logistic Regression | 0.435     | 0.630  | 0.515 |
+Our delivered data product is a comprehensive machine learning pipeline, composed of a series of interconnected Python scripts. This pipeline automates the end-to-end process of data preparation, model development, and evaluation. Key functionalities include robust data processing steps such as cleaning, transformation (pivoting), and splitting into training and testing sets. Once the data is prepared, users can leverage dedicated scripts to train various machine learning models, perform hyperparameter tuning for optimization, and rigorously evaluate model performance. The primary objective of this data product is to provide an effective AI-driven solution for identifying and predicting instances of low survival rates.
 
 
----
+### Classical Models Evaluation
 
-### Phase 2: Sequence Models Performance (80 % Threshold)
+We trained several classical machine learning models, including Logistic Regression, Random Forest, and Gradient Boosting. These models were selected for their proven effectiveness in similar time series research. Logistic Regression provides interpretability, while the ensemble models capture more complex, non-linear relationships in the data. Each model was evaluated across multiple thresholds (50%, 60%, 70%, 80%) for defining low survival, providing a comprehensive view of model robustness under different definitions of the target variable.
 
-| Model (Features)    | Precision | Recall | F1    |
-|---------------------|-----------|--------|-------|
-| LSTM (Site + Sat)   | 0.367     | 0.369  | 0.368 |
-| GRU (Site + Sat)    | **0.359** | **0.569** | **0.440** |
+#### Permutation Feature Importance
 
-The GRU with site + satellite features is the best performing RNN configuration.
+Permutation feature importance analysis showed that at lower thresholds (50% and 60%), Logistic Regression placed greater importance on remote sensing vegetation indices (NDVI, EVI1, EVI2, NDWI). These indices are derived from satellite imagery and reflect the health and vigor of vegetation. As the threshold increased to 70% and 80%, tree-based models, especially Gradient Boosting, assigned higher importance to structural features like Density and Age, which are direct measures of stand structure and development. Random Forest maintained moderate importance across both types of features, indicating a balanced approach.
 
----
+#### SHAP Feature Importance
 
-> **Interpretation:**  
-> * Classical static models plateau around F1 ≈ 0.52, with Random Forest achieving the highest F1.  
-> * GRU significantly improves Recall on high-risk sites, while LSTM offers modest gains.  
-> * Temporal models increase false positives, suggesting a CNN–LSTM hybrid could better capture spatial–temporal patterns.
+SHAP analysis provided a more nuanced view of feature contributions. Logistic Regression consistently relied on spectral indices, while Gradient Boosting balanced between structural and spectral features. Random Forest's SHAP values were less interpretable, suggesting reliance on complex feature interactions or limitations of SHAP with tree ensembles. This analysis helps users understand which variables are driving predictions and can inform future data collection or management strategies.
+
+#### Recursive Feature Elimination (RFE)
+
+RFE demonstrated that as less informative features were removed, all models converged on a core set of impactful variables. At the highest threshold, features such as Type_Mixed and Coniferous became highly important, highlighting the value of both structural and categorical site characteristics. This process helps streamline the model, making it more efficient and potentially more generalizable to new data.
+
+#### Precision-Recall Curves
+
+Precision-recall curves showed that Random Forest maintained higher precision across a wider range of recall values, especially at the 80% threshold, indicating more robust performance in identifying low survival cases. This is particularly important in imbalanced datasets, where the minority class (low survival) is of greatest interest for intervention.
+
+#### ROC Curves
+
+ROC curves were relatively linear, suggesting that the models struggled to effectively distinguish between classes, particularly at lower thresholds. This highlights the challenge of predicting rare events and the need for ongoing model refinement.
+
+#### Confusion Matrices
+
+Confusion matrices revealed a high number of false negatives, meaning the models often failed to identify instances of low survival. This is a critical challenge for practical deployment, as missing at-risk sites could result in lost opportunities for timely intervention.
+
+#### Evaluation Metrics
+
+Given the pronounced class imbalance in our dataset, we prioritized the F1 score as our main evaluation metric. At the 80% threshold, Random Forest achieved the highest F1 score (0.521), outperforming both Logistic Regression (0.515) and Gradient Boosting (0.441). Performance improved as the survival threshold increased, suggesting that the models are better at identifying the most extreme cases of low survival.
+
+### Sequence Model Evaluation
+
+We also implemented deep learning approaches, specifically Recurrent Neural Network (RNN) architectures including LSTM and GRU models, to address temporal dependencies in the data. These models are well-suited for sequential data, as they can capture patterns across time steps that classical models may overlook. The goal was to see if leveraging the time series nature of the data could improve predictive performance.
+
+#### Residual Plots
+
+Residual plots for the GRU and LSTM models showed that both tended to predict values close to 80% with high frequency, indicating a potential bias and limited flexibility to capture the full spectrum of true values. This suggests that the models may be overfitting to the majority class or failing to learn meaningful temporal patterns.
+
+#### Confusion Matrices (RNNs)
+
+At lower thresholds, the models failed to make correct predictions for low survival rates, likely due to data being heavily skewed toward higher survival rates. At the 80% threshold, the models began to show improvement but still did not match the accuracy of classical models. This highlights the challenge of applying deep learning to small or imbalanced datasets.
+
+#### Evaluation Metrics (RNNs)
+
+At the 50% threshold, all RNN models and feature combinations showed an F1 Score of 0, indicating no predictive capability. At the 80% threshold, performance improved: LSTM with Site + Satellite features achieved an F1 Score of 0.368, while GRU with Site + Satellite features attained 0.44. However, these results did not surpass the classical models, suggesting that more data or advanced feature engineering is needed to unlock the potential of deep learning in this context.
+
+
+
