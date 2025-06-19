@@ -62,7 +62,6 @@ The deliverables are organized into the following directories:
   - [`evaluation/`](./src/evaluation):  
     Scripts for evaluating trained models using various classification metrics.
 
-
 - [`models/`](./models):  
   Contains serialized model objects (`.joblib` for classical ML, `.pth` for deep learning).  
   Models are grouped by the binary classification threshold used during training:  
@@ -91,30 +90,46 @@ The deliverables are organized into the following directories:
 - [`tests/`](./tests/):  
   A comprehensive test suite for validating all core pipeline scripts, implemented using the [pytest](https://docs.pytest.org/en/stable/) framework.
 
-### Prerequisites
+## Prerequisites
 
-Ensure Quarto CLI is installed. For installation instructions, visit [Quarto Get Started](https://quarto.org/docs/get-started/).
+### Quarto
 
-### Rendering the Reports
+[Quarto](https://quarto.org/) is an open-source publishing system that supports reproducible documents using Markdown and executable code. While rendered reports are already included in the repository, **Quarto is required to re-render them locally** to validate reproducibility. Installation instructions are available in the [Get Started Guide](https://quarto.org/docs/get-started/).
 
-To generate the proposal report, execute the following command in your terminal:
+### Conda
 
-``` bash
-quarto render reports/proposal/report.qmd --to pdf
+[Conda](https://docs.conda.io/projects/conda/en/latest/index.html) is an environment and package manager used to handle software dependencies in isolated environments. This project uses Conda to ensure reproducibility and prevent library conflicts. Three environments are provided at the root of the repository:
+
+- [`environment.yml`](./environment.yml): Core environment for executing the pipeline.
+- [`environment-dev.yml`](./environment-dev.yml): Development environment for testing and report generation; includes additional packages beyond the core environment.
+- [`environment-dev-gpu.yml`](./environment-dev-gpu.yml): GPU-compatible environment for use on the UBC Sockeye platform. Included for transparency; not intended for general use.
+
+To install Conda, refer to the [User Guide](https://docs.conda.io/projects/conda/en/latest/user-guide/index.html). If you prefer a minimal installation, you can install [Miniconda3](https://docs.conda.io/en/latest/miniconda.html), which provides the same functionality with a smaller footprint.
+
+For instructions on creating and activating environments, see the [`Quick Start Guide`](./notebooks/data_product_quickstart.ipynb).
+
+## Rendering the Reports
+
+To generate any of the project reports as PDFs, run the following command in your terminal:
+
+```bash
+quarto render reports/<report_name>/report.qmd --to pdf
 ```
 
-To generate the technical report, execute the following command in your terminal:
+Replace `<report_name>` with one of the following:
 
-``` bash
+- `proposal`: The proposal report
+- `technical`: The technical report
+- `final`: The final MDS report
+
+For example, to render the technical report:
+
+```bash
 quarto render reports/technical/report.qmd --to pdf
 ```
 
-To generate the final report, execute the following command in your terminal:
+**Note:** Both Quarto and the development environment provided by `environment-dev.yml` **must** be installed prior to rendering the report.
 
-``` bash
-quarto render reports/final/report.qmd --to pdf
-```
+## Running the Pipeline - Quick Start
 
-## Quick Start
-
-To quickly get started with the project, you can refer to the notebook [`Data Product Quick Start`](./notebooks/data_product_quickstart.ipynb). This notebook provides a step-by-step guide on how to set up the environment, run the scripts, and visualize the results.
+To quickly get started with the project, you can refer to the [`Data Product Quick Start`](./notebooks/data_product_quickstart.ipynb). This provides a step-by-step guide on how to set up the environment, run the scripts, and visualize the results.
