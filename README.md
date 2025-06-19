@@ -4,6 +4,7 @@
 [![License](https://img.shields.io/badge/License-GPL--3-blue)](./LICENSE)
 [![Python Version](https://img.shields.io/badge/Python-3.12.11-blue)](https://www.python.org/downloads/release/python-31211/)
 [![PyTorch Version](https://img.shields.io/badge/PyTorch-2.7.0-red)](https://pytorch.org/blog/pytorch-2-7/)
+[![Report](https://img.shields.io/badge/report-technical-orange)](./reports/technical/report.pdf)
 
 ## Summary
 
