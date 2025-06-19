@@ -12,12 +12,18 @@ This project's report is developed using Quarto, a reproducible publishing syste
 
 Ensure Quarto CLI is installed. For installation instructions, visit [Quarto Get Started](https://quarto.org/docs/get-started/).
 
-### Rendering the Report
+### Rendering the Reports
 
 To generate the proposal report, execute the following command in your terminal:
 
 ```bash
-quarto render reports/proposal/report.qmd
+quarto render reports/proposal/report.qmd --to pdf
+```
+
+To generate the technical report, execute the following command in your terminal:
+
+```bash
+quarto render reports/technical/report.qmd --to pdf
 ```
 
 ## Quick Start
