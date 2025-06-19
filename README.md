@@ -1,5 +1,7 @@
 # MDS Capstone Project: Afforestation Monitoring
 
+![Tests](https://github.com/ptompalski/MDSAfforestationMonitoring/actions/workflows/run_test.yaml)
+
 ## Summary
 
 Monitoring afforestation progress across hundreds of remote and ecologically diverse sites in Canada poses significant challenge, particularly due to the weak spectral signals from newly planted trees with sparse canopies in early growth stages. This project seeks to address two key research questions:
