@@ -1,20 +1,95 @@
 # MDS Capstone Project: Afforestation Monitoring
 
-![tests](https://img.shields.io/github/workflow/status/ptompalski/MDSAfforestationMonitoring/Python%20Package%20(Conda)?branch=main&label=tests)
-
 ## Summary
 
-Monitoring afforestation progress across hundreds of remote and ecologically diverse sites in Canada poses significant challenge, particularly due to the weak spectral signals from newly planted trees with sparse canopies in early growth stages. This project seeks to address two key research questions:
+### Project Overview
 
-1. Can satellite-derived vegetation indices and site-level data be used to accurately predict tree survival over time in large-scale afforestation programs?
+Monitoring afforestation across hundreds of remote and ecologically diverse sites in Canada presents a significant challeng, particularly due to the weak spectral signals produced by sparse canopies during the early stages of tree growth. This project investigates the feasibility of leveraging remote sensing and machine learning to support large-scale forest restoration efforts.
 
-2. What modeling approaches are most effective for this task?
+We focus on two central research questions:
 
-Using data from Canada’s 2 Billion Trees initiative, we began by training a suite of classical machine learning models, including the [Logistic Regression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html) and[Random Forest](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html) models from the[Scikit-Learn library](https://scikit-learn.org/stable/index.html) in Python, and the [Gradient Boosting Machine](https://xgboost.readthedocs.io/en/latest/python/python_api.html#module-xgboost.sklearn) model from the [XGBoost library](https://xgboost.readthedocs.io/en/latest/index.html). Following this, we attempted a different modelling approach using more advanced sequential deep learning methods, namely [Long-term Short Term Memory (LSTM)](https://docs.pytorch.org/docs/stable/generated/torch.nn.LSTM.html) and [Gated Recurrent Unit (GRU)](https://docs.pytorch.org/docs/stable/generated/torch.nn.GRU.html) models implemented in the [PyTorch library](https://pytorch.org/).
+1. Can satellite-derived vegetation indices and site-level data accurately predict tree survival over time in large-scale afforestation programs?
+2. What modeling approaches are most effective for this predictive task?
 
-## Report
+Using data from Canada’s **2 Billion Trees** initiative, we trained a suite of classical machine learning models, including:
 
-This project's report is developed using Quarto, a reproducible publishing system.
+- [Logistic Regression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html)
+- [Random Forest](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html)  
+  via the [Scikit-learn](https://scikit-learn.org/stable/index.html) library
+- [Gradient Boosting Machine (GBM)](https://xgboost.readthedocs.io/en/latest/python/python_api.html#module-xgboost.sklearn)  
+  using the [XGBoost](https://xgboost.readthedocs.io/en/latest/index.html) library
+
+To better model the sequential and seasonal dynamics of vegetation indices, we further developed deep learning models using [PyTorch](https://pytorch.org/), specifically:
+
+- [Long Short-Term Memory (LSTM)](https://pytorch.org/docs/stable/generated/torch.nn.LSTM.html) networks
+- [Gated Recurrent Unit (GRU)](https://pytorch.org/docs/stable/generated/torch.nn.GRU.html) networks
+
+### Deliverables
+
+This project provides the following key deliverables:
+
+1. **Reproducible model pipeline**:  
+   A complete, tested, and modular pipeline for data preprocessing, model training, and performance evaluation, implemented in Python.  
+   Users can run the entire workflow via the provided [Makefile](./Makefile).  
+   See the [`Quick Start Guide`](./notebooks/data_product_quickstart.ipynb) for setup and usage instructions.
+
+2. **Technical report**:  
+   A comprehensive [technical report](./reports/technical/report.pdf) detailing the analysis, modeling approaches, results, and recommendations for future development.
+
+### Repository Structure
+
+The deliverables are organized into the following directories:
+
+- [`data/`](./data):  
+  Placeholder directories for the raw, interim (partially processed), and fully processed datasets:  
+  - [`raw/`](./data/raw): Unmodified source data  
+  - [`interim/`](./data/interim): Data after partial preprocessing  
+  - [`processed/`](./data/processed): Final cleaned dataset used for modeling  
+  
+  **Note:** Due to privacy restrictions, data is not included in the repository. To request access, please contact [Piotr Tompalski](https://github.com/ptompalski).
+
+- [`src/`](./src):  
+  Contains all core Python scripts used to run the full modeling pipeline. Subdirectories are organized by pipeline stage:
+  - [`data/`](./src/data):  
+    Scripts for data preprocessing, cleaning, and preparation prior to modeling.
+  - [`models/`](./src/models):  
+    Scripts for constructing untrained model instances (classical and deep learning).
+  - [`training/`](./src/training):  
+    Handles model training and hyperparameter tuning routines.
+  - [`slurm_jobs/`](./src/slurm_jobs):  
+    Job submission scripts for training deep learning models on the [UBC Sockeye Computing Platform](https://arc.ubc.ca/compute-storage/ubc-arc-sockeye), using the [Slurm](https://slurm.schedmd.com/overview.html) cluster manager.  
+    These are not required for local execution, but are included to support reproducibility and extension on high-performance computing systems.
+  - [`evaluation/`](./src/evaluation):  
+    Scripts for evaluating trained models using various classification metrics.
+
+
+- [`models/`](./models):  
+  Contains serialized model objects (`.joblib` for classical ML, `.pth` for deep learning).  
+  Models are grouped by the binary classification threshold used during training:  
+  - [`50/`](./models/50), [`60/`](./models/60), [`70/`](./models/70), [`80/`](./models/80)  
+    For example, a tuned Gradient Boosting model trained with a 70% survival threshold is saved at:  
+    `models/70/tuned_gradient_boosting.joblib`  
+
+  Each threshold folder also includes a `logs/` subdirectory with CSV files summarizing hyperparameter search results.
+  
+- [`results/`](./results):  
+  Stores model evaluation outputs, including `.csv` and `.joblib` files with key error metrics—such as confusion matrices, precision-recall (PR) and ROC curves, and $F_1$ scores.  
+  Results are organized by classification threshold, consistent with the structure of the [`models/`](./models) directory.
+
+- [`reports/`](./reports):  
+  Contains all documents and source files related to the three reports generated during the project:
+  - [`proposal/`](./reports/proposal):  
+    Includes the [proposal report](./reports/proposal/report.pdf), outlining the project's initial objectives, proposed methodology, and expected deliverables.
+  - [`technical/`](./reports/technical):  
+    Contains the [technical report](./reports/technical/report.pdf), which provides a detailed account of the full analysis—including methodology, modeling results, evaluation, and future directions.
+  - [`final/`](./reports/final):  
+    Includes the [MDS final report](./reports/final/report.pdf), a concise summary of the technical report, submitted for internal program assessment.
+
+- [`img/`](./img/):  
+  Contains plots, diagrams, and other visual assets used in the reports and documentation.
+
+- [`tests/`](./tests/):  
+  A comprehensive test suite for validating all core pipeline scripts, implemented using the [pytest](https://docs.pytest.org/en/stable/) framework.
 
 ### Prerequisites
 
