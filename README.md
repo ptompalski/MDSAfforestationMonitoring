@@ -1,5 +1,7 @@
 # MDS Capstone Project: Afforestation Monitoring
 
+![Tests Badge](https://github.com/ptompalski/MDSAfforestationMonitoring/actions/workflows/run_test.yaml/badge.svg)
+
 ## Summary
 
 ### Project Overview
