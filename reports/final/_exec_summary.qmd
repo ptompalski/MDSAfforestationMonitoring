@@ -1,25 +1,7 @@
-**Problem.** Field surveys at Year‑7 are costly and delayed; need forecasts for 80% survival threshold to guide timely interventions.  
-The **Canada Forest Service** requires an early-warning system to flag high-risk sites for proactive intervention.
+This report details the technical framework and principal findings of the MDS Afforestation Monitoring project. The project's central goal was to create and validate a data-driven system for monitoring the progress of afforestation initiatives across Canada.
 
-**Approach.**  
-- Merged multispectral rasters (2010–2023) with planting and Year‑7 survival survey tables.  
-- Two modeling phases:  
-  1. **Static classifiers** (Logistic Regression, Random Forest, XGBoost) on aggregated features.  
-  2. **Temporal RNNs** (GRU, LSTM) on annual spectral sequences.  
-- Employed grouped 5‑fold cross‑validation by site ID; optimized for F1 score.
+Our methodology integrates satellite-derived vegetation indices with site-level data to train predictive models. This curated dataset was used to train and evaluate a suite of machine learning models and a deep learning model aimed at classifying the survival outcomes of newly planted forests. The report provides a comprehensive overview of the entire data science pipeline, from data acquisition and preprocessing to feature engineering and model evaluation.
 
-**Key Findings.**  
-- **Random Forest** (80% threshold) achieved the highest F1 = 0.521.  
-- **Gradient Boosting** F1 = 0.411; **Logistic Regression** F1 = 0.515.  
-- **GRU** sequence model (site + spectral features) reached F1 = 0.440 and Recall = 0.569, outperforming LSTM (F1 = 0.368).
+A comparative analysis of classical machine learning algorithms and a deep learning architecture identified the Random Forest model as the most effective. It achieved an F1-score of approximately 0.52. While this performance does not align with expectations, it establishes a crucial baseline for further scientific research.
 
-**Deliverables.**  
-- Reproducible Makefile targets (`make data`, `make train_models`, `make train_rnn`, `make evaluate`).  
-- Versioned model artifacts in `models/80` and evaluation plots in `results/80`.  
-- Quick-start Jupyter notebook for batch scoring.
-
-**Recommendations.**  
-- **Advisory use only:** Validate flagged sites with targeted surveys before field action.  
-- **Data enhancement:** Expand ground surveys in under-sampled ecozones.  
-- **Future exploration:** Prototype a CNN–LSTM hybrid to jointly learn spatial and temporal patterns.  
-- **Deployment:** Develop a Streamlit dashboard for non-technical planners.
+The report concludes with actionable recommendations for future work, including the integration of higher-resolution data and more advanced model architectures.
