@@ -459,7 +459,7 @@ def main(estimator,method,drop_features,input_path,output_dir,random_state):
         estimator = XGBClassifier(random_state=random_state,n_jobs=-1)
     else:
         output_path = output_dir/f'fitted_random_forest_{method.lower()}.joblib'
-        estimator = RandomForestClassifier(random_state=random_state,n_jobs=-1)
+        estimator = RandomForestClassifier(random_state=random_state,n_estimators=50,n_jobs=-1)
     
     click.echo('Fitting feature importance selector...')
     

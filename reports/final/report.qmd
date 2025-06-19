@@ -1,0 +1,66 @@
+---
+title: "Remote Sensing for Forest Recovery: Final Report"
+author: 
+  - name: Benjamin Frizzell
+  - name: Zanan Pech
+  - name: Mavis Wong
+  - name: Hui Tang
+  - name: Piotr Tompalski
+  - name: Alexi Rodríguez-Arelis
+date: today
+bibliography: references.bib
+format: 
+  pdf:
+    toc: true
+    number-sections: true
+    theme: flatly
+    include-in-header:
+      text: |
+        \usepackage{booktabs}
+        \usepackage{longtable}
+        \usepackage{array}
+        \usepackage{caption}
+        \usepackage{float}
+        \usepackage{colortbl}
+        \usepackage{etoolbox}
+        \AtBeginEnvironment{longtable}{\rowcolors{2}{gray!15}{white}}
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+---
+
+## Executive Summary {#sec-exec}
+
+{{< include _exec_summary.qmd >}}
+
+## Introduction {#sec-introduction}
+
+{{< include _introduction.qmd >}}
+
+## Data Science Methods {#sec-methods}
+
+{{< include _methods.qmd >}}
+
+## Data Product & Results {#sec-product_results}
+
+{{< include _data_product_and_results.qmd >}}
+
+## Conclusions & Recommendations {#sec-conclusions}
+
+{{< include _conclusions.qmd >}}
+
+---
+
+::: {.callout-tip}
+**Rendering Instructions**
+
+```bash
+cd reports/"final report"
+conda activate mds-afforest-dev
+quarto render report.qmd
+open report.pdf
+```
+:::

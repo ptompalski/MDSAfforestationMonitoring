@@ -1,0 +1,679 @@
+```{python}
+#| echo: false
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='tqdm')
+```
+
+Our delivered data product is a comprehensive machine learning pipeline, composed of a series of interconnected Python scripts. This pipeline automates the end-to-end process of data preparation, model development, and evaluation. Key functionalities include robust data processing steps such as cleaning, transformation (pivoting), and splitting into training and testing sets. Once the data is prepared, users can leverage dedicated scripts to train various machine learning models, perform hyperparameter tuning for optimization, and rigorously evaluate model performance. The primary objective of this data product is to provide an effective AI-driven solution for identifying and predicting instances of low survival rates.
+
+### Classical Models Evaluation
+
+In the first phase, we trained several classical machine learning models, including logistic regression as a transparent baseline, as well as ensemble methods such as random forest and gradient boosting. These models were selected based on their proven effectiveness in some of similar time series research. Logistic regression provides interpretability and serves as a benchmark, while the ensemble models are capable of capturing more complex, non-linear relationships in the data. This approach allows us to compare model performance and select the most suitable method for predicting low survival rates.
+
+#### Permutation Feature Importance
+
+The permutation feature importance plot as show in @fig-permutation-importance compares how different features influence model performance for Logistic Regression, Random Forest, and Gradient Boosting across four thresholds (50%, 60%, 70%, and 80%) used to define low versus high survival rates. At the lower thresholds (50% and 60%), Logistic Regression (blue) places greater importance on remote sensing vegetation indices, especially NDVI, EVI1, EVI2, and NDWI, indicating that these spectral features are valuable in distinguishing low from high survival when the cutoff is lower. Random Forest (orange) and Gradient Boosting (red) show lower overall importance at these thresholds but begin to emphasize features like Density, Age, and some spectral indices.
+
+```{python}
+#| echo: false
+#| label: fig-permutation-importance
+#| fig-cap: "Permutation importance bar plot"
+#| fig-pos: "H"
+#| fig-align: center
+
+
+import pandas as pd
+import joblib
+import altair as alt
+import glob
+import sys
+import os
+import numpy as np
+from pathlib import Path
+
+sys.path.append(os.path.abspath("../../"))
+alt.data_transformers.enable("vegafusion")
+from src.models.feat_selection import ImportanceFeatureSelector
+alt.renderers.enable("png")
+
+perm_plots = []
+model_order=['Logistic Regression','Random Forest','Gradient Boosting']
+for threshold in [50,60,70,80]:   
+    gbm_perm = joblib.load(f'../../models/{threshold}/fitted_gradient_boosting_permute.joblib')
+    rf_perm = joblib.load(f'../../models/{threshold}/fitted_random_forest_permute.joblib')
+    lr_perm = joblib.load(f'../../models/{threshold}/fitted_logistic_regression_permute.joblib')
+
+    permutation_df = pd.DataFrame({
+        'mean':np.concatenate((
+            gbm_perm.values['importances_mean'],
+            rf_perm.values['importances_mean'],
+            lr_perm.values['importances_mean'])),
+        'std':np.concatenate((
+            gbm_perm.values['importances_std'],
+            rf_perm.values['importances_std'],
+            lr_perm.values['importances_std']
+            ))/np.sqrt(5),
+        'model':['Gradient Boosting']*15 + ['Random Forest']*15 + ['Logistic Regression']*15,
+        'feature':gbm_perm.plot_data.index.to_list()*3
+    })
+    permutation_df['ci_lower'] = permutation_df['mean'] - 1.96*permutation_df['std']
+    permutation_df['ci_upper'] = permutation_df['mean'] + 1.96*permutation_df['std']
+
+    feat_order = gbm_perm.plot_data.index.to_list()
+
+    bars = alt.Chart(permutation_df).mark_bar().encode(
+        x=alt.X('feature:N',sort=feat_order, title='',axis=alt.Axis(labelAngle=45)),
+        xOffset=alt.XOffset('model:N',sort=model_order),
+        y=alt.Y('mean:Q', title='',scale=alt.Scale(domain=[None,0.25])),
+        color=alt.Color('model:N',title='Model',sort=model_order),
+    )
+
+    error_bars = alt.Chart(permutation_df).mark_rule().encode(
+        x=alt.X('feature:N',sort=feat_order),
+        xOffset=alt.XOffset('model:N',sort=model_order),
+        y='ci_lower:Q',
+        y2='ci_upper:Q',
+        color=alt.value('black')
+    )
+
+    cap_top = alt.Chart(permutation_df).mark_tick(
+        color='black',
+        thickness=1,
+        width=6
+    ).encode(
+        x=alt.X('feature:N', sort=feat_order),
+        xOffset=alt.XOffset('model:N',sort=model_order),
+        y='ci_upper:Q'
+    )
+
+    # Bottom caps
+    cap_bottom = alt.Chart(permutation_df).mark_tick(
+        color='black',
+        thickness=1,
+        width=6
+    ).encode(
+        x=alt.X('feature:N', sort=feat_order),
+        xOffset=alt.XOffset('model:N',sort=model_order),
+        y='ci_lower:Q'
+    )
+
+
+    permutation_plot = (bars + error_bars + cap_bottom + cap_top).properties(
+        title=f'{threshold}%',
+        width=220,
+        height=200
+        )
+    perm_plots.append(permutation_plot)
+    
+title = alt.Chart({'values':[{}]}).mark_text(
+    text='Permutation Feature Importance',
+    fontSize=20,
+    font='Helvetica',
+    dy=-10
+).encode().properties(
+    width=225,
+    height=2
+)
+
+# Remove x-axis tick labels but keep ticks and gridlines
+perm_plots[0] = perm_plots[0].encode(
+    x=alt.X('feature:N', axis=alt.Axis(labels=False, title=None))
+)
+perm_plots[1] = perm_plots[1].encode(
+    x=alt.X('feature:N', axis=alt.Axis(labels=False, title=None))
+)
+
+# Remove y-axis tick labels but keep ticks and gridlines
+perm_plots[1] = perm_plots[1].encode(
+    y=alt.Y('mean:Q', axis=alt.Axis(labels=False, title=None))
+)
+perm_plots[3] = perm_plots[3].encode(
+    y=alt.Y('mean:Q', axis=alt.Axis(labels=False, title=None))
+)
+
+perm_importance_plot = alt.vconcat(title, (perm_plots[0] & perm_plots[2]) | (perm_plots[1] & perm_plots[3])).configure_view(stroke=None)
+
+perm_importance_plot.show()
+```
+
+As the threshold increases to 70% and 80%, the pattern shifts. Tree-based models, particularly Gradient Boosting, assign higher importance to structural features like Density and Age, with Density becoming the most important feature for Gradient Boosting at the 80% threshold. Meanwhile, Logistic Regression continues to rely heavily on spectral indices, but their relative importance becomes slightly more balanced with structural variables like NBR and NDWI. Random Forest maintains moderate importance across both types of features but shows no dominant patterns.
+
+Overall, Logistic Regression favors spectral vegetation indices, especially when the threshold for low survival is set lower. In contrast, Gradient Boosting and, to a lesser extent, Random Forest prioritize structural stand features like Density and Age more strongly as the survival threshold increases. This suggests that tree-based models may better capture non-linear relationships between structural features and survival, particularly when distinguishing very low from very high survival outcomes.
+
+#### SHAP Feature Importance
+
+The SHAP feature importance plot as shown in @fig-shap illustrates how different features contribute to predictions. Across all thresholds, Logistic Regression (blue) consistently assigns high SHAP values to vegetation indices such as NDVI, MSAVI, EVI1, EVI2, NDWI, and NBR, indicating that it heavily relies on spectral information from remote sensing data to make predictions. The influence of these indices becomes more pronounced as the survival rate threshold increases, with NDWI and MSAVI emerging as particularly dominant at the 70% and 80% thresholds.
+
+In contrast, Random Forest (orange) contributes minimal feature importance across all thresholds, as indicated by its near-zero SHAP values, suggesting either weak feature attribution under SHAP for this model or that Random Forest is relying more on complex interactions that are not easily captured by additive SHAP values. Gradient Boosting (red), on the other hand, demonstrates moderate and evolving feature importance. At the 50% threshold, it shows high importance for Density and some attention to NDVI. As the threshold increases, Age becomes increasingly important for Gradient Boosting, especially at 70% and 80%, though the magnitude of SHAP values remains lower than those seen in Logistic Regression.
+
+```{python}
+#| echo: false
+#| label: fig-shap
+#| fig-cap: "Shap feature importance bar plot"
+#| fig-pos: "H"
+#| fig-align: center
+
+
+
+shap_plots = []
+model_order=['Logistic Regression','Random Forest','Gradient Boosting']
+for threshold in [50,60,70,80]:   
+    gbm_shap = joblib.load(f'../../models/{threshold}/fitted_gradient_boosting_shap.joblib')
+    rf_shap = joblib.load(f'../../models/{threshold}/fitted_random_forest_shap.joblib')
+    lr_shap = joblib.load(f'../../models/{threshold}/fitted_logistic_regression_shap.joblib')
+
+    shap_df = pd.DataFrame({
+        'mean':np.concatenate((
+            gbm_shap.plot_data,
+            rf_shap.plot_data,
+            lr_shap.plot_data)),
+        'model':['Gradient Boosting']*15 + ['Random Forest']*15 + ['Logistic Regression']*15,
+        'feature':gbm_shap.plot_data.index.to_list()*3
+    })
+
+    feat_order = gbm_shap.plot_data.index.to_list()
+
+    bars = alt.Chart(shap_df).mark_bar().encode(
+        x=alt.X('feature:N',sort=feat_order, title='',axis=alt.Axis(labelAngle=45)),
+        xOffset=alt.XOffset('model:N',sort=model_order),
+        y=alt.Y('mean:Q', title=''),
+        color=alt.Color('model:N',title='Model',sort=model_order),
+    ).properties(
+        title=f'{threshold}%',
+        width=220,
+        height=200
+        )
+    shap_plots.append(bars)
+
+
+# Remove x-axis tick labels but keep ticks and gridlines
+shap_plots[0] = shap_plots[0].encode(
+    x=alt.X('feature:N', axis=alt.Axis(labels=False, title=None))
+)
+shap_plots[1] = shap_plots[1].encode(
+    x=alt.X('feature:N', axis=alt.Axis(labels=False, title=None))
+)
+
+# Remove y-axis tick labels but keep ticks and gridlines
+shap_plots[1] = shap_plots[1].encode(
+    y=alt.Y('mean:Q', axis=alt.Axis(labels=False, title=None))
+)
+shap_plots[3] = shap_plots[3].encode(
+    y=alt.Y('mean:Q', axis=alt.Axis(labels=False, title=None))
+)
+
+title = alt.Chart({'values':[{}]}).mark_text(
+    text='SHAP Feature Importance',
+    fontSize=20,
+    font='Helvetica',
+    dy=-10
+).encode().properties(
+    width=235,
+    height=2
+)
+
+
+shap_importance_plot = alt.vconcat(title,(shap_plots[0] & shap_plots[2]) | (shap_plots[1] & shap_plots[3]))
+shap_importance_plot.show()
+```
+
+#### Recursive Feature Elimination Importance
+
+The provided plot as illustrated in @fig-rfe illustrates the Recursive Feature Elimination (RFE) importance rankings for various machine learning models, including Logistic Regression, Random Forest, and Gradient Boosting, across different feature selection thresholds (50%, 60%, 70%, and 80%). Each heatmap represents the importance ranking of features, with darker green shades indicating higher importance (rank 1) and lighter shades indicating lower importance (rank 15). At the 50% threshold, Logistic Regression, Random Forest, and Gradient Boosting show a varied distribution of feature importance, with some features like Age and Density appearing more significant across models. As the threshold increases to 60% and 70%, the concentration of important features becomes more pronounced, with Random Forest and Gradient Boosting consistently highlighting certain features, such as EVI and NDVI, as highly relevant.
+
+```{python}
+#| echo: false
+#| label: fig-rfe
+#| fig-cap: "RFE heatmap"
+#| fig-pos: "H"
+#| fig-align: center
+
+rfe_plots = []
+for threshold in [50,60,70,80]:
+    # get models   
+    gbm_rfe = joblib.load(f'../../models/{threshold}/fitted_gradient_boosting_rfecv.joblib')
+    rf_rfe = joblib.load(f'../../models/{threshold}/fitted_random_forest_rfecv.joblib')
+    lr_rfe = joblib.load(f'../../models/{threshold}/fitted_logistic_regression_rfecv.joblib')
+    
+    # construct dataframe for plotting
+    rfecv_df = pd.DataFrame({
+        'feature': 
+            [name.split('__')[1] for name in gbm_rfe.named_steps['columntransformer'].get_feature_names_out()] + 
+            [name.split('__')[1] for name in rf_rfe.named_steps['columntransformer'].get_feature_names_out()] + 
+            [name.split('__')[1] for name in lr_rfe.named_steps['columntransformer'].get_feature_names_out()],
+        'model': ['Gradient Boosting']*15 + ['Random Forest']*15 + ['Logistic Regression']*15,
+        'ranking': np.concatenate((
+            gbm_rfe.named_steps['rfecv'].ranking_,
+            rf_rfe.named_steps['rfecv'].ranking_,
+            lr_rfe.named_steps['rfecv'].ranking_
+            ))
+    })
+    
+    rfe_heatmap = alt.Chart(rfecv_df).mark_rect().encode(
+    x=alt.X('feature:N',title='',axis=alt.Axis(labelAngle=45)),
+    y=alt.Y('model:N',sort=model_order,title=''),
+    color=alt.Color('ranking:O',title='Importance Ranking',scale=alt.Scale(scheme='greens', reverse=True))
+    ).properties(
+        title=f'{threshold}%',
+        width=190
+        )
+    rfe_plots.append(rfe_heatmap)        
+
+
+
+# Remove x-axis tick labels but keep ticks and gridlines
+rfe_plots[0] = rfe_plots[0].encode(
+    x=alt.X('feature:N', axis=alt.Axis(labels=False, title=None))
+)
+rfe_plots[1] = rfe_plots[1].encode(
+    x=alt.X('feature:N', axis=alt.Axis(labels=False, title=None))
+)
+
+# Remove y-axis tick labels but keep ticks and gridlines
+rfe_plots[1] = rfe_plots[1].encode(
+    y=alt.Y('model:N', axis=alt.Axis(labels=False, title=None))
+)
+rfe_plots[3] = rfe_plots[3].encode(
+    y=alt.Y('model:N', axis=alt.Axis(labels=False, title=None))
+)
+
+title = alt.Chart({'values':[{}]}).mark_text(
+    text='RFE Importance',
+    fontSize=20,
+    font='Helvetica',
+    dy=-10
+).encode().properties(
+    width=145,
+    height=2
+)
+
+rfe_importance_plot = alt.vconcat(title,(rfe_plots[0] & rfe_plots[2]) | (rfe_plots[1] & rfe_plots[3]))
+rfe_importance_plot.show()
+```
+
+At the 80% threshold, the feature importance becomes more focused, with a significant portion of the heatmap dominated by darker green shades, indicating that only a few features retain high importance rankings. This suggests that as more features are eliminated, the models prioritize a core set of variables, such as Type_Mixed and Coniferous, which stand out across all three models. The progression from 50% to 80% demonstrates how RFE refines the feature set, potentially improving model performance by focusing on the most impactful predictors while discarding less informative ones. This analysis highlights the robustness of Random Forest and Gradient Boosting in identifying key features compared to Logistic Regression, which shows a more dispersed importance ranking throughout the thresholds.
+
+In summary, Logistic Regression strongly depends on remote sensing indices across all thresholds, with increasing emphasis as the survival rate cutoff rises. Gradient Boosting balances between structural features like Age and Density, while Random Forest appears to contribute less interpretable feature importance under SHAP, possibly due to model complexity or SHAP limitations with tree ensembles.
+
+#### Precision-recall Curves
+
+The precision-recall curves as showin in @fig-precision-recall for Gradient Boosting, the curve starts high at low recall values but declines steadily, indicating a strong initial precision that decreases as recall increases. Logistic Regression shows a similar trend, with a sharp drop in precision after a moderate recall level, suggesting it maintains decent performance only at lower recall thresholds. In contrast, Random Forest exhibits a more stable curve, particularly at the 80% threshold, where it sustains higher precision across a broader recall range, reflecting better balance and robustness in classification performance. Overall, Random Forest appears to outperform the other models at higher thresholds, while Gradient Boosting and Logistic Regression show limitations as recall increases.
+
+```{python}
+#| echo: false
+#| label: fig-precision-recall
+#| fig-cap: "Precision Recall curves for each model across different thresholds"
+#| fig-pos: "H"
+#| fig-align: center
+
+precision_recall_dfs = []
+
+# gather precision recall plots for all models
+for model_name in ['gradient_boosting','random_forest','logistic_regression']:
+    for file in Path('../../').glob(f"results/*/{model_name}_pr_curve.csv"):
+        df = pd.read_csv(file)
+        df['Threshold'] = file.parent.name + '%'
+        df['Model'] = model_name.replace('_', ' ').title()
+        precision_recall_dfs.append(df)
+
+precision_recall_df = pd.concat(precision_recall_dfs, ignore_index=True)
+precision_recall_plot = alt.Chart(precision_recall_df).mark_line().encode(
+    x=alt.X('Recall:Q'),
+    y=alt.Y('Precision:Q'),
+    color=alt.Color('Threshold:O',sort=['50%','60%','70%','80%'],scale=alt.Scale(scheme='greens'))
+).properties(
+    width=200,  # Width of each individual facet
+    height=200  # Height of each individual facet (optional)
+).facet(
+    column=alt.Column('Model:N', title='Precision-Recall Curves'),
+    columns=2
+).configure_view(
+    strokeWidth=0
+).configure_header(
+    titleFontSize=20,
+)
+precision_recall_plot
+```
+
+
+#### ROC Curves
+
+Our ROC curves as shown in @fig-roc-curve appear more linear rather than hugging the top-left border, suggesting that the models are not performing very well. The linear shape indicates that as we increase the number of true positives, the number of false positives also increases. In a good model, we would expect to find a point with a high true positive rate and a low false positive rate.
+
+```{python}
+#| echo: false
+#| label: fig-roc-curve
+#| fig-cap: "ROC curves for each of model across different thresholds"
+#| fig-pos: "H"
+#| fig-align: center
+#| fig-width: 4
+#| fig-height: 4
+
+roc_dfs = []
+
+# gather precision recall plots for all models
+for model_name in ['gradient_boosting','random_forest','logistic_regression']:
+    for file in Path('../../').glob(f"results/*/{model_name}_roc_curve.csv"):
+        df = pd.read_csv(file)
+        df['Threshold'] = file.parent.name + '%'
+        df['Model'] = model_name.replace('_', ' ').title()
+        roc_dfs.append(df)
+
+roc_df = pd.concat(roc_dfs, ignore_index=True)
+
+alt.data_transformers.enable("vegafusion")
+roc_plot = alt.Chart(roc_df).mark_line().encode(
+    x=alt.X('False Positive Rate:Q'),
+    y=alt.Y('True Positive Rate:Q'),
+    color=alt.Color('Threshold:O',sort=['50%','60%','70%','80%'],scale=alt.Scale(scheme='greens'))
+).properties(
+    width=200,   # Width of each facet
+    height=200
+).facet(
+    column=alt.Column('Model:N', title='ROC Curves')
+).configure_view(
+    strokeWidth=0
+).configure_header(
+    titleFontSize=20,  # Size of the facet title
+)
+roc_plot
+```
+
+#### Confusion Matrices
+
+Confusion matrices as illustrated in @fig-confusion-matrix reaveals how our classical machine learning models is predicting our true positives which low survival rate. Similar to what ROC curves suggest, we observe more true postives and a relatively fewer false positives at higher thresholds, but false negatives begin to increase rapidly which suggests that the issue is beyond class imbalance.
+
+```{python}
+#| echo: false
+#| label: fig-confusion-matrix
+#| fig-cap: "Confusion matrices for each model across different thresholds"
+#| fig-pos: "H"
+#| fig-align: center
+#| fig-width: 4
+#| fig-height: 4
+
+
+conf_matrix_dfs = []
+
+for model_name in ['gradient_boosting','random_forest','logistic_regression']:
+    for file in Path('../../').glob(f"results/*/{model_name}_confusion_matrix.csv"):
+        conf_matrix = pd.read_csv(file,index_col=0)
+        conf_matrix = conf_matrix.reset_index().melt(id_vars='index')
+        conf_matrix.columns = ['True', 'Predicted', 'Count']
+        conf_matrix['Threshold'] = file.parent.name + '%'
+        conf_matrix['Model'] = model_name.replace('_', ' ').title()
+        conf_matrix_dfs.append(conf_matrix)
+
+conf_matrix_df = pd.concat(conf_matrix_dfs,ignore_index=True)
+heatmap = alt.Chart(conf_matrix_df).mark_rect().encode(
+    x=alt.X('Predicted:N', title='',axis=alt.Axis(labelAngle=0)),
+    y=alt.Y('True:N', title=''),
+    color=alt.Color('Count:Q', scale=alt.Scale(scheme='greens'),legend=None),
+)
+
+text = alt.Chart(conf_matrix_df).mark_text(baseline='middle').encode(
+    x='Predicted:N',
+    y='True:N',
+    text='Count:Q'
+).properties(
+    width=100,
+    height=100
+)
+
+conf_mat_plot = (heatmap+text).properties(
+    width=110,   # Width of each facet
+    height=110
+).facet(
+    row=alt.Row('Model:N',title='',header=alt.Header(labelAngle=0,labelPadding=7,labelOrient='right')),
+    column=alt.Column('Threshold:O',sort=['50%','60%','70%','80%'],title='Confusion Matrices')
+).configure_view(
+    strokeWidth=0  # Removes the border around each facet
+).configure_header(
+    titleFontSize=20,  # Size of the facet title
+).configure_axis(
+    labelFontSize=8,    # Axis tick labels
+    titleFontSize=12
+)
+
+conf_mat_plot
+```
+
+#### Evaluation Metrics
+
+Given the pronounced class imbalance in our dataset, we prioritized the F1 score as our main evaluation metric, as it balances both precision and recall. The F1 scores as shown in @tbl-f1-threshold-50 across different models and thresholds reveal important trends. At the 50% threshold, all models perform poorly: Gradient Boosting achieves an F1 score of just 0.058, Logistic Regression reaches 0.122, and Random Forest attains 0.124. As the threshold increases to 80%, performance improves markedly—Gradient Boosting rises to 0.441, Logistic Regression to 0.515, and Random Forest achieves the highest F1 score at 0.521. These results suggest that both Random Forest and Logistic Regression benefit from higher thresholds, with Random Forest consistently outperforming the others at the upper end. Gradient Boosting also improves but remains slightly behind.
+
+```{python}
+#| echo: false
+#| label: tbl-f1-threshold-50
+#| tbl-cap: "Scores at 50% threshold"
+#| fig-pos: "H"
+#| fig-align: center
+
+error_dicts = []
+for model_name in ['gradient_boosting','random_forest','logistic_regression']:
+    for file in Path('../../').glob(f"results/*/{model_name}_scores.joblib"):
+        error_dict = joblib.load(file)
+        error_dict['Model'] =  model_name.replace('_', ' ').title()
+        error_dict['Threshold'] = file.parent.name + '%'
+        error_dicts.append(error_dict)
+
+results_df = pd.DataFrame(error_dicts).sort_values(by=['Model','Threshold'])[['Model','Threshold','Accuracy','F1 Score','F2 Score','AUC','AP']]
+results_df.query('Threshold == "50%"').drop(columns='Threshold')
+```
+
+```{python}
+#| echo: false
+#| label: table-f1-threshold-80
+#| tbl-cap: "Scores at 80% threshold"
+#| fig-pos: "H"
+#| fig-align: center
+
+results_df.query('Threshold == "80%"').drop(columns='Threshold')
+```
+
+#### Conclusion
+
+Despite these improvements, the highest F1 score observed (0.521 with Random Forest) remains modest, underscoring the challenges posed by class imbalance and the inherent complexity of the prediction task. These findings indicate that classical machine learning models may be limited in their ability to capture temporal dependencies within the data. To address this limitation and further enhance predictive performance, more advanced modeling techniques—such as sequence models—are warranted.
+
+### Sequence Model Evaluation
+
+In the second phase, we advanced to deep learning approaches to address the temporal dependencies inherent in our dataset. Specifically, we implemented Recurrent Neural Network (RNN) architectures, including both Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU) models. These architectures are well-suited for sequential data, as they can capture patterns and dependencies across time steps that classical machine learning models may overlook. By leveraging LSTM and GRU networks, our goal was to improve predictive performance—particularly the F1 score—by enabling the model to learn from the temporal structure present in the survival rate data.
+
+#### Residual Plots
+
+The residual plots, as shown in @fig-rnn-residual, for the Satellite and Site-Satellite datasets, featuring the GRU and LSTM models, reveal a distinctive pattern resembling a convex function, with the residuals predominantly centered around the 80% mark on the true value axis. This clustering suggests that both models tend to predict values close to 80% with high frequency across the range of true values, from approximately 30 to 100. Such a concentration indicates a potential bias in the models, where they consistently favor this particular value regardless of the actual data distribution. This behavior is highly undesirable, as it implies the models lack the flexibility to accurately capture the full spectrum of true values, rendering their predictions less useful for practical applications. The tight grouping of residuals around 80% for both GRU and LSTM, with some spread at the extremes, further highlights a limitation in their ability to adapt to diverse data points, undermining their overall predictive reliability.
+
+```{python}
+#| echo: false
+#| label: fig-rnn-residual
+#| fig-cap: "Residual plots"
+#| fig-pos: "H"
+#| fig-align: center
+
+import pickle
+import pandas as pd
+import numpy as np
+import altair as alt
+alt.data_transformers.enable("vegafusion")
+
+def residual_df(file, model, features):
+    with open(file, 'rb') as f:
+        result = pickle.load(f)
+    df = result['pred_df'].groupby(by='ID').mean(numeric_only=True)
+    df['Features'] = features
+    df['Model'] = model
+    df['Residual'] = abs(df['raw_y_true']-df['raw_y_pred'])
+    return df
+
+
+def plot_residual(threshold, file_list):
+    resid_df = None
+    for i in file_list:
+        model = 'LSTM' if 'lstm' in i else 'GRU'
+        features = 'Satellite' if 'no_site' in i else 'Site + Satellite'
+        resid_df = pd.concat((resid_df, residual_df(i, model, features)))
+
+    resid_plot = alt.Chart(resid_df).mark_circle(opacity=0.5, size=40).encode(
+        x=alt.X('raw_y_true:Q', title='True value'),
+        y=alt.Y('Residual:Q', title='Residual'),
+        color=alt.Color('Model:N', legend=None)
+    ).properties(
+        width=200,
+        height=200).facet(
+        row=alt.Row('Model:N', title='', header=alt.Header(
+            labelAngle=0, labelPadding=7, labelOrient='right', labelFontSize=15)),
+        column=alt.Column('Features:O', sort=[
+            'Satellite', 'Site + Satellite'], title='Residual Plots', header=alt.Header(labelFontSize=15))).configure_view(
+        strokeWidth=0  # Removes the border around each facet
+    ).configure_header(
+        titleFontSize=20,  # Size of the facet title
+    ).configure_axis(titleFontSize=15)
+
+    return resid_plot
+
+plot_residual(80, ['../../results/80/lstm_site.pkl',
+                   '../../results/80/lstm_no_site.pkl',
+                   '../../results/80/gru_site.pkl',
+                   '../../results/80/gru_no_site.pkl'])
+```
+
+#### Confusion Matrices
+
+The confusion matrices, as shown in @fig-conf-mat-50, at lower thresholds reveal an intriguing outcome: the model fails to make any correct predictions for lower survival rates, which is unexpected and suggests a significant limitation in its ability to identify these cases. This is likely due to the data being heavily skewed toward higher survival rates, with most data points concentrated around 100%, allowing the model to correctly predict only the high survival rates. At the higher threshold, as shown in @fig-conf-mat-80, of 80%, the model begins to show improvement by making some correct predictions, indicating that it is starting to learn the underlying patterns in the data. However, the number of true positives remains lower compared to classical models, suggesting that while the model is adapting, it has not yet achieved the same level of accuracy or robustness in identifying positive cases across the full range of survival rates.
+
+```{python}
+#| echo: false
+#| label: fig-conf-mat-50
+#| fig-cap: "Confusion matrices for 50% threshold"
+#| fig-pos: "H"
+#| fig-align: center
+
+def conf_matrix_df(file, model, features):
+    with open(file, 'rb') as f:
+        result = pickle.load(f)
+    conf_matrix = result['conf_matrix_overall'].reset_index(
+    ).melt(id_vars='index')
+    conf_matrix.columns = ['True', 'Predicted', 'Count']
+    conf_matrix['Features'] = features
+    conf_matrix['Model'] = model
+    return conf_matrix
+
+
+def plot_conf_matrix(threshold, file_list):
+    conf_df = None
+    for i in file_list:
+        model = 'LSTM' if 'lstm' in i else 'GRU'
+        features = 'Satellite' if 'no_site' in i else 'Site + Satellite'
+        conf_df = pd.concat((conf_df, conf_matrix_df(i, model, features)))
+
+    conf_plot = alt.Chart(conf_df).mark_rect(opacity=0.8).encode(
+        y=alt.Y('True', title=''),
+        x=alt.X('Predicted', title='', axis=alt.Axis(labelAngle=0)),
+        color=alt.Color('Count:Q', scale=alt.Scale(
+            scheme='greens'), legend=None)
+    ).properties(
+        width=200,
+        height=200
+    )
+
+    text = alt.Chart(conf_df).mark_text(baseline='middle', fontSize=12).encode(
+        x='Predicted:N',
+        y='True:N',
+        text='Count:Q'
+    ).properties(
+        width=200,
+        height=200
+    )
+    conf_mat_plot = (conf_plot+text).facet(
+        row=alt.Row('Model:N', title='', header=alt.Header(
+            labelAngle=0, labelPadding=7, labelOrient='right')),
+        column=alt.Column('Features:O', sort=[
+            'Satellite', 'Site + Satellite'], title=f'{threshold}%')
+    ).configure_view(
+        strokeWidth=0  # Removes the border around each facet
+    ).configure_header(
+        titleFontSize=20,  # Size of the facet title
+        labelFontSize=14
+    ).configure_axis(
+        labelFontSize=12
+    )
+
+    return conf_mat_plot
+
+plot_conf_matrix(50, ['../../results/50/lstm_site.pkl',
+                      '../../results/50/lstm_no_site.pkl',
+                      '../../results/50/gru_site.pkl',
+                      '../../results/50/gru_no_site.pkl'])
+```
+
+```{python}
+#| echo: false
+#| label: fig-conf-mat-80
+#| fig-cap: "Confusion matrices for 80% threshold"
+#| fig-pos: "H"
+#| fig-align: center
+
+plot_conf_matrix(80, ['../../results/80/lstm_site.pkl',
+                      '../../results/80/lstm_no_site.pkl',
+                      '../../results/80/gru_site.pkl',
+                      '../../results/80/gru_no_site.pkl'])
+```
+
+
+The table highlights the F1 Scores for LSTM and GRU models using Site + Satellite and Satellite features at 50% and 80% thresholds. At the 50% threshold, all models and feature combinations show an F1 Score of 0, indicating no predictive capability. At the 80% threshold, performance improves: LSTM with Site + Satellite features achieves an F1 Score of 0.368, while LSTM with Satellite features reaches 0.393. GRU with Satellite features records a higher F1 Score of 0.434, and GRU with Site + Satellite features attains 0.44, demonstrating the best performance at this threshold. While GRU consistently outperforms LSTM, with notable improvements at the 80% threshold, it fails to outperform our classical machine learning models.
+
+```{python}
+#| echo: false
+#| label: tbl-lstm-no-site-scores
+#| tbl-cap: "Scores for LSTM model without site features"
+
+metrics_no_site, metrics_site = [], []
+for threshold in [50, 60, 70, 80]:
+    with open(f'../../results/{threshold}/lstm_no_site.pkl', 'rb') as f:
+        data = pickle.load(f)
+        metrics_no_site.append(data['error_metrics_overall'])
+df_lstm_no_site = pd.DataFrame(metrics_no_site, index=['50%', '60%', '70%', '80%'])
+for threshold in [50, 60, 70, 80]:
+    with open(f'../../results/{threshold}/lstm_site.pkl', 'rb') as f:
+        data = pickle.load(f)
+        metrics_site.append(data['error_metrics_overall'])
+df_lstm_site = pd.DataFrame(metrics_site, index=['50%', '60%', '70%', '80%'])
+display(df_lstm_no_site.drop(columns=df_lstm_no_site.columns[-3:]))
+```
+
+```{python}
+#| echo: false
+#| label: tbl-lstm-site-scores
+#| tbl-cap: "Scores for LSTM model with site features"
+display(df_lstm_site.drop(columns=df_lstm_site.columns[-3:]))
+```
+
+```{python}
+#| echo: false
+#| label: tbl-gru-no-site-scores
+#| tbl-cap: "Scores for GRU model without site features"
+
+metrics_no_site, metrics_site = [], []
+for threshold in [50, 60, 70, 80]:
+    with open(f'../../results/{threshold}/gru_no_site.pkl', 'rb') as f:
+        data = pickle.load(f)
+        metrics_no_site.append(data['error_metrics_overall'])
+df_gru_no_site = pd.DataFrame(metrics_no_site, index=['50%', '60%', '70%', '80%'])
+for threshold in [50, 60, 70, 80]:
+    with open(f'../../results/{threshold}/gru_site.pkl', 'rb') as f:
+        data = pickle.load(f)
+        metrics_site.append(data['error_metrics_overall'])
+df_gru_site = pd.DataFrame(metrics_site, index=['50%', '60%', '70%', '80%'])
+display(df_gru_no_site.drop(columns=df_gru_no_site.columns[-3:]))
+```
+```{python}
+#| echo: false
+#| label: tbl-gru-site-scores
+#| tbl-cap: "Scores for GRU model with site features"
+display(df_gru_site.drop(columns=df_lstm_site.columns[-3:]))
+```
+
+
+#### Conclusion
+
+To conclude, both modeling techniques explored—LSTM and GRU—have failed to deliver satisfactory results. Their performance, as sequence modeling approaches, falls short compared to classical modeling techniques, highlighting several potential areas for improvement. This suggests the necessity for acquiring additional data to enhance model training, developing more effective methods to address missing values, and exploring innovative ways to organize and engineer features tailored to our dataset. Addressing these aspects could significantly boost the models' predictive capability and overall effectiveness.
