@@ -14,6 +14,23 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from src.models.feat_selection import ImportanceFeatureSelector
 
+# Suppress expected warnings for tests
+import warnings
+from sklearn.exceptions import ConvergenceWarning
+
+# Suppress shap DeprecationWarning about missing __sklearn_tags__
+warnings.filterwarnings(
+    "ignore",
+    message=".*__sklearn_tags__.*",
+    category=DeprecationWarning
+)
+
+# Suppress convergence warnings from LogisticRegression
+warnings.filterwarnings(
+    "ignore",
+    category=ConvergenceWarning
+)
+
 # Test data 
 test_X = pd.DataFrame(
         {
@@ -177,7 +194,7 @@ def test_fit_shap_lr():
     Test if function runs for LogisticRegression with SHAP feature selection.
     """
     pipeline = ImportanceFeatureSelector(
-        LogisticRegression(), 'SHAP')
+        LogisticRegression(max_iter=500), 'SHAP')
     pipeline.fit(test_X, test_y)
     check_is_fitted(pipeline.estimator)
     check_is_fitted(pipeline.preprocessor_)
@@ -193,7 +210,7 @@ def test_fit_permute_lr():
     Test if function runs for LogisticRegression with permutation feature selection.
     """
     pipeline = ImportanceFeatureSelector(
-        LogisticRegression(), 'permute')
+        LogisticRegression(max_iter=500), 'permute')
     pipeline.fit(test_X, test_y)
     check_is_fitted(pipeline.estimator)
     check_is_fitted(pipeline.preprocessor_)
