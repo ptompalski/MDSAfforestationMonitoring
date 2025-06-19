@@ -34,4 +34,4 @@ quarto render reports/final/report.qmd --to pdf
 
 ## Quick Start
 
-To quickly get started with the project, you can refer to the notebook [`Data Product Quick Start`](./notebooks/data_product_quickstart.ipynb). This notebook provides a step-by-step guide on how to set up the environment, run the scripts, and visualize the results.
+To quickly get started with the project, you can refer to the notebook [`Quickstart Guide`](./quickstart_guide.md). This notebook provides a step-by-step guide on how to set up the environment, run the scripts, and visualize the results.
