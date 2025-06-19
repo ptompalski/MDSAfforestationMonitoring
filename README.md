@@ -37,7 +37,7 @@ This project provides the following key deliverables:
 1. **Reproducible model pipeline**:  
    A complete, tested, and modular pipeline for data preprocessing, model training, and performance evaluation, implemented in Python.  
    Users can run the entire workflow via the provided [Makefile](./Makefile).  
-   See the [`Quickstart Guide`](./quickstart_guide.md) for setup and usage instructions.
+   See the [`QuickStart Guide`](./quickstart_guide.md) for setup and usage instructions.
 
 2. **Technical report**:  
    A comprehensive [technical report](./reports/technical/report.pdf) detailing the analysis, modeling approaches, results, and recommendations for future development.
@@ -116,7 +116,7 @@ The deliverables are organized into the following directories:
 
 To install Conda, refer to the [User Guide](https://docs.conda.io/projects/conda/en/latest/user-guide/index.html). If you prefer a minimal installation, you can install [Miniconda3](https://docs.conda.io/en/latest/miniconda.html), which provides the same functionality with a smaller footprint.
 
-For instructions on creating and activating environments, see the [`Quick Start Guide`](./notebooks/data_product_quickstart.ipynb).
+For instructions on creating and activating environments, see the [`QuickStart Guide`](./quickstart_guide.md).
 
 ## Rendering the Reports
 
@@ -140,6 +140,6 @@ quarto render reports/technical/report.qmd --to pdf
 
 **Note:** Both Quarto and the development environment provided by `environment-dev.yml` **must** be installed prior to rendering the report.
 
-## Running the Pipeline - Quick Start
+## Running the Pipeline - QuickStart
 
-To quickly get started with the project, you can refer to the [`Quickstart Guide`](./quickstart_guide.md). This provides a step-by-step guide on how to set up the environment, run the scripts, and visualize the results.
+To quickly get started with the project, you can refer to the [`QuickStart Guide`](./quickstart_guide.md). This provides a step-by-step guide on how to set up the environment, run the scripts, and visualize the results.
