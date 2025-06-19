@@ -1,0 +1,295 @@
+### Data Cleaning
+
+Before proceeding with modeling, we performed extensive data cleaning to
+address some quality issues in the dataset. The preprocessing steps were
+outlined below:
+
+1.  **Records Removal**
+
+    -   **Replanted Sites** : To avoid introducing complex survival
+        dynamics, we removed all records from replanted afforested
+        sites.
+    -   **Out-of-Range Values** : All records that are outside of the
+        expected range for the spectral indices and survival rates were
+        considered invalid and removed from the dataset.
+    -   **Missing Spectral Data** : All rows with missing spectral data
+        were removed.
+    -   **Pre-Plantation Satellite Data** : To avoid introducing noise,
+        satellite records captured before planting were removed, as
+        pre-plantation site conditions are not relevant when modeling
+        afforestation survival rates.
+
+2.  **Data Engineering**
+
+    By normalizing tree counts (`Planted`) across site sizes
+    (`Area_ha`), we created a new feature `Density`, which provides a
+    more informative representation of underlying site conditions.
+
+3.  **Imputing Species Type**
+
+    The missing values from the `Type` column was imputed from the
+    `SpcsCmp` column. Using the threshold defined in the Forestry
+    Glossary from Natural Resources Canada, sites were labeled as
+    `Conifer` if the proportion of softwood species exceeds 80%,
+    `Deciduous` if hardwood species exceeds 80% and `Mixed` otherwise.
+
+4.  **Column Removal**
+
+    To reduce redundancy and ineffectual data, the following columns
+    were dropped :
+
+    -   `PlantDt` : This column was dropped since the majority of values
+        in the column were missing.
+    -   `NmblR`, `NmblT`, `NmblO`: As we excluded all replanted site
+        records, these columns were no longer useful.
+    -   `prevUse`: Due to severe class imbalance, this column has
+        limited predictive power.
+    -   `SpcsCmp` : As the majority of the data does not have any
+        detailed species composition, this column was only used for
+        imputing the species type.
+    -   `Year` : Both `Year` and `DOY` can be derived from `ImgDate`.
+        The `Year` column was dropped to avoid redundancy with
+        `ImgDate`. `DOY` was retained for seasonality tracking in RNN
+        modeling.
+    -   `Area_ha`, `Planted` : These two columns were dropped after
+        deriving the new feature `Density`.
+
+5.  **Train Test Split**
+
+    We performed a 70:30 train test split on the processed data,
+    splitting the data by site. This ensures that each site appears only
+    in either the training set or the test set, avoiding data leakage
+    and preserves the temporal structure of the satellite data.
+
+### Phase 1: Classical Modelling
+
+After data cleaning, we performed data transformation to prepare the
+cleaned data for classical model training.
+
+1.  **Pivoting survival records**
+
+    We pivot the data to combine the survival rates columns (`SrvvR_1`
+    to `SrvvR_7`) into a single column (`target`), and the survey dates
+    columns (`AsssD_1` to `AsssD_7`) into a survey date column
+    (`SrvvR_Date`). We added an `Age` column to keep track of the tree's
+    age at the time of the survey.
+
+2.  **Satellite-Survey record matching**
+
+    The survival rates data and satellite data were recorded at
+    irregular time intervals. A ±16 days average spectral signal of the
+    survey date was computed to match the satellite data with the
+    survival rate data. This time window was chosen specifically to
+    match the repeat cycle of the Landsat satellite.
+
+3.  **Binary Target Mapping**
+
+    We approached the problem as a classification problem and mapped the
+    `target` (survival rates) into binary classes `Low(0)`/ `High(1)`
+    survival rates based on a given classification threshold.
+
+4.  **One-hot-encoding of** **`Type`**
+
+    While Random Forest and Gradient Boosting models have native support
+    for handling categorical features, logistic regression models can
+    only handle numeric features. To maintain consistency,
+    OneHotEncoding was applied to the `Type` column for all classical
+    models.
+
+5.  **Standard Scaling**
+
+    Since the logistic regression model is also sensitive to the scale
+    of the data, we applied StandardScaler to the numeric features
+    before fitting the logistic regression model.
+
+#### Logistic Regression
+
+Logistic regression is a generalized linear model widely used for binary
+classification tasks, valued for its simplicity and interpretability. It
+provides a statistically grounded baseline and serves as a proxy for the
+classical statistical modeling used prior to this analysis. To
+demonstrate the value of more sophisticated machine learning models in
+predicting survival rates, subsequent models were expected to achieve
+performance exceeding that of logistic regression.
+
+#### Random Forest
+
+The Random Forest model is an aggregate model composed of many decision
+trees, each trained on a bootstrapped subset of the training data and a
+randomly selected subset of the features. Although training Random
+Forests can be computationally intensive, each tree is trained
+independently, enabling efficient parallelization and scalability.
+Previous studies from @bergmuller2022predicting have demonstrated that
+Random Forests perform well when using vegetation indices to predict
+canopy tree mortality. Becuase of this, this model was selected as a
+candidate for the present analysis.
+
+#### Gradient Boosting
+
+The Gradient Boosting model is a popular model that exists in a
+collection of 'boosting' models, which -unlike Random Forests- consists
+of a sequence of underfit and biased 'weak learner' models which
+converge to a high-performing 'strong learner' model when combined
+[@zhou2025ensemble] by training on the errors of previous iterations.
+This model was selected as a candidate model due to strong performance
+across a wide variety of machine learning tasks; in particular, the
+implementation offered by the XGBoost library offers optimized training
+and additional regularization methods [@xgboost].
+
+#### Feature Selection
+
+To address collinearity among vegetation indices and evaluate the
+importance of both site-based and remote sensing features, three feature
+selection methods were applied prior to tuning. Each of the methods vary
+in interpretabilty and handling of collinearity, and were chosen to
+compensate for eachother's disadvantages in this regard.
+
+##### Permutation Importance
+
+We estimate each feature's importance by randomly shuffling its values
+across samples before training, then measuring the resulting change in
+the model’s performance. This yields an interpretable, global importance
+metric. However, when predictors are highly correlated, it can
+misattribute importance—because different features may serve as proxies
+for one another—leading to misleading rankings [@scikit-learn].
+
+##### SHAP Values
+
+SHAP (SHapley Additive exPlanations) return per-prediction feature
+contributions based on Shapley values from cooperative game theory
+[@NIPS2017_7062]. This method provides both local (per-prediction) and
+global interpretability. However, SHAP may tacitly distribute credit
+among highly correlated features, depending on whether the model uses
+marginal or conditional expectations when computing the baseline.
+
+##### Recursive Feature Elimination with Cross‑Validation (RFECV)
+
+Finally, RFECV is used to iteratively train the model and remove the
+least important features based on model-derived importance metrics
+(e.g., coefficients or feature gains). Each reduced feature subset was
+evaluated by its $F_1$ performance using cross-validation. This method
+directly handles correlated features by eliminating them if they do not
+contribute to the model performance, however it can be quite
+computationally exhaustive. Feature rankings based on how early features
+were removed are used as importance metrics.
+
+### Phase 2: Temporal Models
+
+While previous models provide strong benchmarks for supervised learning,
+their assumption of independent input instances fails to capture the
+sequential and spatial dependencies inherent in the vegetation index
+data. To address this, the final phase of analysis employed Recurrent
+Neural Networks (RNNs), specifically Long Short-Term Memory (LSTM) and
+Gated Recurrent Unit (GRU) architectures, which are well-suited for
+modeling temporal dynamics. These models, though more computationally
+intensive, are efficiently implemented using modern libraries such as
+PyTorch [@paszke2019pytorch].
+
+#### Processing and Sequence Generation
+
+To prepare our data for RNN modeling, we performed a series of data
+preprocessing.
+
+1.  **Validation Split**
+
+    We performed a 50:50 split on the test data to obtain a validation
+    set for model evaluation when training the RNN models.
+
+2.  **Data Engineering**
+
+    -   `Log transformed time_delta`: This feature records the
+        difference between the image date and survey date. It is used to
+        capture the irregularities in the time steps of the satellite
+        records.
+
+    -   `negative cosine transformation DOY`: We perform a negative
+        cosine transformation on `DOY` to capture the seasonality of the
+        spectral indices.
+
+3.  **Data Normalisation**
+
+    Since RNN models are sensitive to the scale of the data, we
+    normalise the data to avoid vanishing or exploding gradient. To
+    avoid data leakage, the summary statistics (mean and standard
+    deviation) used for normalization was computed using only the
+    training data.
+
+4.  **One-hot-encoding of** **`Type`**
+
+    Since RNN models can only handle numeric data, OneHotEncoding was
+    applied to the species `Type` column. `Type_Mixed` was dropped to
+    remove linear dependencies between type columns and reduce
+    redundancy.
+
+5.  **Sequence Generation**
+
+    We split the site survey records and satellite records into separate
+    data frames. For each row in the site lookup table, we searched the
+    image table for all records with match `ID`, and `PixelID` and
+    selected all satellite records up until the survey date. This would
+    be the sequence data we use for training our RNN model. All survey
+    records with no sequences available were removed from the dataset.
+
+6.  **RNN Dataset and Dataloader**
+
+    To feed the sequence data into the RNN model, the sequence within
+    the same batch needs to have the same sequence length. Depending on
+    the age of the site, the sequence length for each survival record
+    varies. To optimize memory usage while still introducing randomness
+    to the data, we created a custom Pytorch dataset with an associated
+    method that shuffles the dataset within their Age group to minimize
+    the padding lengths required for each batch.
+
+7.  **Target mapping**
+
+    We had trained regression RNN models instead of classification
+    models, as training RNN models is time-consuming, and we want to
+    avoid training separate RNN models for each threshold value. As
+    such, the target values mapping to binary classes was done after
+    model training.
+
+#### Modelling Pipeline
+
+Following preprocessing, the deep learning pipeline proceeds as follows:
+
+1.  The sequence of vegetation indices and engineered features is passed
+    through a bidirectional GRU or LSTM, producing a hidden state.
+2.  The static site features are concatenated onto the hidden state
+    vector and passed to a multilayer FCNN.
+3.  The final layer of the FCNN output is a scalar, which is passed
+    through a sigmoid activation and multiplied by 100 to produce an
+    estimate of the survival rate of the site pixel.
+
+In addition to these steps, **layer normalization** was experimented
+with, although no improvement to predictions was observed. **Dropout**
+was also added within the FCNN layers, decreasing overfitting.
+Bidirectionality was added later in he analysis, as doing so seemed to
+generally increase performance by decreasing overfitting. Modelling was
+attemped with and without site features to assess their usage in
+predicting survival rate. Initally, prediction output was constrained to
+\[0,100\] using a simple 'clamp' function, but it was found that a
+smoother, scaled sigmoid actvation produced more consistent predictions.
+
+Hidden state and hidden layer sizes, and the number of hidden layers are
+all variable hyperparameters than may effect model performance
+[@7508408], however model performance seemed to 'plateau' after a
+certain degree of model complexity. For example, increasing the hidden
+state size beyond 32 did not increase prediction accuracy, nor did
+increasing hidden state layers beyond 3.
+
+### Evaluation Metrics
+
+Model performance was primarily evaluated using $\boldsymbol{F_1}$
+score, **precision**, and **recall**, with classification accuracy
+treated as a secondary metric due to class imbalance favoring
+high-survival sites. To enable comparison between classical
+classification models and deep learning regression models, continuous
+survival rate predictions were thresholded to produce binary labels. In
+the context of these metrics, **low-survival sites are treated as the
+positive class**, reflecting the goal of identifying potentially failing
+afforestation sites for targeted intervention. To evaluate classical
+model performance across a range of decision thresholds,
+**Precision-Recall (PR) Curves** and **Receiver Operating Characteristic
+(ROC) Curves** were produced. As is standard for machine learning
+analysis, the area under each curve (**AUC, AUROC** respectively) were
+reported as a summary of performance across all thresholds.
