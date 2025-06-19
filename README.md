@@ -10,7 +10,7 @@
 
 ### Project Overview
 
-Monitoring afforestation across hundreds of remote and ecologically diverse sites in Canada presents a significant challeng, particularly due to the weak spectral signals produced by sparse canopies during the early stages of tree growth. This project investigates the feasibility of leveraging remote sensing and machine learning to support large-scale forest restoration efforts.
+Monitoring afforestation across hundreds of remote and ecologically diverse sites in Canada presents a significant challenge, particularly due to the weak spectral signals produced by sparse canopies during the early stages of tree growth. This project investigates the feasibility of leveraging remote sensing and machine learning to support large-scale forest restoration efforts.
 
 We focus on two central research questions:
 
