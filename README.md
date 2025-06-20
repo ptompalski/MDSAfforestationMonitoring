@@ -107,7 +107,7 @@ The deliverables are organized into the following directories:
 [Conda](https://docs.conda.io/projects/conda/en/latest/index.html) is an environment and package manager used to handle software dependencies in isolated environments. This project uses Conda to ensure reproducibility and prevent library conflicts. Three environments are provided at the root of the repository:
 
 - [`environment.yml`](./environment.yml): Core environment for executing the pipeline.
-- [`environment-dev.yml`](./environment-dev.yml): Development environment for testing and report generation; includes additional packages beyond the core environment.
+- [`environment-dev.yml`](./environment-dev.yml): Development environment for testing; includes additional packages beyond the core environment.
 - [`environment-dev-gpu.yml`](./environment-dev-gpu.yml): GPU-compatible environment for use on the UBC Sockeye platform. Included for transparency; not intended for general use.
 
 To install Conda, refer to the [User Guide](https://docs.conda.io/projects/conda/en/latest/user-guide/index.html). If you prefer a minimal installation, you can install [Miniconda3](https://docs.conda.io/en/latest/miniconda.html), which provides the same functionality with a smaller footprint.
@@ -118,7 +118,7 @@ For instructions on creating and activating environments, see the [`Quick Start 
 
 [GNU Make](https://www.gnu.org/software/make/) is a build automation tool that automatically determines which parts of a program or workflow need to be re-executed, based on file dependencies and modification times. It uses a `Makefile` to define rules and targets, making it easy to manage complex or repetitive tasks such as data processing, model training, and report generation.
 
-This project includes a `Makefile` to simplify tasks. See the [`Data Product Quick Start`](./notebooks/data_product_quickstart.ipynb) for further details.
+This project includes a [`Makefile`](./Makefile) to simplify tasks. See the [`Data Product Quick Start`](./notebooks/data_product_quickstart.ipynb) for further details.
 
 If GNU Make is not already available on your personal computer, see [this guide](https://www.gnu.org/software/make/#download) to download it.
 
@@ -142,8 +142,14 @@ For example, to render the technical report:
 quarto render reports/technical/report.qmd --to pdf
 ```
 
-**Note:** Both Quarto and the development environment provided by `environment-dev.yml` **must** be installed prior to rendering the report.
+**NOTE:** The report requires the full suite of trained models, feature selectors, and results from the GitHub repository to properly render. If you have deleted those files, you can recover them by running this command in your terminal, in the root of the repository:
+
+```bash
+git restore .
+```
+
+Additionally, make sure Quarto and the environment provided by `environment.yml` are installed prior to rendering the report.
 
 ## Running the Pipeline - Quick Start
 
-To quickly get started with the project, you can refer to the [`Data Product Quick Start`](./notebooks/data_product_quickstart.ipynb). This provides a step-by-step guide on how to set up the environment, run the scripts, and visualize the results.
+To quickly get started with the project, you can refer to the [`Data Product Quick Start`](./notebooks/data_product_quickstart.ipynb). This provides a step-by-step guide on how to set up the environment and run scripts that preprocess the data and train the models.
