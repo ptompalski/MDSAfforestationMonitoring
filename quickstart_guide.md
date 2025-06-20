@@ -45,6 +45,8 @@ These commands will install all required dependencies for development.\
 
 ## Running the Scripts
 
+**Note:** If the target files or instances of the data or models already exist, the scripts will **not overwrite** them. Instead, you will see **nothing to be done** on your console.
+
 To run the scripts, ensure you are in the project directory and the environment is activated. You can then execute the scripts using make. You can find the available scripts in the `Makefile` located in the root directory of the project. A Makefile is a special file containing a set of instructions used by the make build automation tool. In data science and software projects, a Makefile is often used to automate tasks such as data preprocessing, model training, testing, and cleaning up files. The scripts are organized into different sections, such as data processing, model training, and evaluation.
 
 - Data processing scripts are used to prepare the data for analysis, cleaning, and transformation.
@@ -123,9 +125,11 @@ make data_for_classical_models THRESHOLD=${THRESHOLD}
 
 ## Data Processing for RNN Models
 
+Due to temporal nature of the data, we will use Recurrent Neural Networks (RNNs) to model the sequential and seasonal dynamics of vegetation indices. This section describes how to process the data for RNN models, including cleaning, splitting, and generating training and testing sequences.
+
 ### Split cleaned data
 
-This splits the partially cleaned dataset into training and testing subsets. The reason why we don't need to set a threshold for the RNN model is that it is designed to handle sequences of data. The threshold will be applied at the end of RNN model training to determine the survival rate classification for evaluation. The output of this step will be two parquet files: one for the training set and one for the test set.
+This splits the partially cleaned dataset into training and testing subsets. The reason why we don't need to set a threshold for the RNN model is that it is designed to handle sequences of data and training RNN model on multiple thresholds does take a lot of time. Therefore the threshold will be applied at the end of RNN model regression training to determine the survival rate classification for evaluation. The output of this step will be two parquet files: one for the training set and one for the test set.
 To split the cleaned data into training and testing subsets for RNN models, you can use the following command:
 
 ```bash
@@ -159,14 +163,14 @@ make time_series_test_data
 make data_for_RNN_models
 ```
 
-## Train the Models
+## Train Classical Models
 
-This section describes how to train the classical machine learning models and RNN models using the processed data. The training process involves using the prepared datasets to fit the models and save them for later use.
-**Note:** If the trained models already exist in the `models/` directory, the training will be skipped. You can delete the existing models if you want to retrain them by using make clean command.
+This section describes how to create and train the classical machine learning models using the processed data. The training process involves using the prepared datasets to fit the models and save them for later use.
+.
 
-### Classical Machine Learning Models
+### Create classical model instances
 
-To train the models using the provided pipelines, run the following commands:
+To create an instance of the untrained models using the provided pipelines, run the following commands:
 
 - **Logistic Regression:**
 
@@ -174,7 +178,7 @@ To train the models using the provided pipelines, run the following commands:
   make logistic_regression_pipeline
   ```
 
-  This will train a logistic regression model and save it to `models/logistic_regression.joblib`.
+  This will create an untrained logistic regression model and save it to `models/logistic_regression.joblib`.
 
 - **Random Forest:**
 
@@ -182,21 +186,22 @@ To train the models using the provided pipelines, run the following commands:
   make random_forest_pipeline
   ```
 
-  This will train a random forest model and save it to `models/` directory.
+  This will create an untrained random forest model and save it to `models/` directory.
 
 - **Gradient Boosting:**
   ```bash
   make gradient_boosting_pipeline
   ```
-  This will train a gradient boosting model and save it to `models/` directory.
+  This will create an untrained gradient boosting model and save it to `models/` directory.
 - **All models**:
   ```bash
   make all_classical_models
   ```
-  This will train all the models above and save them to the `models/` directory.
+  This will create all the untrained model above and save them to the `models/` directory.
 
-## Fine-tune the classical models
+### Fine-tune the classical models
 
+Fine tuning models involving training and hyperparameter optimization to improve their performance. The tuning process will use the training data generated in the previous steps and save the tuned models to the `models/` directory. The tuning process will also evaluate the model performance using cross-validation and return the best parameters and scores.
 You can customize hyperparameters for tuning by setting the following variables in your command:
 
 - `TUNING_METHOD`: Specify the tuning method (e.g., `grid` or `random`). grid search will try all combinations of the parameters in the grid, while random search will sample a fixed number of parameter settings from the specified grid.
@@ -276,7 +281,9 @@ You can tune each classical model separately using the following commands:
       THRESHOLD_PCT=${THRESHOLD_PCT}
   ```
 
-## Deep Learning Models (RNNs)
+## Train Deep Learning Model (RNNs)
+
+This section describes how to create and train Recurrent Neural Networks (RNNs) for modeling the sequential and seasonal dynamics of vegetation indices. RNNs are particularly well-suited for time series data, as they can capture temporal dependencies in the data.
 
 ### Set up arguments for RNN model
 
@@ -328,37 +335,40 @@ To set up the arguments for RNN training, you can run the following commands in 
     TRAINED_RNN_OUTPUT_PATH=models/trained_rnn_model.pth
 ```
 
-- **Create RNN model:**  
-   The following command will create the RNN model with the specified parameters. It will initialize the model architecture and prepare it for training.
-  To initialize the RNN model, run the following command:
+### Create RNN model instance
 
-  ```bash
-  make rnn_model \
-      INPUT_SIZE=${INPUT_SIZE} \
-      HIDDEN_SIZE=${HIDDEN_SIZE} \
-      SITE_FEATURES_SIZE=${SITE_FEATURES_SIZE} \
-      RNN_TYPE=${RNN_TYPE} \
-      NUM_LAYERS=${NUM_LAYERS} \
-      DROPOUT_RATE=${DROPOUT_RATE} \
-      CONCAT_FEATURES=${CONCAT_FEATURES} \
-      RNN_PIPELINE_PATH=${RNN_PIPELINE_PATH}
-  ```
+The following command will create the RNN model instance with the specified parameters. It will initialize the model architecture and prepare it for training.
+To initialize the RNN model, run the following command:
 
-- **Train RNN model:**
-  The following command will train the RNN model with the specified parameters. It will use the training data generated in the previous steps and save the trained model to the specified output path.
-  To train the RNN model with the specified parameters, run:
-  ```bash
-  make rnn_training \
-      LR=${LR} \
-          BATCH_SIZE=${BATCH_SIZE} \
-          EPOCHS=${EPOCHS} \
-          PATIENCE=${PATIENCE} \
-          NUM_WORKERS=${NUM_WORKERS} \
-          SITE_COLS=${SITE_COLS} \
-          SEQ_COLS=${SEQ_COLS} \
-          RNN_PIPELINE_PATH=${RNN_PIPELINE_PATH} \
-          TRAINED_RNN_OUTPUT_PATH=${TRAINED_RNN_OUTPUT_PATH}
-  ```
+```bash
+make rnn_model \
+    INPUT_SIZE=${INPUT_SIZE} \
+    HIDDEN_SIZE=${HIDDEN_SIZE} \
+    SITE_FEATURES_SIZE=${SITE_FEATURES_SIZE} \
+    RNN_TYPE=${RNN_TYPE} \
+    NUM_LAYERS=${NUM_LAYERS} \
+    DROPOUT_RATE=${DROPOUT_RATE} \
+    CONCAT_FEATURES=${CONCAT_FEATURES} \
+    RNN_PIPELINE_PATH=${RNN_PIPELINE_PATH}
+```
+
+### Train RNN model
+
+The following command will train the RNN model with the specified parameters. It will use the training data generated in the previous steps and save the trained model to the specified output path.
+To train the RNN model with the specified parameters, run:
+
+```bash
+make rnn_training \
+    LR=${LR} \
+        BATCH_SIZE=${BATCH_SIZE} \
+        EPOCHS=${EPOCHS} \
+        PATIENCE=${PATIENCE} \
+        NUM_WORKERS=${NUM_WORKERS} \
+        SITE_COLS=${SITE_COLS} \
+        SEQ_COLS=${SEQ_COLS} \
+        RNN_PIPELINE_PATH=${RNN_PIPELINE_PATH} \
+        TRAINED_RNN_OUTPUT_PATH=${TRAINED_RNN_OUTPUT_PATH}
+```
 
 ## Test
 
@@ -373,20 +383,24 @@ make test
 
 To clean up generated data and models, you can use the following commands:
 
-- **Clean data files:**
+### Clean data files
 
-  ```bash
-  make clean_data
-  ```
+```bash
+make clean_data
+```
 
-  This will remove the raw, interim, and processed data files and recreate the necessary directories with `.gitkeep` files.
+This will remove the raw, interim, and processed data files and recreate the necessary directories with `.gitkeep` files.
 
-- **Clean model files:**
-  ```bash
-  make clean_models
-  ```
-  This will remove all files in the `models` directory.
-- **Clean all generated files:**
-  ```bash
-  make clean_all
-  ```
+### Clean model files
+
+```bash
+make clean_models
+```
+
+This will remove all files in the `models` directory.
+
+### Clean all generated files
+
+```bash
+make clean_all
+```
