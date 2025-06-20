@@ -281,6 +281,14 @@ You can tune each classical model separately using the following commands:
       THRESHOLD_PCT=${THRESHOLD_PCT}
   ```
 
+### Feature selection for Classical Models
+
+Feature selection is an important step in the machine learning pipeline, as it helps to reduce the dimensionality of the data and improve model performance. In this project, we use Recursive Feature Elimination (RFE), SHAP, and permutation importance to select the most important features for each classical model. If you want to learn more, you can find the details in the [`src/models/feature_selection.py`](src/models/feat_selection.py) script.
+
+### Evaluate Classical Models
+
+After training and tuning the classical models, it is essential to evaluate their performance on the test set. This step will provide insights into how well the models generalize to unseen data. The evaluation will include metrics such as accuracy, precision, recall, and F1 score. To learn more about the evaluation process, you can refer to the [`src/evaluation/error_metrics.py`](src/evaluation/error_metrics.py) script. You can also look at our notebook in the `notebooks/` directory for a more detailed analysis of the model evaluation.
+
 ## Train Deep Learning Model (RNNs)
 
 This section describes how to create and train Recurrent Neural Networks (RNNs) for modeling the sequential and seasonal dynamics of vegetation indices. RNNs are particularly well-suited for time series data, as they can capture temporal dependencies in the data.
@@ -369,6 +377,10 @@ make rnn_training \
         RNN_PIPELINE_PATH=${RNN_PIPELINE_PATH} \
         TRAINED_RNN_OUTPUT_PATH=${TRAINED_RNN_OUTPUT_PATH}
 ```
+
+### Evaluate RNN model
+
+After training the RNN model, it is essential to evaluate its performance on the test set. This step will provide insights into how well the model generalizes to unseen data. The evaluation will include metrics such as accuracy, precision, recall, and F1 score. To learn more about the evaluation process, you can refer to the [`src/evaluation/rnn_evaluation.py`](src/evaluation/rnn_evaluation.py) script. You can also look at our notebook in the `notebooks/` directory for a more detailed analysis of the model evaluation.
 
 ## Test
 
