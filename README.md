@@ -36,7 +36,7 @@ This project provides the following key deliverables:
 1. **Reproducible model pipeline**:  
    A complete, tested, and modular pipeline for data preprocessing, model training, and performance evaluation, implemented in Python.  
    Users can run the entire workflow via the provided [Makefile](./Makefile).  
-   See the [`Quick Start Guide`](./notebooks/data_product_quickstart.ipynb) for setup and usage instructions.
+   See the [`QuickStart Guide`](./quickstart_guide.md) for setup and usage instructions.
 
 2. **Technical report**:  
    A comprehensive [technical report](./reports/technical/report.pdf) detailing the analysis, modeling approaches, results, and recommendations for future development.
@@ -46,15 +46,17 @@ This project provides the following key deliverables:
 The deliverables are organized into the following directories:
 
 - [`data/`](./data):  
-  Placeholder directories for the raw, interim (partially processed), and fully processed datasets:  
-  - [`raw/`](./data/raw): Unmodified source data  
-  - [`interim/`](./data/interim): Data after partial preprocessing  
-  - [`processed/`](./data/processed): Final cleaned dataset used for modeling  
-  
+  Placeholder directories for the raw, interim (partially processed), and fully processed datasets:
+
+  - [`raw/`](./data/raw): Unmodified source data
+  - [`interim/`](./data/interim): Data after partial preprocessing
+  - [`processed/`](./data/processed): Final cleaned dataset used for modeling
+
   **Note:** Due to privacy restrictions, data is not included in the repository. To request access, please contact [Piotr Tompalski](https://github.com/ptompalski).
 
 - [`src/`](./src):  
   Contains all core Python scripts used to run the full modeling pipeline. Subdirectories are organized by pipeline stage:
+
   - [`data/`](./src/data):  
     Scripts for data preprocessing, cleaning, and preparation prior to modeling.
   - [`models/`](./src/models):  
@@ -69,19 +71,21 @@ The deliverables are organized into the following directories:
 
 - [`models/`](./models):  
   Contains serialized model objects (`.joblib` for classical ML, `.pth` for deep learning).  
-  Models are grouped by the binary classification threshold used during training:  
+  Models are grouped by the binary classification threshold used during training:
+
   - [`50/`](./models/50), [`60/`](./models/60), [`70/`](./models/70), [`80/`](./models/80)  
     For example, a tuned Gradient Boosting model trained with a 70% survival threshold is saved at:  
-    `models/70/tuned_gradient_boosting.joblib`  
+    `models/70/tuned_gradient_boosting.joblib`
 
   Each threshold folder also includes a `logs/` subdirectory with CSV files summarizing hyperparameter search results.
-  
+
 - [`results/`](./results):  
   Stores model evaluation outputs, including `.csv` and `.joblib` files with key error metrics—such as confusion matrices, precision-recall (PR) and ROC curves, and $F_1$ scores.  
   Results are organized by classification threshold, consistent with the structure of the [`models/`](./models) directory.
 
 - [`reports/`](./reports):  
   Contains all documents and source files related to the three reports generated during the project:
+
   - [`proposal/`](./reports/proposal):  
     Includes the [proposal report](./reports/proposal/report.pdf), outlining the project's initial objectives, proposed methodology, and expected deliverables.
   - [`technical/`](./reports/technical):  
@@ -111,13 +115,13 @@ The deliverables are organized into the following directories:
 
 To install Conda, refer to the [User Guide](https://docs.conda.io/projects/conda/en/latest/user-guide/index.html). If you prefer a minimal installation, you can install [Miniconda3](https://docs.conda.io/en/latest/miniconda.html), which provides the same functionality with a smaller footprint.
 
-For instructions on creating and activating environments, see the [`Quick Start Guide`](./notebooks/data_product_quickstart.ipynb).
+For instructions on creating and activating environments, see the [`QuickStart Guide`](./quickstart_guide.md).
 
 ### GNU Make
 
 [GNU Make](https://www.gnu.org/software/make/) is a build automation tool that automatically determines which parts of a program or workflow need to be re-executed, based on file dependencies and modification times. It uses a `Makefile` to define rules and targets, making it easy to manage complex or repetitive tasks such as data processing, model training, and performance evaluation.
 
-This project includes a [`Makefile`](./Makefile) to simplify tasks. See the [`Data Product Quick Start`](./notebooks/data_product_quickstart.ipynb) for further details.
+This project includes a [`Makefile`](./Makefile) to simplify tasks. See the [`QuickStart Guide`](./quickstart_guide.md) for further details.
 
 If GNU Make is not already available on your personal computer, see [this guide](https://www.gnu.org/software/make/#download) to download it.
 
@@ -151,4 +155,4 @@ Additionally, make sure Quarto and the environment provided by `environment.yml`
 
 ## Running the Pipeline - Quick Start
 
-To quickly get started with the project, you can refer to the [`Data Product Quick Start`](./notebooks/data_product_quickstart.ipynb). This provides a step-by-step guide on how to set up the environment and run scripts that preprocess the data and train the models.
+To quickly get started with the project, you can refer to the [`QuickStart Guide`](./quickstart_guide.md). This provides a step-by-step guide on how to set up the environment and run scripts that preprocess the data and train the models.
