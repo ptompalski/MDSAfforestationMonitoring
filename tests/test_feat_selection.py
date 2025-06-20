@@ -25,7 +25,7 @@ warnings.filterwarnings(
     category=DeprecationWarning
 )
 
-# Suppress convergence warnings from LogisticRegression
+# Suppress convergence warnings from LogisticRegression: failure to converge is not critical to model functionality 
 warnings.filterwarnings(
     "ignore",
     category=ConvergenceWarning
