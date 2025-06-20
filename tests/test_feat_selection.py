@@ -18,7 +18,7 @@ from src.models.feat_selection import ImportanceFeatureSelector
 import warnings
 from sklearn.exceptions import ConvergenceWarning
 
-# Suppress shap DeprecationWarning about missing __sklearn_tags__
+# Suppress shap DeprecationWarning about missing __sklearn_tags__: this warning can safely be ignored as the  __sklearn_tags__() method is not used in this implementation.
 warnings.filterwarnings(
     "ignore",
     message=".*__sklearn_tags__.*",
