@@ -448,7 +448,8 @@ rnn_evaluation: $(TRAINED_RNN_PATH)
 		--num_workers=$(NUM_WORKERS)
 
 test:
-	pytest
+# suppress sklearn internal tag deprecation warnings
+	PYTHONWARNINGS="ignore:::DeprecationWarning" pytest
 
 clean_data:
 	rm -rf data/raw/raw_data.parquet 
