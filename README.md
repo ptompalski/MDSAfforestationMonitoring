@@ -116,7 +116,7 @@ For instructions on creating and activating environments, see the [`Quick Start 
 
 ### GNU Make
 
-[GNU Make](https://www.gnu.org/software/make/) is a build automation tool that automatically determines which parts of a program or workflow need to be re-executed, based on file dependencies and modification times. It uses a `Makefile` to define rules and targets, making it easy to manage complex or repetitive tasks such as data processing, model training, and report generation.
+[GNU Make](https://www.gnu.org/software/make/) is a build automation tool that automatically determines which parts of a program or workflow need to be re-executed, based on file dependencies and modification times. It uses a `Makefile` to define rules and targets, making it easy to manage complex or repetitive tasks such as data processing, model training, and performance evaluation.
 
 This project includes a [`Makefile`](./Makefile) to simplify tasks. See the [`Data Product Quick Start`](./notebooks/data_product_quickstart.ipynb) for further details.
 
