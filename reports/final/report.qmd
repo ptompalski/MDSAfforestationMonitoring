@@ -32,9 +32,11 @@ execute:
 
 ---
 
-## Executive Summary {#sec-exec}
+\newpage
+## Executive Summary {- #sec-exec .unnumbered}
 
 {{< include _exec_summary.qmd >}}
+\newpage
 
 ## Introduction {#sec-introduction}
 
