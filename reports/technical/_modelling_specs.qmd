@@ -1,4 +1,4 @@
-This phase of modeling began with three classical machine learning models: Logistic Regression (as a baseline), Random Forest, and Gradient Boosting Machines. To better capture the temporal structure of the remote sensing time series, two recurrent neural networks—GRU and LSTM—were subsequently developed. This section provides detailed descriptions of each model's architecture and the rationale for their selection. Methods for training, tuning, and evaluating model performance will also be thoroughly outlined.
+This phase of modeling began with three classical machine learning models: Logistic Regression (as a baseline), Random Forest, and Gradient Boosting Machines. To better capture the temporal structure of the remote sensing time series, two recurrent neural networks-Gated Recurrent Unit (GRUs) and Long Short-Term Memory (LSTM) models- were subsequently developed. This section provides detailed descriptions of each model's architecture and the rationale for their selection. Methods for training, tuning, and evaluating model performance will also be thoroughly outlined.
 
 ### Classial Modelling
 
@@ -309,16 +309,22 @@ Larger values of $\beta$ emphasize recall more heavily. This analysis primarily 
 
 To evaluate classifier performance across a range of decision thresholds, two widely used diagnostic tools are the **Receiver Operating Characteristic (ROC) curve** and the **Precision–Recall (PR) curve**.
 
-The **ROC curve** plots the **true positive rate** (recall) against the **false positive rate** (FPR) at various classification thresholds:
+The **ROC curve** plots the **true positive rate** (recall, TPR) against the **false positive rate** (FPR) at various classification thresholds:
 
 $$
 \text{TPR} = \frac{TP}{TP + FN}, \qquad \text{FPR} = \frac{FP}{FP + TN}
 $$
 
-It summarizes a model’s ability to distinguish between the positive and negative classes, regardless of their prevalence. **Note:** this treshold is intrinstic to the probabilistic predictions of the model, and is **not** the same threshold used in the preprocessing target conversion.
+It summarizes a model’s ability to distinguish between the positive and negative classes, regardless of their prevalence. Note that this treshold is intrinstic to the probabilistic predictions of the model, and is **not** the same threshold used in the preprocessing target conversion as outlined in @sec-data_prep_classical. An example of this curve is shown in @fig-roc_example.
 
-The **area under the ROC curve (AUC-ROC)** provides a scalar summary of this performance; a value of 1 indicates perfect separation, while 0.5 indicates no discriminative ability.
+![An example ROC curve for a 'one-vs-rest' binary classification problem. The plot displays the trade-off between the TPR and the FPR at **decreasing thresholds** from left to right; starting with a threshold of 0, both TPR and FPR are 0 as no positive predictions are made. As the threshold decreases, more positive predictions -TP and FP- are made. A model with predictive power better than chance should display a curve **above** the dotted black line. The figure was sourced from the  Scikit-Learn library [@scikit-learn].](../../img/roc_example.png){#fig-roc_example width="70%"}
+
+The **area under the ROC curve (AUC)** provides a scalar summary of this performance; a value of 1 indicates perfect separation, while 0.5 indicates no discriminative ability.
 
 ROC curves can be misleading in **imbalanced classification problems**, where the majority class dominates performance metrics. In this analysis, most afforestation sites exhibit **high survival**, so the model may appear to perform well overall even if it fails to identify the few low-survival sites of interest.
-The **Precision–Recall (PR) curve** more directly reflects performance on the **minority (positive) class**, which in this case is defined as **low-survival** sites.
-This curve focuses on the trade-off between **false positives** and **false negatives** when trying to identify high-risk sites. The **area under the PR curve (AUC-PR)** is more informative than AUC-ROC in this context because it penalizes false positives more explicitly and does not assume a balanced label distribution.
+
+The **Precision–Recall (PR) curve** more directly reflects performance on the **minority (positive) class**, which in this case is defined as **low-survival** sites. An example is shown in @fig-pr_example.
+
+![An example PR curve for a binary classification problem. As was the case for @fig-roc_example, the plot shows a decreasing threshold from left to right. As the threshold decreases, more positive predictions are made. This has the effect of increasing recall (more TP) while decreasing precision (more FP). The figure was sourced from the  Scikit-Learn library [@scikit-learn].](../../img/pr_example.png)
+
+This curve focuses on the trade-off between **false positives** and **false negatives** when trying to identify high-risk sites. The area under the PR curve, also known as **Average Precision (AP)** is more informative than AUC in this context because it penalizes false positives more explicitly. As is the case for AUC, an AP approaching 1 indicates high performance and perfect separation.
