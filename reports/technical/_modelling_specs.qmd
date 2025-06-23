@@ -4,7 +4,7 @@ This phase of modeling began with three classical machine learning models: Logis
 
 #### Logistic Regression
 
-Logistic regression is a generalized linear model widely used for binary classification tasks, valued for its simplicity and interpretability. It models the **log-odds** of the probability, or the **logit** that a given record belongs to class 1 as a linear combination of the input features [@enwiki:logreg]:
+Logistic regression is a generalized linear model widely used for binary classification tasks, valued for its simplicity and interpretability. It models the **log-odds** of the probability, or the **logit** that a given record belongs to class 1 as a linear combination of the input features [@Hosmer2000-gk]:
 
 $$
 \log\left( \frac{p}{1 - p} \right) = \boldsymbol{\beta}_0 + \boldsymbol{\beta}^\top \mathbf{x}_i,
