@@ -50,6 +50,5 @@ format:
 ##  Conclusions & Recommendations {#sec-conclusions}
 
 {{< include _conclusions.qmd >}}
-
-## References
 ---
+## References
