@@ -1,6 +1,6 @@
 This phase of modeling began with three classical machine learning models: Logistic Regression (as a baseline), Random Forest, and Gradient Boosting Machines. To better capture the temporal structure of the remote sensing time series, two models based on the Recurrent Neural Network (RNN) model -the Gated Recurrent Unit (GRUs) [@Ravanelli_2018] and the Long Short-Term Memory (LSTM) [@sak2014longshorttermmemorybased]- were subsequently developed. This section provides detailed descriptions of each model's architecture and the rationale for their selection. Methods for training, tuning, and evaluating model performance will also be thoroughly outlined.
 
-### Classial Modelling
+### Classial Modeling
 
 #### Logistic Regression
 
@@ -35,7 +35,7 @@ These probabilistic predictions can be converted to binary class labels by apply
 
 Overall, logistic regression provides an interpretable, statistically grounded baseline and serves as a proxy for the classical statistical modeling used prior to this analysis. To demonstrate the value of more sophisticated machine learning models in predicting survival rates, any subsequent models should achieve performance that exceeds that of logistic regression.
 
-#### Tree-Based Modelling {#sec-tree_models}
+#### Tree-Based Modeling {#sec-tree_models}
 
 Many high-performing machine learning models are composed of simple, rule-based structures known as decision trees. These models make predictions by recursively partitioning the input dataset into distinct regions based on selected features and threshold values. An example of a decision tree is shown in @fig-decision_tree.
 
@@ -178,7 +178,7 @@ While the previously discussed models perform well across a range of supervised 
 
 #### Recursive Neural Network (RNN) {#sec-rnn}
 
-The simplest deep learning model that supports sequential modelling is the RNN. @fig-rnn outlines the architecture of this model.
+The simplest deep learning model that supports sequential modeling is the RNN. @fig-rnn outlines the architecture of this model.
 
 ![Basic architecture of a many-to-one RNN. Inputs from a sequence of vectors $(X_1,X_2,...,X_n)$ are taken one-by-one, which updates a hidden state vector $h_i$ according to a linear transformation with a weight matrix $W_{xh}$. As furher inputs are processed, the hidden state recursively updates according to the input as well as the previous hidden state through the weight matrix $W_{hh}$. A many-to-one RNN outputs one prediction $Y$ after the final entry of the sequence is processed.](../../img/rnn.png){#fig-rnn width="70%"}
 
@@ -205,7 +205,7 @@ h_t &= o_t \odot \tanh(c_t)
 \end{aligned}
 $$ {#eq-lstm}
 
-Where $\odot$ represents the Hadamard product (elementwise multiplication of vector entries), $\tanh$ represents the hyperbolic tangent function and $\sigma$ represents the sigmoid function introduced in @eq-sigmoid. The cyclical behaviour of the hidden state update helps to control for problematic gradients during training, making the LSTM suitable for many long-term sequential modelling and prediction tasks [@sak2014longshorttermmemorybased]. However, the introducion of several new weight matrices and bias vectors can lead to excessively complex models that take extensive time to train.
+Where $\odot$ represents the Hadamard product (elementwise multiplication of vector entries), $\tanh$ represents the hyperbolic tangent function and $\sigma$ represents the sigmoid function introduced in @eq-sigmoid. The cyclical behaviour of the hidden state update helps to control for problematic gradients during training, making the LSTM suitable for many long-term sequential modeling and prediction tasks [@sak2014longshorttermmemorybased]. However, the introducion of several new weight matrices and bias vectors can lead to excessively complex models that take extensive time to train.
 
 #### Gated Recurrent Unit (GRU) {#sec-gru}
 
@@ -258,7 +258,7 @@ Following preprocessing (@sec-data_prep), the deep learning pipeline —comprisi
 2. The static site features are concatenated onto the hidden state vector and passed to a multilayer FCNN.
 3. The final layer of the FCNN output is a scalar, which is passed through a sigmoid activation and multiplied by 100 to produce an estimate of the survival rate of the site pixel. 
 
-In addition to these steps, **layer normalization** -which normalizes hidden layer output as a method of stabilizing predictions- was experimented with, although no improvement to predictions was observed. **dropout** -which randomly sets some parameter values to zero as a method of regularization- was also added within the FCNN layers. Modelling was attemped with and without site features to assess their usage in predicting survival rate. Hidden state and hidden layer sizes, and the number of hidden layers are all variable hyperparameters than may effect model performance [@7508408].
+In addition to these steps, **layer normalization** -which normalizes hidden layer output as a method of stabilizing predictions- was experimented with, although no improvement to predictions was observed. **dropout** -which randomly sets some parameter values to zero as a method of regularization- was also added within the FCNN layers. Modeling was attemped with and without site features to assess their usage in predicting survival rate. Hidden state and hidden layer sizes, and the number of hidden layers are all variable hyperparameters that may effect model performance [@7508408].
 
 ### Training Deep Learning Models {#sec-training_deep_learning}
 
