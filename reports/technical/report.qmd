@@ -8,6 +8,7 @@ author:
   - name: Piotr Tompalski
   - name: Alexi Rodríguez-Arelis
 date: today
+link-citations: true
 bibliography: references.bib
 format: 
   pdf:
