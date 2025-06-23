@@ -325,6 +325,6 @@ ROC curves can be misleading in imbalanced classification problems, where the ma
 
 The **Precision–Recall (PR) curve** more directly reflects performance on the minority (positive) class, which in this case is defined as low-survival sites. An example is shown in @fig-pr_example.
 
-![An example PR curve for a binary classification problem. As was the case for @fig-roc_example, the plot shows a decreasing threshold from left to right. As the threshold decreases, more positive predictions are made. This has the effect of increasing recall (more TP) while decreasing precision (more FP). The figure was sourced from the  Scikit-Learn library [@scikit-learn].](../../img/pr_example.png)
+![An example PR curve for a binary classification problem. As was the case for @fig-roc_example, the plot shows a decreasing threshold from left to right. As the threshold decreases, more positive predictions are made. This has the effect of increasing recall (more TP) while decreasing precision (more FP). The figure was sourced from the  Scikit-Learn library [@scikit-learn].](../../img/pr_example.png) {#fig-pr_example width="70%"}
 
 This curve focuses on the trade-off between false positives** and false negatives when trying to identify high-risk sites. The area under the PR curve, also known as **Average Precision (AP)** is more informative than AUC in this context because it penalizes false positives more explicitly. As is the case for AUC, an AP approaching 1 indicates high performance and perfect separation.
