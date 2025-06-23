@@ -111,7 +111,7 @@ Where $K$ is the total number of iterations of the algorithm.
 
 ### Feature Selection Methods
 
-To address collinearity among vegetation indices and evaluate the importance of both site-based and remote sensing features, we applied three feature selection methods:
+To address collinearity among vegetation indices and evaluate the importance of both site-based and remote sensing features, we applied three feature selection methods: Permutation Importance, SHAP, and Recursive Feature Elimination.
 
 #### Permutation Importance
 
@@ -171,7 +171,8 @@ Given a candidate model and a set of tunable hyperparameters, an optimization pr
 
 Cross-validation mitigates the risk of overfitting by simulating model performance on unseen data through repeated training on subsets of the data while reserving a separate fold for validation. Averaging the resulting scores provides a more realistic estimate of generalization performance than fitting on the entire training set alone.
 
-In random search, hyperparameter values are sampled from predefined distributions at each iteration, offering an efficient alternative to grid search, which exhaustively evaluates all combinations of specified values. Although grid search can be effective for low-dimensional hyperparameter spaces, it quickly becomes computationally prohibitive as the number of parameters increases. Accordingly, random search was chosen for its efficiency and scalability in this analysis.
+In random search, hyperparameter values are drawn from user-defined probability distributions rather than exhaustively testing every possible combination, as in grid search. This allows for a more efficient exploration of the hyperparameter space, particularly when only a few hyperparameters significantly influence model performance. The choice of distribution should reflect prior knowledge about the expected scale or sensitivity of each parameter. For instance, when tuning a regularization parameter such as $\lambda$, it is common practice to test values across several orders of magnitude (e.g., 0.01, 0.1, 1, 10), as performance often changes more noticeably on a logarithmic scale. In such cases, sampling from a **log-uniform** or **log-normal** distribution can better capture meaningful variation. In other cases, a **uniform** distribution, or a list of user-defined values may be more appropriate. This strategy prioritizes exploration of the most relevant regions of the hyperparameter space while reducing the computational cost of exhaustive search.
+Although grid search can be effective for low-dimensional hyperparameter spaces, it quickly becomes computationally prohibitive as the number of parameters increases. Accordingly, random search was chosen for its efficiency and scalability in this analysis.
 
 ### Sequential Deep Learning Models {#sec-sequential_deep_learning}
 
