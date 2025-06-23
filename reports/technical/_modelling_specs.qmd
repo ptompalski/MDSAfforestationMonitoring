@@ -194,7 +194,7 @@ Although the RNN is capable of capturing short term dependencies in sequential d
 
 #### Long-Term Short Term Memory (LSTM)  {#sec-lstm}
 
-To address the long-term dependency issue regarding RNNs, several models of similar, but more complex architecture have been proposed. One such model is the LSTM, which includes additional weights in the form of **input**, **output**, **cell**, and **forget** gates $(i_t, o_t, g_t, f_t)$ respectively. These gates determine which aspects of the prior hidden state and current input are 'important' for prediction. These gates are used to update the cell state $c_t$, which is then used to update the current hidden state $\h_t$ according to the equation:
+To address the long-term dependency issue regarding RNNs, several models of similar, but more complex architecture have been proposed. One such model is the LSTM, which includes additional weights in the form of **input**, **output**, **cell**, and **forget** gates $(i_t, o_t, g_t, f_t)$ respectively. These gates determine which aspects of the prior hidden state and current input are 'important' for prediction. These gates are used to update the cell state $c_t$, which is then used to update the current hidden state $h_t$ according to the equation:
 
 $$
 \begin{aligned}
@@ -211,7 +211,7 @@ Where $\odot$ represents the Hadamard product (elementwise multiplication of vec
 
 #### Gated Recurrent Unit (GRU) {#sec-gru}
 
-Like LSTMs, GRUs were developed to handle the vanishing gradient problem of RNNs. However, GRUs only utilize a **reset**, **update**, and **candidate** hidden state gate: $(r_t, z_t, \hat{h_t})$. This allows for a lighter model than the LSTM, often with comparable performance on certain tasks [@Ravanelli_2018]. Hidden states $\h_t$ are updated according to the equation:
+Like LSTMs, GRUs were developed to handle the vanishing gradient problem of RNNs. However, GRUs only utilize a **reset**, **update**, and **candidate** hidden state gate: $(r_t, z_t, \hat{h_t})$. This allows for a lighter model than the LSTM, often with comparable performance on certain tasks [@Ravanelli_2018]. Hidden states $h_t$ are updated according to the equation:
 
 $$
 \begin{aligned}
