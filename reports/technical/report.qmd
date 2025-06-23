@@ -51,16 +51,5 @@ format:
 
 {{< include _conclusions.qmd >}}
 
-
+## References
 ---
-
-::: {.callout-tip}
-**Rendering Instructions**
-
-```bash
-cd reports/technical
-conda activate mds-afforest-dev
-quarto render report.qmd
-open report.pdf
-```
-:::
