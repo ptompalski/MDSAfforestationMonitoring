@@ -389,7 +389,7 @@ roc_plot
 
 #### Confusion Matrices
 
-Confusion matrices as illustrated in @fig-confusion-matrix reaveals how our classical machine learning models is predicting our true positives which low survival rate. Similar to what ROC curves suggest, we observe more true postives and a relatively fewer false positives at higher thresholds, but false negatives begin to increase rapidly which suggests that the issue is beyond class imbalance.
+Confusion matrices as illustrated in @fig-confusion-matrix reaveals how well our classical machine learning models correctly predict true positive values which is low survival rate. Similar to what ROC curves suggest, we observe more true positives and a relatively fewer false positives at higher thresholds, but false negatives begin to increase rapidly which suggests that the issue is beyond class imbalance.
 ```{python}
 #| echo: false
 #| label: fig-confusion-matrix
