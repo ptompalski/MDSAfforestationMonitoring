@@ -1,0 +1,86 @@
+### Limitations
+
+Despite exploring both classical modeling and RNN modeling approaches,
+all our models failed to deliver satisfactory results for predicting
+tree survival rates. Here are the key limitations of our modeling
+approaches:
+
+1.  **Data Imbalance**
+
+    Our data distribution was highly imbalanced, with the target values
+    skewed heavily towards high survival rates. We believe this is the
+    leading cause for the biased predictions across all of our models.
+
+2.  **Loss of Temporal Information in Classical Models**
+
+    Our classical models fail to capture complex temporal structures in
+    the satellite data. By averaging the satellite data over time, we
+    were losing a lot of vital information, including seasonal
+    variations and short-term vegetation responses.
+
+3.  **Lack of Spatial Information in RNN Models**
+
+    Our RNN model lacks the ability to model spatial relationships
+    between pixels. Each pixel is processed independently, ignoring
+    spatial context within the same site. Neighboring pixels often share
+    similar micro-climate and environmental conditions, without spatial
+    data, our model may overlook key spatial dependencies that influence
+    vegetation response.
+
+4.  **Misleading Target Labels**
+
+    While our models were predicting at pixel level, survival records
+    were recorded at site level and assigned uniformly to each pixel
+    within a site. As a result, ‘healthy’ pixels and ‘unhealthy’ pixels
+    are assigned identical targets labels, potentially misleading the
+    model during training.
+
+### Recommendations
+
+1.  **Using Higher Resolution Satellite Data**
+
+    Using higher-resolution satellite and field-survey data may help
+    capture finer details and spatial variations between pixels of the a
+    site, improving model performance.
+
+2.  **Obtaining Higher Resolution Field Survey Data**
+
+    In the future, we recommend collecting survival rates at a finer
+    spatial resolution to improve the precision of our training targets.
+    When combined with high resolution satellite data, this would allow
+    models to learn localized vegetation dynamics more efficiently.
+
+3.  **Obtaining Annual Survival Records**
+
+    Acquiring additional training data with complete annual survival
+    rate records would substantially enhance the dataset’s temporal
+    resolution and modeling potential.
+
+4.  **Modeling at Site Level**
+
+    Since survival records are measured at site level, we recommend that
+    future models should aggregate satellite information across all
+    pixels within a site, making predictions per site rather than per
+    pixel.
+
+5.  **Incorporating Spatial Data**
+
+    We suggest incorporating spatial data such as GPS coordinates to the
+    current dataset, allowing the model to capture spatial correlations
+    across sites and pixels.
+
+6.  **CNN-LSTM model**
+
+    Alternatively, we suggest using raw satellite imagery instead of
+    pre-extracted spectral indices. Using satellite image directly allow
+    us to utilize convolutional architectures to learn spatial patterns,
+    potentially improving model performance.
+
+    We propose exploring a CNN-LSTM architecture as a next step. In this
+    hybrid approach, the satellite image for each site will first passed
+    through a CNN to extract spatial features. The CNN outputs at each
+    time step is then fed into an LSTM or GRU to capture temporal
+    patterns. The final hidden state can be passed through fully
+    connected layers to predict the survival rate for the entire site.
+    This architecture naturally accommodates both spatial and temporal
+    dependencies, addressing key shortcomings of our current models.
