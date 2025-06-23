@@ -31,7 +31,7 @@ $$
 \hat p_i = \sigma(\boldsymbol{\beta}_0 + \boldsymbol{\beta}^\top \mathbf{x}_i) = \frac{1}{1 + \exp\left( -(\boldsymbol{\beta}_0 + \boldsymbol{\beta}^\top \mathbf{x}_i) \right)}
 $$ {#eq-sigmoid}
 
-These probabilistic predictions can be converted to binary class labels by applying a specified decision threshold, typically 0.5. Model performance across different thresholds can be evaluated using the Receiver Operating Characteristic (ROC) and precision–recall (PR) curves, which are discussed in @sec-error_metrics.
+These probabilistic predictions can be converted to binary class labels by applying a specified decision threshold, typically 0.5. Model performance across different thresholds can be evaluated using the Receiver Operating Characteristic (ROC) and Precision–Recall (PR) curves, which are discussed in @sec-error_metrics.
 
 Overall, logistic regression provides an interpretable, statistically grounded baseline and serves as a proxy for the classical statistical modeling used prior to this analysis. To demonstrate the value of more sophisticated machine learning models in predicting survival rates, any subsequent models should achieve performance that exceeds that of logistic regression.
 
@@ -97,9 +97,7 @@ $$
 f_1(\mathbf{x}_i) = f_0 + \eta \omega_{\mathbf{x}_i}^{(1)}
 $$
 
-Where $\omega_{\mathbf{x}_i}$ denotes the leaf node that sample $\mathbf{x}_i$ is assigned.
-
-Where $\eta$ is a predefined **learning rate** which controls the degree to which each weak learner can make contributions to the overall model estimate. See @sec-tree_hparams for further details.
+Where $\omega_{\mathbf{x}_i}$ denotes the leaf node that sample $\mathbf{x}_i$ is assigned. $\eta$ is a predefined **learning rate** which controls the degree to which each weak learner can make contributions to the overall model estimate. See @sec-tree_hparams for further details.
 
 This update process is repeated iteratively, producing a final estimate of the log-odds which can be converted to a class probability and class labels through the same process as that of the logistic regression model:
 
@@ -222,7 +220,7 @@ h_t &= (1 - z_t) \odot \hat{h}_t + z_t \odot h_{t-1}
 \end{aligned}
 $$ {#eq-gru}
 
-Where -as in @eq-lstm- @eq-$\odot$ represents the Hadamard product, $\tanh$ represents the hyperbolic tangent function and $\sigma$ represents the sigmoid function introduced in @eq-sigmoid. 
+Where -as in @eq-lstm- $\odot$ represents the Hadamard product, $\tanh$ represents the hyperbolic tangent function and $\sigma$ represents the sigmoid function introduced in @eq-sigmoid. 
 
 #### Bidirectional RNNs {#sec-bidirectional}
 
@@ -327,4 +325,4 @@ The **Precision–Recall (PR) curve** more directly reflects performance on the 
 
 ![An example PR curve for a binary classification problem. As was the case for @fig-roc_example, the plot shows a decreasing threshold from left to right. As the threshold decreases, more positive predictions are made. This has the effect of increasing recall (more TP) while decreasing precision (more FP). The figure was sourced from the  Scikit-Learn library [@scikit-learn].](../../img/pr_example.png){#fig-pr_example width="70%"}
 
-This curve focuses on the trade-off between false positives** and false negatives when trying to identify high-risk sites. The area under the PR curve, also known as **Average Precision (AP)** is more informative than AUC in this context because it penalizes false positives more explicitly. As is the case for AUC, an AP approaching 1 indicates high performance and perfect separation.
+This curve focuses on the trade-off between false positives and false negatives when trying to identify high-risk sites. The area under the PR curve, also known as **Average Precision (AP)** is more informative than AUC in this context because it penalizes false positives more explicitly. As is the case for AUC, an AP approaching 1 indicates high performance and perfect separation.
