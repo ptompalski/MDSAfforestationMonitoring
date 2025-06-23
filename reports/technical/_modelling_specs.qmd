@@ -1,10 +1,10 @@
-This phase of modeling began with three classical machine learning models: Logistic Regression (as a baseline), Random Forest, and Gradient Boosting Machines. To better capture the temporal structure of the remote sensing time series, two recurrent neural networks-Gated Recurrent Unit (GRUs) and Long Short-Term Memory (LSTM) models- were subsequently developed. This section provides detailed descriptions of each model's architecture and the rationale for their selection. Methods for training, tuning, and evaluating model performance will also be thoroughly outlined.
+This phase of modeling began with three classical machine learning models: Logistic Regression (as a baseline), Random Forest, and Gradient Boosting Machines. To better capture the temporal structure of the remote sensing time series, two models based on the Recurrent Neural Network (RNN) model -the Gated Recurrent Unit (GRUs) [@Ravanelli_2018] and the Long Short-Term Memory (LSTM) [@sak2014longshorttermmemorybased]- were subsequently developed. This section provides detailed descriptions of each model's architecture and the rationale for their selection. Methods for training, tuning, and evaluating model performance will also be thoroughly outlined.
 
 ### Classial Modelling
 
 #### Logistic Regression
 
-Logistic regression is a generalized linear model widely used for binary classification tasks, valued for its simplicity and interpretability. It models the **log-odds** of the probability, or the **logit** that a given record belongs to class 1 as a linear combination of the input features [@Hosmer2000-gk]:
+Logistic regression is a generalized linear model widely used for binary classification tasks, valued for its simplicity and interpretability. It models the **log-odds** of the probability, or the **logit** that a given record belongs to the positive class as a linear combination of the input features [@Hosmer2000-gk] (Where the binary target is low (`0`, the positive class) or high (`1`, the negative class) survival rate as defined in  @sec-data_prep_classical):
 
 $$
 \log\left( \frac{p_i}{1 - p_i} \right) = \boldsymbol{\beta}_0 + \boldsymbol{\beta}^\top \mathbf{x}_i,
@@ -15,7 +15,7 @@ Here,
 
 -   $n$ denotes the sample size (i.e. the number of records or rows in the dataset)\
 -   $\mathbf{x}_i = [x_{i1}, x_{i2}, \dots, x_{iD}]$ is the $D$-dimensional feature vector for the $i$th observation (e.g., site-level features and aggregated vegetation indices),\
--   $p_i$ is the probability that the target label $y_i$ corresponds to the high survival class: $p_i = P(y_i = 1 \mid \mathbf{x}_i)$
+-   $p_i$ is the probability that the target label $y_i$ corresponds to the high survival class: $p_i = P(y_i = 0 \mid \mathbf{x}_i)$
 
 The coefficient vector $\boldsymbol{\beta} = [\beta_1, \beta_2, \dots, \beta_D]^T$ represents the influence of the features on each prediction. The $j$th entry of $\boldsymbol{\beta}$ corresponds to the change in the log-odds associated with a one-unit increase in the $j$th feature, holding all other features constant.
 
@@ -31,7 +31,7 @@ $$
 \hat p_i = \sigma(\boldsymbol{\beta}_0 + \boldsymbol{\beta}^\top \mathbf{x}_i) = \frac{1}{1 + \exp\left( -(\boldsymbol{\beta}_0 + \boldsymbol{\beta}^\top \mathbf{x}_i) \right)}
 $$ {#eq-sigmoid}
 
-These probabilistic predictions can be converted to binary class labels by applying a specified decision threshold, typically 0.5. Model performance across different thresholds can be evaluated using ROC and precision–recall (PR) curves, which are discussed in @sec-error_metrics.
+These probabilistic predictions can be converted to binary class labels by applying a specified decision threshold, typically 0.5. Model performance across different thresholds can be evaluated using the Receiver Operating Characteristic (ROC) and precision–recall (PR) curves, which are discussed in @sec-error_metrics.
 
 Overall, logistic regression provides an interpretable, statistically grounded baseline and serves as a proxy for the classical statistical modeling used prior to this analysis. To demonstrate the value of more sophisticated machine learning models in predicting survival rates, any subsequent models should achieve performance that exceeds that of logistic regression.
 
@@ -41,7 +41,7 @@ Many high-performing machine learning models are composed of simple, rule-based 
 
 ![A simple example of a Decision Tree with a depth of 2. The predictions $Y$ are made by comparing selected features $X_A$ and $X_B$ via comparison with threshold values $T_1$ and $T_2$.](../../img/decision_tree.png){#fig-decision_tree width="70%"}
 
-Each internal node in the tree represents a decision based on a specific feature and a corresponding threshold, and each leaf node corresponds to a unique subset of the data, defined by the path of decision rules leading to it. In binary classification, the majority label of the samples (i.e. individual records) in a leaf node is used as the prediction, but for regression, the mean of the target within the leaf node is given. Feature-threshold pairs are selected using a greedy algorithm: starting from the root node, the tree is grown iteratively by choosing the split that most effectively reduces the value of a given loss function. The cross-entropy loss defined in @eq-logloss is commonly used for binary classification tasks; however, Gini impurity is another frequently used criterion [@scikit-learn]. Alternatively, regression loss functions such as MSE can be used for Regression Tree tasks. Tree construction halts either when a leaf node contains only one class (resulting in zero loss for that subset) or when a predefined stopping criterion, such as the maximum depth, is met. See @sec-tree_hparams for guidance on selecting an appropriate maximum tree depth; choosing a higher max depth generally leads to a greater number of decisons and an overall more complex model.
+Each internal node in the tree represents a decision based on a specific feature and a corresponding threshold, and each leaf node corresponds to a unique subset of the data, defined by the path of decision rules leading to it. In binary classification, the majority label of the samples (i.e. individual records) in a leaf node is used as the prediction, but for regression, the mean of the target within the leaf node is given. Feature-threshold pairs are selected using a greedy algorithm: starting from the root node, the tree is grown iteratively by choosing the split that most effectively reduces the value of a given loss function. The cross-entropy loss defined in @eq-logloss is commonly used for binary classification tasks; however, Gini impurity is another frequently used criterion [@scikit-learn]. Alternatively, regression loss functions such as Mean Squared Error (MSE) can be used for Regression Tree tasks. Tree construction halts either when a leaf node contains only one class (resulting in zero loss for that subset) or when a predefined stopping criterion, such as the maximum depth, is met. See @sec-tree_hparams for guidance on selecting an appropriate maximum tree depth; choosing a higher max depth generally leads to a greater number of decisons and an overall more complex model.
 
 #### Random Forest Classifier
 
@@ -53,7 +53,7 @@ Although training Random Forests can be computationally intensive, each tree is 
 
 The Gradient Boosting model is a popular model that exists in a collection of 'boosting' models, which -unlike Random Forests- consists of a sequence of underfit and biased 'weak learner' models which converge to a high-performing 'strong learner' model when combined [@zhou2025ensemble]. This model was selected as a candidate model due to fast implementation and strong performance across a wide variety of machine learning tasks [@xgboost].
 
-Convergence to a strong learner from a series of weak learners is performed by iteratively fitting a regression tree to the errors of the previous model estimate. To understand this, we first define **the per-sample loss** to be the negative of @eq-logloss evaluated for a particular class prediction $\hat p_i$:
+Convergence to a strong learner from a series of weak learners is performed by iteratively fitting a regression tree to the errors of the previous model estimate. To understand this, we first define the **per-sample loss** to be the negative of @eq-logloss evaluated for a particular class prediction $\hat p_i$:
 
 $$
 \ell_i(\hat p_i, y_i) = -\left[ y_i \log(\hat p_i) + (1 - y_i) \log(1 - \hat p_i) \right]
@@ -176,7 +176,7 @@ Although grid search can be effective for low-dimensional hyperparameter spaces,
 
 ### Sequential Deep Learning Models {#sec-sequential_deep_learning}
 
-While the previously discussed models perform well across a range of supervised learning tasks and provide a strong performance baseline, they are limited by their assumption that each input instance is independent. This assumption is ill-suited to the sequential structure of the vegetation index data in this study, which exhibits temporal dynamics and potential spatial correlations between pixels within sites. To better model these dependencies, the final phase of the analysis employed sequential deep learning architectures based on Recurrent Neural Networks (RNNs), specifically Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU) models. Despite their increased complexity and computational demands, these models are efficiently implemented using modern deep learning libraries in Python, such as PyTorch [@paszke2019pytorch].
+While the previously discussed models perform well across a range of supervised learning tasks and provide a strong performance baseline, they are limited by their assumption that each input instance is independent. This assumption is ill-suited to the sequential structure of the vegetation index data in this study, which exhibits temporal dynamics and potential spatial correlations between pixels within sites. To better model these dependencies, the final phase of the analysis employed sequential deep learning architectures based on RNNs, specifically LSTM and GRU models. Despite their increased complexity and computational demands, these models are efficiently implemented using modern deep learning libraries in Python, such as PyTorch.
 
 #### Recursive Neural Network (RNN) {#sec-rnn}
 
@@ -321,10 +321,10 @@ It summarizes a model’s ability to distinguish between the positive and negati
 
 The **area under the ROC curve (AUC)** provides a scalar summary of this performance; a value of 1 indicates perfect separation, while 0.5 indicates no discriminative ability.
 
-ROC curves can be misleading in **imbalanced classification problems**, where the majority class dominates performance metrics. In this analysis, most afforestation sites exhibit **high survival**, so the model may appear to perform well overall even if it fails to identify the few low-survival sites of interest.
+ROC curves can be misleading in imbalanced classification problems, where the majority class dominates performance metrics. In this analysis, most afforestation sites exhibit high survival, so the model may appear to perform well overall even if it fails to identify the few low-survival sites of interest.
 
-The **Precision–Recall (PR) curve** more directly reflects performance on the **minority (positive) class**, which in this case is defined as **low-survival** sites. An example is shown in @fig-pr_example.
+The **Precision–Recall (PR) curve** more directly reflects performance on the minority (positive) class, which in this case is defined as low-survival sites. An example is shown in @fig-pr_example.
 
 ![An example PR curve for a binary classification problem. As was the case for @fig-roc_example, the plot shows a decreasing threshold from left to right. As the threshold decreases, more positive predictions are made. This has the effect of increasing recall (more TP) while decreasing precision (more FP). The figure was sourced from the  Scikit-Learn library [@scikit-learn].](../../img/pr_example.png)
 
-This curve focuses on the trade-off between **false positives** and **false negatives** when trying to identify high-risk sites. The area under the PR curve, also known as **Average Precision (AP)** is more informative than AUC in this context because it penalizes false positives more explicitly. As is the case for AUC, an AP approaching 1 indicates high performance and perfect separation.
+This curve focuses on the trade-off between false positives** and false negatives when trying to identify high-risk sites. The area under the PR curve, also known as **Average Precision (AP)** is more informative than AUC in this context because it penalizes false positives more explicitly. As is the case for AUC, an AP approaching 1 indicates high performance and perfect separation.
