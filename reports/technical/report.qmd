@@ -46,20 +46,10 @@ format:
 
 {{< include _product_results.qmd >}}
 
-##  Conclusions & Recommendations {#sec-conclusions}
+##  Limitations & Recommendations {#sec-conclusions}
 
 {{< include _conclusions.qmd >}}
 
 
 ---
 
-::: {.callout-tip}
-**Rendering Instructions**
-
-```bash
-cd reports/technical
-conda activate mds-afforest-dev
-quarto render report.qmd
-open report.pdf
-```
-:::
