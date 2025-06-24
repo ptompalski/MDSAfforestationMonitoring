@@ -4,7 +4,7 @@ import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='tqdm')
 ```
 
-Our delivered data product is a comprehensive machine learning pipeline, composed of a series of interconnected Python scripts. This pipeline automates the end-to-end process of data preparation, model development, and evaluation. Key functionalities include robust data processing steps such as cleaning, transformation (pivoting), and splitting into training and testing sets. Once the data is prepared, users can leverage dedicated scripts to train various machine learning models, perform hyperparameter tuning for optimization, and rigorously evaluate model performance. The primary objective of this data product is to provide an effective AI-driven solution for identifying and predicting instances of low survival rates.
+Our delivered data product is a comprehensive machine learning pipeline, composed of a series of interconnected Python scripts. This pipeline automates the end-to-end process of data preparation, model development, and evaluation. Key functionalities include robust data processing steps such as cleaning, transformation (pivoting), and splitting into training and testing sets. Once the data is prepared, users can leverage dedicated scripts to train various machine learning models, perform hyperparameter tuning for optimization, and rigorously evaluate model performance. The primary objective of this data product is to provide an effective ML-driven solution for identifying and predicting instances of low survival rates.
 
 ### Classical Models Evaluation
 
@@ -30,6 +30,7 @@ import sys
 import os
 import numpy as np
 from pathlib import Path
+alt.renderers.enable("png", scale_factor=1, ppi=300)
 
 sys.path.append(os.path.abspath("../../"))
 alt.data_transformers.enable("vegafusion")
@@ -219,7 +220,7 @@ shap_importance_plot.show()
 
 #### Recursive Feature Elimination Importance
 
-The provided plot as illustrated in @fig-rfe illustrates the Recursive Feature Elimination (RFE) importance rankings for various machine learning models, including Logistic Regression, Random Forest, and Gradient Boosting, across different feature selection thresholds (50%, 60%, 70%, and 80%). Each heatmap represents the importance ranking of features, with darker green shades indicating higher importance (rank 1) and lighter shades indicating lower importance (rank 15). At the 50% threshold, Logistic Regression, Random Forest, and Gradient Boosting show a varied distribution of feature importance, with some features like Age and Density appearing more significant across models. As the threshold increases to 60% and 70%, the concentration of important features becomes more pronounced, with Random Forest and Gradient Boosting consistently highlighting certain features, such as EVI and NDVI, as highly relevant.
+The provided plot as illustrated in @fig-rfe illustrates the Recursive Feature Elimination (RFE) importance rankings for various machine learning models, including Logistic Regression, Random Forest, and Gradient Boosting, across different feature selection thresholds (50%, 60%, 70%, and 80%). Each heatmap represents the importance ranking of features, with darker green shades indicating higher importance (rank 1) and lighter shades indicating lower importance (rank 15). At the 50% threshold, Logistic Regression, Random Forest, and Gradient Boosting show a varied distribution of feature importance, with some features like Age and Density appearing more significant across models. As the threshold increases to 60% and 70%, the concentration of important features becomes more pronounced, with Random Forest and Gradient Boosting consistently highlighting certain vegetation indices as highly relevant.
 
 ```{python}
 #| echo: false
@@ -250,12 +251,13 @@ for threshold in [50,60,70,80]:
     })
     
     rfe_heatmap = alt.Chart(rfecv_df).mark_rect().encode(
-    x=alt.X('feature:N',title='',axis=alt.Axis(labelAngle=45)),
-    y=alt.Y('model:N',sort=model_order,title=''),
-    color=alt.Color('ranking:O',title='Importance Ranking',scale=alt.Scale(scheme='greens', reverse=True))
+        x=alt.X('feature:N',title='',axis=alt.Axis(labelAngle=45)),
+        y=alt.Y('model:N',sort=model_order,title=''),
+        color=alt.Color('ranking:O',title='Importance Ranking',scale=alt.Scale(scheme='greens', reverse=True),
+                        legend=alt.Legend(labelFontSize=8, titleFontSize=9))
     ).properties(
         title=f'{threshold}%',
-        width=190
+        width=200
         )
     rfe_plots.append(rfe_heatmap)        
 
@@ -291,13 +293,13 @@ rfe_importance_plot = alt.vconcat(title,(rfe_plots[0] & rfe_plots[2]) | (rfe_plo
 rfe_importance_plot.show()
 ```
 
-At the 80% threshold, the feature importance becomes more focused, with a significant portion of the heatmap dominated by darker green shades, indicating that only a few features retain high importance rankings. This suggests that as more features are eliminated, the models prioritize a core set of variables, such as Type_Mixed and Coniferous, which stand out across all three models. The progression from 50% to 80% demonstrates how RFE refines the feature set, potentially improving model performance by focusing on the most impactful predictors while discarding less informative ones. This analysis highlights the robustness of Random Forest and Gradient Boosting in identifying key features compared to Logistic Regression, which shows a more dispersed importance ranking throughout the thresholds.
+At the 80% threshold, the feature importance becomes more focused, with a significant portion of the heatmap dominated by darker green shades, indicating that every feature are highly relavant. The progression from 50% to 80% demonstrates how RFE expand its feature importance, potentially improving model performance by having more features.
 
-In summary, Logistic Regression strongly depends on remote sensing indices across all thresholds, with increasing emphasis as the survival rate cutoff rises. Gradient Boosting balances between structural features like Age and Density, while Random Forest appears to contribute less interpretable feature importance under SHAP, possibly due to model complexity or SHAP limitations with tree ensembles.
+In summary, Density seems to be the most important feature across all thresholds for every model, while the rest start to becomre more relevant as the threshold increases.
 
 #### Precision-recall Curves
 
-The precision-recall curves as showin in @fig-precision-recall for Gradient Boosting, the curve starts high at low recall values but declines steadily, indicating a strong initial precision that decreases as recall increases. Logistic Regression shows a similar trend, with a sharp drop in precision after a moderate recall level, suggesting it maintains decent performance only at lower recall thresholds. In contrast, Random Forest exhibits a more stable curve, particularly at the 80% threshold, where it sustains higher precision across a broader recall range, reflecting better balance and robustness in classification performance. Overall, Random Forest appears to outperform the other models at higher thresholds, while Gradient Boosting and Logistic Regression show limitations as recall increases.
+The PR curves as showin in @fig-precision-recall for Gradient Boosting, the curve starts high at low recall values but declines steadily, indicating a strong initial precision that decreases as recall increases. Logistic Regression shows a similar trend, with a sharp drop in precision after a moderate recall level, suggesting it maintains decent performance only at lower recall thresholds. In contrast, Random Forest exhibits a more stable curve, particularly at the 80% threshold, where it sustains higher precision across a broader recall range, reflecting better balance and robustness in classification performance. Overall, Random Forest appears to outperform the other models at higher thresholds, while Gradient Boosting and Logistic Regression show limitations as recall increases.
 
 ```{python}
 #| echo: false
@@ -322,8 +324,8 @@ precision_recall_plot = alt.Chart(precision_recall_df).mark_line().encode(
     y=alt.Y('Precision:Q'),
     color=alt.Color('Threshold:O',sort=['50%','60%','70%','80%'],scale=alt.Scale(scheme='greens'))
 ).properties(
-    width=200,  # Width of each individual facet
-    height=200  # Height of each individual facet (optional)
+    width=170,  # Width of each individual facet
+    height=170  # Height of each individual facet (optional)
 ).facet(
     column=alt.Column('Model:N', title='Precision-Recall Curves'),
     columns=2
@@ -367,8 +369,8 @@ roc_plot = alt.Chart(roc_df).mark_line().encode(
     y=alt.Y('True Positive Rate:Q'),
     color=alt.Color('Threshold:O',sort=['50%','60%','70%','80%'],scale=alt.Scale(scheme='greens'))
 ).properties(
-    width=200,   # Width of each facet
-    height=200
+    width=170,   # Width of each facet
+    height=170
 ).facet(
     column=alt.Column('Model:N', title='ROC Curves')
 ).configure_view(
@@ -381,7 +383,7 @@ roc_plot
 
 #### Confusion Matrices
 
-Confusion matrices as illustrated in @fig-confusion-matrix reaveals how our classical machine learning models is predicting our true positives which low survival rate. Similar to what ROC curves suggest, we observe more true postives and a relatively fewer false positives at higher thresholds, but false negatives begin to increase rapidly which suggests that the issue is beyond class imbalance.
+Confusion matrices as illustrated in @fig-confusion-matrix reaveals how well our classical machine learning models correctly predict true positive values which is low survival rate. Similar to what ROC curves suggest, we observe more true positives and a relatively fewer false positives at higher thresholds, but false negatives begin to increase rapidly which suggests that the issue is beyond class imbalance.
 
 ```{python}
 #| echo: false
@@ -440,7 +442,7 @@ conf_mat_plot
 
 #### Evaluation Metrics
 
-Given the pronounced class imbalance in our dataset, we prioritized the F1 score as our main evaluation metric, as it balances both precision and recall. The F1 scores as shown in @tbl-f1-threshold-50 across different models and thresholds reveal important trends. At the 50% threshold, all models perform poorly: Gradient Boosting achieves an F1 score of just 0.058, Logistic Regression reaches 0.122, and Random Forest attains 0.124. As the threshold increases to 80%, performance improves markedly—Gradient Boosting rises to 0.441, Logistic Regression to 0.515, and Random Forest achieves the highest F1 score at 0.521. These results suggest that both Random Forest and Logistic Regression benefit from higher thresholds, with Random Forest consistently outperforming the others at the upper end. Gradient Boosting also improves but remains slightly behind.
+Given the pronounced class imbalance in our dataset, we prioritized the F1 score as our main evaluation metric, as it balances both precision and recall. The F1 scores as shown in @tbl-f1-threshold-50 across different models and thresholds reveal important trends. At the 50% threshold, all models perform poorly: Gradient Boosting achieves an F1 score of just 0.058, Logistic Regression reaches 0.122, and Random Forest attains 0.124. As the threshold increases to 80%, as shown in @tbl-f1-threshold-80, performance improves markedly—Gradient Boosting rises to 0.441, Logistic Regression to 0.515, and Random Forest achieves the highest F1 score at 0.521. These results suggest that both Random Forest and Logistic Regression benefit from higher thresholds, with Random Forest consistently outperforming the others at the upper end. Gradient Boosting also improves but remains slightly behind.
 
 ```{python}
 #| echo: false
@@ -463,7 +465,7 @@ results_df.query('Threshold == "50%"').drop(columns='Threshold')
 
 ```{python}
 #| echo: false
-#| label: table-f1-threshold-80
+#| label: tbl-f1-threshold-80
 #| tbl-cap: "Scores at 80% threshold"
 #| fig-pos: "H"
 #| fig-align: center
@@ -477,7 +479,7 @@ Despite these improvements, the highest F1 score observed (0.521 with Random For
 
 ### Sequence Model Evaluation
 
-In the second phase, we advanced to deep learning approaches to address the temporal dependencies inherent in our dataset. Specifically, we implemented Recurrent Neural Network (RNN) architectures, including both Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU) models. These architectures are well-suited for sequential data, as they can capture patterns and dependencies across time steps that classical machine learning models may overlook. By leveraging LSTM and GRU networks, our goal was to improve predictive performance—particularly the F1 score—by enabling the model to learn from the temporal structure present in the survival rate data.
+In the second phase, we advanced to deep learning approaches to address the temporal dependencies inherent in our dataset. Specifically, we implemented RNN architectures, including both LSTM and GRU models. These architectures are well-suited for sequential data, as they can capture patterns and dependencies across time steps that classical machine learning models may overlook. By leveraging LSTM and GRU networks, our goal was to improve predictive performance—particularly the F1 score—by enabling the model to learn from the temporal structure present in the survival rate data.
 
 #### Residual Plots
 
@@ -619,8 +621,9 @@ plot_conf_matrix(80, ['../../results/80/lstm_site.pkl',
                       '../../results/80/gru_no_site.pkl'])
 ```
 
+#### Evaluation Metrics (RNNs)
 
-The table highlights the F1 Scores for LSTM and GRU models using Site + Satellite and Satellite features at 50% and 80% thresholds. At the 50% threshold, all models and feature combinations show an F1 Score of 0, indicating no predictive capability. At the 80% threshold, performance improves: LSTM with Site + Satellite features achieves an F1 Score of 0.368, while LSTM with Satellite features reaches 0.393. GRU with Satellite features records a higher F1 Score of 0.434, and GRU with Site + Satellite features attains 0.44, demonstrating the best performance at this threshold. While GRU consistently outperforms LSTM, with notable improvements at the 80% threshold, it fails to outperform our classical machine learning models.
+The tables highlight the F1 Scores for LSTM and GRU models using Site + Satellite and Satellite features at 50% and 80% thresholds. At the 50% threshold, all models and feature combinations show an F1 Score of 0, indicating no predictive capability. At the 80% threshold, performance improves: LSTM with Site + Satellite features, as shown in @tbl-lstm-site-scores, achieves an F1 Score of 0.368, while LSTM with Satellite features, as shown in @tbl-lstm-no-site-scores, reaches 0.393. GRU with Satellite features, as shown in @tbl-tbl-gru-no-site-scores, records a higher F1 Score of 0.434, and GRU with Site + Satellite features, as showin in @tbl-gru-site-scores, attains 0.44, demonstrating the best performance at this threshold. While GRU consistently outperforms LSTM, with notable improvements at the 80% threshold, it fails to outperform our classical machine learning models.
 
 ```{python}
 #| echo: false
