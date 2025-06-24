@@ -9,6 +9,7 @@ author:
   - name: Alexi Rodríguez-Arelis
 date: today
 bibliography: references.bib
+link-citations: true
 format: 
   pdf:
     toc: true
@@ -54,3 +55,4 @@ execute:
 
 ---
 
+## References
