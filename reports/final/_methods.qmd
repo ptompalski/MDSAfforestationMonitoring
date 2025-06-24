@@ -1,3 +1,7 @@
+In this section, we discussed the data science methods used in this
+project, including data cleaning techniques, classical models, recurrent
+neural network (RNN) models and evaluation metrics.
+
 ### Data Cleaning
 
 Before proceeding with modeling, we performed extensive data cleaning to
@@ -6,18 +10,25 @@ outlined below:
 
 1.  **Records Removal**
 
-    -   **Replanted Sites** : To avoid introducing complex survival
+    In order to preserve data integrity, we removed the following
+    records from the dataset:
+
+    -   **Replanted Sites**: To avoid introducing complex survival
         dynamics, we removed all records from replanted afforested
         sites.
-    -   **Out-of-Range Values** : All records that are outside of the
+    -   **Out-of-Range Values**: All records that are outside of the
         expected range for the spectral indices and survival rates were
         considered invalid and removed from the dataset.
-    -   **Missing Spectral Data** : All rows with missing spectral data
+    -   **Missing Spectral Data**: All rows with missing spectral data
         were removed.
-    -   **Pre-Plantation Satellite Data** : To avoid introducing noise,
+    -   **Pre-Plantation Satellite Data**: To avoid introducing noise,
         satellite records captured before planting were removed, as
         pre-plantation site conditions are not relevant when modeling
         afforestation survival rates.
+
+    Since the removed records only accounts for a small proportion of
+    the total records, the impact of this removal on data size and
+    distribution is negligible.
 
 2.  **Data Engineering**
 
@@ -29,17 +40,17 @@ outlined below:
 
     The missing values from the `Type` column was imputed from the
     `SpcsCmp` column. Using the threshold defined in the Forestry
-    Glossary from Natural Resources Canada, sites were labeled as
-    `Conifer` if the proportion of softwood species exceeds 80%,
+    Glossary from Natural Resources Canada [-@mixed], sites were labeled
+    as `Conifer` if the proportion of softwood species exceeds 80%,
     `Deciduous` if hardwood species exceeds 80% and `Mixed` otherwise.
 
 4.  **Column Removal**
 
     To reduce redundancy and ineffectual data, the following columns
-    were dropped :
+    were dropped:
 
     -   `PlantDt` : This column was dropped since the majority of values
-        in the column were missing.
+        in the column were missing (see @fig-missing).
     -   `NmblR`, `NmblT`, `NmblO`: As we excluded all replanted site
         records, these columns were no longer useful.
     -   `prevUse`: Due to severe class imbalance, this column has
@@ -52,19 +63,44 @@ outlined below:
         `ImgDate`. `DOY` was retained for seasonality tracking in RNN
         modeling.
     -   `Area_ha`, `Planted` : These two columns were dropped after
-        deriving the new feature `Density`.
+        deriving the new feature `Density` to avoid multicollinearity.
 
 5.  **Train Test Split**
 
     We performed a 70:30 train test split on the processed data,
     splitting the data by site. This ensures that each site appears only
     in either the training set or the test set, avoiding data leakage
-    and preserves the temporal structure of the satellite data.
+    and preserves the temporal structure of the satellite data. While
+    this splitting method can lead to imbalanced splits—especially given
+    the skew toward higher survival rates—it is a necessary trade-off to
+    ensure valid model evaluation and reduce the risk of overfitting.
+
+```{python}
+#| label: fig-missing
+#| fig-cap: Missingness plot of the raw dataset, where black indicates data presence along rows and white indicates data absent along rows. 
+#| echo: False
+
+import missingno as msno
+import pandas as pd
+import matplotlib.pyplot as plt
+df = pd.read_parquet('../../data/raw/raw_data.parquet')
+msno.matrix(df,label_rotation=70, sparkline=False, fontsize=18)
+plt.title('Missingess Across Raw Dataset', fontsize=24)
+plt.show()
+```
 
 ### Phase 1: Classical Modelling
 
+In this phase of modelling, we start with three classical machine
+learning models: Logistic Regression, Random Forest and Gradient
+Boosting. This section outlines the techniques used in data preparation
+and classical modelling.
+
+#### Data Preparation for Classical Models
+
 After data cleaning, we performed data transformation to prepare the
-cleaned data for classical model training.
+cleaned data for classical model training. The preprocessing steps were
+listed below:
 
 1.  **Pivoting survival records**
 
@@ -88,19 +124,20 @@ cleaned data for classical model training.
     `target` (survival rates) into binary classes `Low(0)`/ `High(1)`
     survival rates based on a given classification threshold.
 
-4.  **One-hot-encoding of** **`Type`**
+4.  **OneHotEncoding of** **`Type`**
 
     While Random Forest and Gradient Boosting models have native support
-    for handling categorical features, logistic regression models can
-    only handle numeric features. To maintain consistency,
-    OneHotEncoding was applied to the `Type` column for all classical
-    models.
+    for handling categorical features [@randForest; @xgboost], logistic
+    regression models can only handle numeric features [@log_data]. To
+    maintain consistency, OneHotEncoding [@scikit-learn] was applied to
+    the `Type` column for all classical models.
 
 5.  **Standard Scaling**
 
     Since the logistic regression model is also sensitive to the scale
-    of the data, we applied StandardScaler to the numeric features
-    before fitting the logistic regression model.
+    of the data [@log_data], we applied StandardScaler [@scikit-learn]
+    to the numeric features before fitting the logistic regression
+    model.
 
 #### Logistic Regression
 
@@ -197,13 +234,13 @@ preprocessing.
 
 2.  **Data Engineering**
 
-    -   `Log transformed time_delta`: This feature records the
+    -   `Log Transformed time_delta`: This feature records the
         difference between the image date and survey date. It is used to
         capture the irregularities in the time steps of the satellite
         records.
 
-    -   `negative cosine transformation DOY`: We perform a negative
-        cosine transformation on `DOY` to capture the seasonality of the
+    -   `Negative Cosine Transformed DOY`: We perform a negative cosine
+        transformation on `DOY` to capture the seasonality of the
         spectral indices.
 
 3.  **Data Normalisation**
@@ -214,12 +251,12 @@ preprocessing.
     deviation) used for normalization was computed using only the
     training data.
 
-4.  **One-hot-encoding of** **`Type`**
+4.  **OneHotEncoding of** **`Type`**
 
-    Since RNN models can only handle numeric data, OneHotEncoding was
-    applied to the species `Type` column. `Type_Mixed` was dropped to
-    remove linear dependencies between type columns and reduce
-    redundancy.
+    Since RNN models can only handle numeric data, OneHotEncoding
+    [@scikit-learn] was applied to the species `Type` column.
+    `Type_Mixed` was dropped to remove linear dependencies between type
+    columns and reduce redundancy.
 
 5.  **Sequence Generation**
 
@@ -246,9 +283,9 @@ preprocessing.
     models, as training RNN models is time-consuming, and we want to
     avoid training separate RNN models for each threshold value. As
     such, the target values mapping to binary classes was done after
-    model training.
+    model training. Further details on the RNN model design and training are presented in the next section (@sec-rnn).
 
-#### Modelling Pipeline
+#### Modelling Pipeline {#sec-rnn}
 
 Following preprocessing, the deep learning pipeline proceeds as follows:
 
