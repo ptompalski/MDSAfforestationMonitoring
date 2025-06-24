@@ -34,7 +34,7 @@ from pathlib import Path
 sys.path.append(os.path.abspath("../../"))
 alt.data_transformers.enable("vegafusion")
 from src.models.feat_selection import ImportanceFeatureSelector
-alt.renderers.enable("png")
+alt.renderers.enable("png", scale_factor=1, ppi=300)
 
 perm_plots = []
 model_order=['Logistic Regression','Random Forest','Gradient Boosting']
@@ -237,6 +237,7 @@ In summary, Density seems to be the most important feature across all thresholds
 #| fig-cap: "RFE heatmap"
 #| fig-pos: "H"
 #| fig-align: center
+alt.renderers.enable("png", scale_factor=1, ppi=300)
 
 rfe_plots = []
 for threshold in [50,60,70,80]:

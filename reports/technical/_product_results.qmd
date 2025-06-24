@@ -4,7 +4,7 @@ import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='tqdm')
 ```
 
-Our delivered data product is a comprehensive machine learning pipeline, composed of a series of interconnected Python scripts. This pipeline automates the end-to-end process of data preparation, model development, and evaluation. Key functionalities include robust data processing steps such as cleaning, transformation (pivoting), and splitting into training and testing sets. Once the data is prepared, users can leverage dedicated scripts to train various machine learning models, perform hyperparameter tuning for optimization, and rigorously evaluate model performance. The primary objective of this data product is to provide an effective AI-driven solution for identifying and predicting instances of low survival rates.
+Our delivered data product is a comprehensive machine learning pipeline, composed of a series of interconnected Python scripts. This pipeline automates the end-to-end process of data preparation, model development, and evaluation. Key functionalities include robust data processing steps such as cleaning, transformation (pivoting), and splitting into training and testing sets. Once the data is prepared, users can leverage dedicated scripts to train various machine learning models, perform hyperparameter tuning for optimization, and rigorously evaluate model performance. The primary objective of this data product is to provide an effective ML-driven solution for identifying and predicting instances of low survival rates.
 
 ### Classical Models Evaluation
 
@@ -30,11 +30,11 @@ import sys
 import os
 import numpy as np
 from pathlib import Path
+alt.renderers.enable("png", scale_factor=1, ppi=300)
 
 sys.path.append(os.path.abspath("../../"))
 alt.data_transformers.enable("vegafusion")
 from src.models.feat_selection import ImportanceFeatureSelector
-alt.renderers.enable("png")
 
 perm_plots = []
 model_order=['Logistic Regression','Random Forest','Gradient Boosting']
@@ -478,7 +478,7 @@ Despite these improvements, the highest F1 score observed (0.521 with Random For
 
 ### Sequence Model Evaluation
 
-In the second phase, we advanced to deep learning approaches to address the temporal dependencies inherent in our dataset. Specifically, we implemented RNN architectures, including both Long Short-Term Memory (LSTM) and Gated Recurrent Unit (GRU) models. These architectures are well-suited for sequential data, as they can capture patterns and dependencies across time steps that classical machine learning models may overlook. By leveraging LSTM and GRU networks, our goal was to improve predictive performance—particularly the F1 score—by enabling the model to learn from the temporal structure present in the survival rate data.
+In the second phase, we advanced to deep learning approaches to address the temporal dependencies inherent in our dataset. Specifically, we implemented RNN architectures, including both LSTM and GRU models. These architectures are well-suited for sequential data, as they can capture patterns and dependencies across time steps that classical machine learning models may overlook. By leveraging LSTM and GRU networks, our goal was to improve predictive performance—particularly the F1 score—by enabling the model to learn from the temporal structure present in the survival rate data.
 
 #### Residual Plots
 
@@ -622,7 +622,7 @@ plot_conf_matrix(80, ['../../results/80/lstm_site.pkl',
 
 #### Evaluation Metrics (RNNs)
 
-The tables highlight the F1 Scores for LSTM and GRU models using Site + Satellite and Satellite features at 50% and 80% thresholds. At the 50% threshold, all models and feature combinations show an F1 Score of 0, indicating no predictive capability. At the 80% threshold, performance improves: LSTM with Site + Satellite features achieves an F1 Score of 0.368, while LSTM with Satellite features reaches 0.393. GRU with Satellite features records a higher F1 Score of 0.434, and GRU with Site + Satellite features attains 0.44, demonstrating the best performance at this threshold. While GRU consistently outperforms LSTM, with notable improvements at the 80% threshold, it fails to outperform our classical machine learning models.
+The tables highlight the F1 Scores for LSTM and GRU models using Site + Satellite and Satellite features at 50% and 80% thresholds. At the 50% threshold, all models and feature combinations show an F1 Score of 0, indicating no predictive capability. At the 80% threshold, performance improves: LSTM with Site + Satellite features, as shown in @tbl-lstm-site-scores, achieves an F1 Score of 0.368, while LSTM with Satellite features, as shown in @tbl-lstm-no-site-scores, reaches 0.393. GRU with Satellite features, as shown in @tbl-tbl-gru-no-site-scores, records a higher F1 Score of 0.434, and GRU with Site + Satellite features, as showin in @tbl-gru-site-scores, attains 0.44, demonstrating the best performance at this threshold. While GRU consistently outperforms LSTM, with notable improvements at the 80% threshold, it fails to outperform our classical machine learning models.
 
 ```{python}
 #| echo: false
