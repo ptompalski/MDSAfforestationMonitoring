@@ -8,6 +8,7 @@ author:
   - name: Piotr Tompalski
   - name: Alexi Rodríguez-Arelis
 date: today
+link-citations: true
 bibliography: references.bib
 format: 
   pdf:
@@ -51,17 +52,5 @@ format:
 ##  Conclusions & Recommendations {#sec-conclusions}
 
 {{< include _conclusions.qmd >}}
-
-
 ---
-
-::: {.callout-tip}
-**Rendering Instructions**
-
-```bash
-cd reports/technical
-conda activate mds-afforest-dev
-quarto render report.qmd
-open report.pdf
-```
-:::
+## References
