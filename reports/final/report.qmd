@@ -54,13 +54,3 @@ execute:
 
 ---
 
-::: {.callout-tip}
-**Rendering Instructions**
-
-```bash
-cd reports/"final report"
-conda activate mds-afforest-dev
-quarto render report.qmd
-open report.pdf
-```
-:::
