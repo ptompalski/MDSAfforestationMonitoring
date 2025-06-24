@@ -78,10 +78,10 @@ model robustness and predictive power in future work.
     Alternatively, we suggest using raw satellite imagery instead of
     pre-extracted spectral indices. Using satellite image directly allow
     us to utilize convolutional architectures to learn spatial patterns,
-    potentially improving model performance.
-
-    We propose exploring a CNN-LSTM [@cnn-lstm] architecture as the next step (see @fig-rnn). In this
-    hybrid approach, the satellite image for each site will first passed
+    potentially improving model performance. 
+    
+    We propose exploring a CNN-LSTM [@cnn-lstm] architecture as the next step (see @fig-rnn). 
+    In this hybrid approach, the satellite image for each site will first passed
     through a CNN to extract spatial features. The CNN outputs at each
     time step is then fed into an LSTM or GRU to capture temporal
     patterns. The final hidden state can be passed through fully
@@ -89,10 +89,5 @@ model robustness and predictive power in future work.
     This architecture naturally accommodates both spatial and temporal
     dependencies, addressing key shortcomings of our current models.
     
-    ![Basic architecture of a CNN-LSTM model, where inputs from a sequence
-of satellite images (𝑋1, 𝑋2, ..., 𝑋𝑛) passes through a convolution
-neural network (CNN) layer. The output sequence of the CNN layer is then
-taken one-by-one into the LSTM layer. The final hidden state of the LSTM
-model can then be passed through fully connected linear layers to
-predict the survival rate for the entire site.
-](../../img/cnn-lstm.png){#fig-rnn width="100%"}
+![Basic architecture of a CNN-LSTM model, where inputs from a sequence of satellite images $(X_1,X_2,...,X_n)$ passes through a convolution neural network (CNN) layer. The output sequence of the CNN layer is then taken one-by-one into the LSTM layer. The final hidden state of the LSTM model can then be passed through fully connected linear layers to predict the survival rate for the entire site.](../../img/cnn-lstm.png){#fig-rnn width="100%"}
+    

@@ -55,6 +55,5 @@ execute:
 
 {{< include _conclusions.qmd >}}
 
----
-
+\newpage
 ## References
