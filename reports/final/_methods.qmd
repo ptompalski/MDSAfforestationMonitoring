@@ -93,13 +93,12 @@ cleaned data for classical model training.
     While Random Forest and Gradient Boosting models have native support
     for handling categorical features, logistic regression models can
     only handle numeric features. To maintain consistency,
-    OneHotEncoding was applied to the `Type` column for all classical
-    models.
+    `OneHotEncoding` as implemented by Scikit-Learn [@scikit-learn] was applied to the `Type` column for all classical models.
 
 5.  **Standard Scaling**
 
     Since the logistic regression model is also sensitive to the scale
-    of the data, we applied StandardScaler to the numeric features
+    of the data, we applied `StandardScaler` -implemented by Scikit-Learn [@scikit-learn]- to the numeric features
     before fitting the logistic regression model.
 
 #### Logistic Regression
@@ -214,10 +213,11 @@ preprocessing.
 
 4.  **One-hot-encoding of** **`Type`**
 
-    Since RNN models can only handle numeric data, OneHotEncoding was
-    applied to the species `Type` column. `Type_Mixed` was dropped to
+    Since RNN models can only handle numeric data, One-Hot Encoding was
+    applied to the species `Type` column, using the Pandas library [@reback2020pandas].
+    `Type_Mixed` was dropped to
     remove linear dependencies between type columns and reduce
-    redundancy.
+    redundancy. 
 
 5.  **Sequence Generation**
 
