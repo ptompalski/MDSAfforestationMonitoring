@@ -403,7 +403,7 @@ for RNN modelling.
 4.  **OneHotEncoding of** **`Type`**
 
     Since RNN models can only handle numeric data, we used
-    OneHotEncoding to transform the species type column into the
+    OneHotEncoding [@scikit-learn] to transform the species type column into the
     `Type_Deciduous`, `Type_Mixed` and `Type_Conifer` columns. Since the
     species types are mutually exclusive, the `Type_Mixed` column was
     dropped to remove linear dependencies between the type columns and
@@ -432,8 +432,7 @@ for RNN modelling.
 
     Depending on the age of the site, the sequence length for each
     survival record varies. For example, for a year 7 survival record,
-    the sequence can contain up to 7 years of satellite records (which
-    were recorded every 16 days in theory).
+    the sequence can contain up to 7 years of satellite records.
 
     When training RNN models, sequences are processed in batches, and
     all sequences within a batch must share the same length. To achieve
@@ -460,4 +459,4 @@ for RNN modelling.
     RNN model instead of a classification RNN model. By doing this, we
     avoided training a separate RNN model for each threshold value. As
     such, we did not map the target values to binary classes during the
-    data preprocessing stage, but rather after the model training.
+    data preprocessing stage, but rather after the model training. Further details on the RNN model architecture and training process are provided later in @sec-sequential_deep_learning.
