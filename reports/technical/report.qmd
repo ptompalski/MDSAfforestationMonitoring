@@ -49,7 +49,7 @@ format:
 
 {{< include _product_results.qmd >}}
 
-##  Conclusions & Recommendations {#sec-conclusions}
+##  Limitations & Recommendations {#sec-conclusions}
 
 {{< include _conclusions.qmd >}}
 ---
