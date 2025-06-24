@@ -47,12 +47,9 @@ model robustness and predictive power in future work.
 1.  **Using Higher Resolution Satellite Data**
 
     Using higher-resolution satellite and field-survey data may help
-    capture finer details and spatial variations between pixels of the a
     site, improving model performance.
 
 2.  **Obtaining Higher Resolution Field Survey Data**
-
-    In the future, we recommend collecting survival rates at a finer
     spatial resolution to improve the precision of our training targets.
     When combined with high resolution satellite data, this would allow
     models to learn localized vegetation dynamics more efficiently.
