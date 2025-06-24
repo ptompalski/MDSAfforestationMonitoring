@@ -123,10 +123,4 @@ model robustness and predictive power in future work.
     architecture naturally accommodates both spatial and temporal
     dependencies, addressing key shortcomings of our current models.
 
-![Basic architecture of a CNN-LSTM model, where inputs from a sequence
-of satellite images (𝑋1, 𝑋2, ..., 𝑋𝑛) passes through a convolution
-neural network (CNN) layer. The output sequence of the CNN layer is then
-taken one-by-one into the LSTM layer. The final hidden state of the LSTM
-model can then be passed through fully connected linear layers to
-predict the survival rate for the entire site.
-](../../img/cnn-lstm.png){#fig-rnn width="100%"}
+![Basic architecture of a CNN-LSTM model, where inputs from a sequence of satellite images $(X_1,X_2,...,X_n)$ passes through a convolution neural network (CNN) layer. The output sequence of the CNN layer is then taken one-by-one into the LSTM layer. The final hidden state of the LSTM model can then be passed through fully connected linear layers to predict the survival rate for the entire site.](../../img/cnn-lstm.png){#fig-rnn width="100%"}
