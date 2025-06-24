@@ -268,7 +268,7 @@ also preserves the temporal structure of the satellite data, which is
 crucial for RNN models, allowing them to train on the complete time
 series for each site in the training data.
 
-### Phase 1: Data Preparation for Classical Models
+### Phase 1: Data Preparation for Classical Models {#sec-data_prep_classical}
 
 After data cleaning, we performed data transformation to prepare the
 cleaned data for classical model training. The data transformation steps

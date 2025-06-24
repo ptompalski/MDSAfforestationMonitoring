@@ -61,7 +61,7 @@ outlined below:
     in either the training set or the test set, avoiding data leakage
     and preserves the temporal structure of the satellite data.
 
-### Phase 1: Classical Modelling
+### Phase 1: Classical Modeling
 
 After data cleaning, we performed data transformation to prepare the
 cleaned data for classical model training.
@@ -93,24 +93,21 @@ cleaned data for classical model training.
     While Random Forest and Gradient Boosting models have native support
     for handling categorical features, logistic regression models can
     only handle numeric features. To maintain consistency,
-    OneHotEncoding was applied to the `Type` column for all classical
-    models.
+    `OneHotEncoding` as implemented by Scikit-Learn [@scikit-learn] was applied to the `Type` column for all classical models.
 
 5.  **Standard Scaling**
 
     Since the logistic regression model is also sensitive to the scale
-    of the data, we applied StandardScaler to the numeric features
+    of the data, we applied `StandardScaler` -implemented by Scikit-Learn [@scikit-learn]- to the numeric features
     before fitting the logistic regression model.
 
 #### Logistic Regression
 
 Logistic regression is a generalized linear model widely used for binary
-classification tasks, valued for its simplicity and interpretability. It
-provides a statistically grounded baseline and serves as a proxy for the
-classical statistical modeling used prior to this analysis. To
+classification tasks, valued for its simplicity and interpretability. Recall that the continuous target is converted to a binary classification problem for simplicity; this means that the probability of a particular record belonging to the `High (1)` survival rate class is modelled here. Logistic Regression provides a statistically grounded baseline and serves as a proxy for the classical statistical modeling used prior to this analysis. To
 demonstrate the value of more sophisticated machine learning models in
 predicting survival rates, subsequent models were expected to achieve
-performance exceeding that of logistic regression.
+performance exceeding that of logistic regression. 
 
 #### Random Forest
 
@@ -121,8 +118,8 @@ Forests can be computationally intensive, each tree is trained
 independently, enabling efficient parallelization and scalability.
 Previous studies from @bergmuller2022predicting have demonstrated that
 Random Forests perform well when using vegetation indices to predict
-canopy tree mortality. Becuase of this, this model was selected as a
-candidate for the present analysis.
+canopy tree mortality. Because of this, this model was selected as a
+candidate for the present analysis, however it was expected that this model may suffer drawbacks as it fails to explicitly capture the temporal sequencing of the data. Additionally, long training times -even with parallelization- made it difficult to finely tune hyperparameters with cross-validation.
 
 #### Gradient Boosting
 
@@ -134,7 +131,7 @@ converge to a high-performing 'strong learner' model when combined
 This model was selected as a candidate model due to strong performance
 across a wide variety of machine learning tasks; in particular, the
 implementation offered by the XGBoost library offers optimized training
-and additional regularization methods [@xgboost].
+and additional regularization methods [@xgboost]. Similar to the Random Forest, this model treats remote sensing records as independent and does not consider temporal ordering. Therefore, it was expected to suffer similar drawbacks.
 
 #### Feature Selection
 
@@ -183,7 +180,7 @@ Neural Networks (RNNs), specifically Long Short-Term Memory (LSTM) and
 Gated Recurrent Unit (GRU) architectures, which are well-suited for
 modeling temporal dynamics. These models, though more computationally
 intensive, are efficiently implemented using modern libraries such as
-PyTorch [@paszke2019pytorch].
+PyTorch [@paszke2019pytorch]. However, spatial correlations were not captured by this modeling paradigm; pixels within sites are still regarded as independent, which still could potentially limit model performance.
 
 #### Processing and Sequence Generation
 
@@ -216,10 +213,11 @@ preprocessing.
 
 4.  **One-hot-encoding of** **`Type`**
 
-    Since RNN models can only handle numeric data, OneHotEncoding was
-    applied to the species `Type` column. `Type_Mixed` was dropped to
+    Since RNN models can only handle numeric data, One-Hot Encoding was
+    applied to the species `Type` column, using the Pandas library [@reback2020pandas].
+    `Type_Mixed` was dropped to
     remove linear dependencies between type columns and reduce
-    redundancy.
+    redundancy. 
 
 5.  **Sequence Generation**
 
@@ -248,7 +246,7 @@ preprocessing.
     such, the target values mapping to binary classes was done after
     model training.
 
-#### Modelling Pipeline
+#### Modeling Pipeline
 
 Following preprocessing, the deep learning pipeline proceeds as follows:
 
@@ -261,10 +259,10 @@ Following preprocessing, the deep learning pipeline proceeds as follows:
     estimate of the survival rate of the site pixel.
 
 In addition to these steps, **layer normalization** was experimented
-with, although no improvement to predictions was observed. **Dropout**
+with, although no improvement to predictions was observed. **dropout**
 was also added within the FCNN layers, decreasing overfitting.
 Bidirectionality was added later in he analysis, as doing so seemed to
-generally increase performance by decreasing overfitting. Modelling was
+generally increase performance by decreasing overfitting. Modeling was
 attemped with and without site features to assess their usage in
 predicting survival rate. Initally, prediction output was constrained to
 \[0,100\] using a simple 'clamp' function, but it was found that a

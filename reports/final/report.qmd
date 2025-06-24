@@ -9,6 +9,7 @@ author:
   - name: Alexi Rodríguez-Arelis
 date: today
 bibliography: references.bib
+link-citations: true
 format: 
   pdf:
     toc: true
@@ -54,13 +55,4 @@ execute:
 
 ---
 
-::: {.callout-tip}
-**Rendering Instructions**
-
-```bash
-cd reports/"final report"
-conda activate mds-afforest-dev
-quarto render report.qmd
-open report.pdf
-```
-:::
+## References
