@@ -80,7 +80,7 @@ The deliverables are organized into the following directories:
   Each threshold folder also includes a `logs/` subdirectory with CSV files summarizing hyperparameter search results. Untrained models and deep learning models that do not require a threshold are stored ouside of the threshold directories.
 
 - [`results/`](./results):  
-  Stores model evaluation outputs, including `.csv` and `.joblib` files with key error metrics—such as confusion matrices, precision-recall (PR) and ROC curves, and $F_1$ scores.  
+  Stores model evaluation outputs, including `.csv` and `.joblib` files (`.pkl` files for RNN models) with key error metrics—such as confusion matrices, precision-recall (PR) and ROC curves, and $F_1$ scores. 
   Results are organized by classification threshold, consistent with the structure of the [`models/`](./models) directory.
 
 - [`reports/`](./reports):  
