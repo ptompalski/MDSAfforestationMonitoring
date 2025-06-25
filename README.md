@@ -77,7 +77,7 @@ The deliverables are organized into the following directories:
     For example, a tuned Gradient Boosting model trained with a 70% survival threshold is saved at:  
     `models/70/tuned_gradient_boosting.joblib`
 
-  Each threshold folder also includes a `logs/` subdirectory with CSV files summarizing hyperparameter search results.
+  Each threshold folder also includes a `logs/` subdirectory with CSV files summarizing hyperparameter search results. Untrained models and deep learning models that do not require a threshold are stored ouside of the threshold directories.
 
 - [`results/`](./results):  
   Stores model evaluation outputs, including `.csv` and `.joblib` files with key error metrics—such as confusion matrices, precision-recall (PR) and ROC curves, and $F_1$ scores.  
