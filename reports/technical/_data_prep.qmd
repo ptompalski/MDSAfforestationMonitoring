@@ -275,7 +275,7 @@ While this splitting method can lead to imbalanced splits—especially
 given the skew toward higher survival rates—it is a necessary trade-off
 to ensure valid model evaluation and reduce the risk of overfitting.
 
-### Phase 1: Data Preparation for Classical Models
+### Phase 1: Data Preparation for Classical Models {#sec-data_prep_classical}
 
 After data cleaning, we performed data transformation to prepare the
 cleaned data for classical model training. The data transformation steps
