@@ -16,7 +16,7 @@ We focus on two central research questions:
 1. Can satellite-derived vegetation indices and site-level data accurately predict tree survival over time in large-scale afforestation programs?
 2. What modeling approaches are most effective for this predictive task?
 
-Using data from Canada’s **2 Billion Trees** initiative, we trained a suite of classical machine learning models, including:
+Using afforestation data, we trained a suite of classical machine learning models, including:
 
 - [Logistic Regression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html)
 - [Random Forest](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html)  
